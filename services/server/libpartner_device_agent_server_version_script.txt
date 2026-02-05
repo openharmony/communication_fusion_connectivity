@@ -1,0 +1,9 @@
+{
+  global:
+  *Try*;
+  *Connect*;
+  *Destroy*;
+  *OnDeviceDiscovered*;
+  local:
+    *;
+};

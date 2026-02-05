@@ -1,0 +1,124 @@
+# Copyright (c) 2026 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+FUSION_CONN = "//foundation/communication/fusion_connectivity"
+
+ohos_shared_library("partner_agent_extension") {
+  sanitize = {
+    integer_overflow = true
+    ubsan = true
+    boundary_sanitize = true
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+  branch_protector_ret = "pac_ret"
+
+  include_dirs = [
+    "$FUSION_CONN/frameworks/inner/include",
+    "$FUSION_CONN/frameworks/extension/include",
+    "$FUSION_CONN/frameworks/napi/include",
+    "$FUSION_CONN/frameworks/napi/include/extension",
+    "$FUSION_CONN/interfaces/inner_api",
+    "$FUSION_CONN/idl/include",
+  ]
+
+  sources = [
+    "js_partner_agent_extension.cpp",
+    "js_partner_agent_extension_context.cpp",
+  ]
+
+  deps = [
+    "$FUSION_CONN/frameworks/extension:partner_agent_extension_common",
+    "$FUSION_CONN/frameworks/extension:partner_agent_extension_ipc",
+    "$FUSION_CONN/idl:libpartner_device_agent_proxy",
+    "$FUSION_CONN/idl:libpartner_device_agent_stub",
+  ]
+
+  external_deps = [
+    "ability_base:want",
+    "ability_runtime:ability_context_native",
+    "ability_runtime:ability_manager",
+    "ability_runtime:app_context",
+    "ability_runtime:extensionkit_native",
+    "ability_runtime:napi_common",
+    "ability_runtime:runtime",
+    "access_token:libaccesstoken_sdk",
+    "access_token:libtokenid_sdk",
+    "c_utils:utils",
+    "eventhandler:libeventhandler",
+    "hilog:libhilog",
+    "ipc:ipc_core",
+    "ipc:ipc_napi",
+    "napi:ace_napi",
+  ]
+
+  defines = [
+    "LOG_DOMAIN = 0xD000100",
+  ]
+
+  subsystem_name = "communication"
+  part_name = "fusion_connectivity"
+}
+
+ohos_shared_library("partner_agent_extension_module") {
+  sanitize = {
+    integer_overflow = true
+    ubsan = true
+    boundary_sanitize = true
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+  branch_protector_ret = "pac_ret"
+
+  include_dirs = [
+    "$FUSION_CONN/frameworks/inner/include",
+    "$FUSION_CONN/frameworks/extension/include",
+    "$FUSION_CONN/frameworks/napi/include/extension",
+    "$FUSION_CONN/idl/include",
+  ]
+
+  sources = [ "partner_agent_extension_module_loader.cpp" ]
+
+  deps = [
+    ":partner_agent_extension",
+    "$FUSION_CONN/idl:libpartner_device_agent_proxy",
+    "$FUSION_CONN/idl:libpartner_device_agent_stub",
+  ]
+
+  external_deps = [
+    "ability_base:configuration",
+    "ability_base:session_info",
+    "ability_runtime:ability_manager",
+    "ability_runtime:app_context",
+    "ability_runtime:extensionkit_native",
+    "ability_runtime:runtime",
+    "bundle_framework:appexecfwk_base",
+    "bundle_framework:appexecfwk_core",
+    "c_utils:utils",
+    "hilog:libhilog",
+    "ipc:ipc_core",
+    "ipc:ipc_napi",
+    "napi:ace_napi",
+  ]
+
+  relative_install_dir = "extensionability"
+  defines = [
+    "LOG_DOMAIN = 0xD000100",
+  ]
+
+  subsystem_name = "communication"
+  part_name = "fusion_connectivity"
+}
