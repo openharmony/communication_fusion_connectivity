@@ -1,0 +1,221 @@
+# Copyright (C) 2026 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//build/ohos_var.gni")
+import("//foundation/communication/fusion_connectivity/fusion_connectivity.gni")
+
+FUSION_CONN = "//foundation/communication/fusion_connectivity"
+
+partner_device_agent_deps = [
+  "$FUSION_CONN/services/etc/init:etc",
+  "$FUSION_CONN/services/etc/param:etc",
+  "$FUSION_CONN/idl:libpartner_device_agent_stub",
+]
+
+partner_device_agent_external_deps = [
+  "safwk:system_ability_fwk",
+  "samgr:samgr_proxy",
+  "c_utils:utils",
+  "hilog:libhilog",
+  "ipc:ipc_single",
+  "ffrt:libffrt",
+  "bluetooth:btframework",
+  "ability_base:zuri",
+  "access_token:libaccesstoken_sdk",
+  "access_token:libtokenid_sdk",
+  "access_token:libprivacy_sdk",
+  "init:libbegetutil",
+  "preferences:native_preferences",
+  "common_event_service:cesfwk_innerkits",
+  "cJSON:cjson",
+  "os_account:os_account_innerkits",
+]
+
+partner_device_agent_source = [
+  "src/partner_device_agent_server.cpp",
+  "src/partner_device.cpp",
+  "src/device_agent_capability_br.cpp",
+  "src/device_agent_capability_ble_adv.cpp",
+  "src/partner_device_config.cpp",
+  "../common/src/permission_manager.cpp",
+  "../common/src/log_util.cpp",
+  "../common/src/fcm_thread_util.cpp",
+  "src/fusion_conn_load_utils.cpp",
+  "../common/src/fcm_common_event_subscriber.cpp",
+  "../common/src/common_utils.cpp",
+  "../common/src/timer_manager.cpp",
+]
+
+config("fusion_connectivity_config") {
+  include_dirs = [
+    "${target_gen_dir}",
+    "$FUSION_CONN/services/common/include",
+    "$FUSION_CONN/interfaces/inner_api",
+    "include",
+  ]
+}
+
+#################################### partner_device_agent_server ########################################
+ohos_shared_library("partner_device_agent_server") {
+  # Used to control the export of dynamic library symbols.
+  version_script = "libpartner_device_agent_server_version_script.txt"
+  # CFI
+  branch_protector_ret = "pac_ret"  # Enable PAC CFI
+  sanitize = {
+    cfi = true                            # Enable/disable control flow integrity detection
+    boundary_sanitize = true               # Enable boundary san detection
+    cfi_cross_dso = true                   # Cross-SO CFI Checks
+    integer_overflow = true                # Enable integer overflow detection
+    ubsan = true                           # Enable some Ubsan options
+    debug = false
+  }
+
+  cflags_cc = [
+    "-fdata-sections",
+    "-ffunction-sections",
+    "-fno-unwind-tables",
+    "-fno-asynchronous-unwind-tables",
+    "-Os",
+    "-fvisibility=hidden",
+  ]
+
+  configs = [
+    ":fusion_connectivity_config"
+  ]
+
+  defines =  [
+    "LOG_DOMAIN = 0xD000100",
+  ]
+
+  sources = partner_device_agent_source
+  deps = partner_device_agent_deps
+
+  external_deps = partner_device_agent_external_deps
+
+  external_deps += [ "ffrt:libffrt" ]
+
+  part_name = "fusion_connectivity"
+  subsystem_name = "communication"
+}
+
+ohos_shared_library("libpartner_agent_extension_service") {
+  sanitize = {
+    integer_overflow = true
+    ubsan = true
+    boundary_sanitize = true
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+  branch_protector_ret = "pac_ret"
+
+  version_script = "libpartner_device_agent_server_version_script.txt"
+  cflags = [
+    "-fno-math-errno",
+    "-fno-unroll-loops",
+    "-fmerge-all-constants",
+    "-fno-ident",
+    "-Oz",
+    "-flto",
+    "-ffunction-sections",
+    "-fdata-sections",
+    "-DFUSION_CONNECTIVITY_SETTINGS_BUNDLE_NAME=\"${fusion_connectivity_settings_bundle_name}\"",
+    "-DFUSION_CONNECTIVITY_SETTINGS_MAIN_ABILITY=\"${fusion_connectivity_settings_main_ability}\"" ,
+  ]
+
+  sources = [
+    "src/extension/extension_service_connection.cpp",
+    "src/extension/extension_service_connection_service.cpp",
+    "src/extension/extension_service_extern_interface.cpp",
+    "src/extension/extension_service_connection_notifier.cpp",
+    "src/extension/bundle_helper.cpp",
+  ]
+
+  include_dirs = [
+    "$FUSION_CONN/services/server/include",
+    "$FUSION_CONN/services/server/include/extension",
+    "$FUSION_CONN/services/common/include",
+    "$FUSION_CONN/interfaces/inner_api",
+    "$FUSION_CONN/idl/include",
+  ]
+
+  deps = [
+    "$FUSION_CONN/frameworks/extension:partner_agent_extension_ipc",
+    "$FUSION_CONN/idl:libpartner_device_agent_proxy",
+    "$FUSION_CONN/idl:libpartner_device_agent_stub",
+  ]
+
+  defines =  [
+    "LOG_DOMAIN = 0xD000100",
+  ]
+
+  external_deps = [
+    "ability_base:zuri",
+    "ability_runtime:ability_connect_callback_stub",
+    "ability_runtime:ability_manager",
+    "ability_runtime:app_manager",
+    "ability_runtime:runtime",
+    "ability_runtime:uri_permission_mgr",
+    "ability_runtime:wantagent_innerkits",
+    "access_token:libaccesstoken_sdk",
+    "bundle_framework:appexecfwk_base",
+    "bundle_framework:appexecfwk_core",
+    "c_utils:utils",
+    "ffrt:libffrt",
+    "hilog:libhilog",
+    "ipc:ipc_core",
+    "os_account:os_account_innerkits",
+    "samgr:samgr_proxy",
+    "distributed_notification_service:ans_innerkits",
+  ]
+
+  part_name = "fusion_connectivity"
+  subsystem_name = "communication"
+}
+
+
+
+#################################### partner_device_agent_server_static ########################################
+# Only used for test
+ohos_static_library("partner_device_agent_server_static") {
+  # CFI
+  branch_protector_ret = "pac_ret"  # Enable PAC CFI
+  sanitize = {
+    cfi = true                            # Enable/disable control flow integrity detection
+    boundary_sanitize = true               # Enable boundary san detection
+    cfi_cross_dso = true                   # Cross-SO CFI Checks
+    integer_overflow = true                # Enable integer overflow detection
+    ubsan = true                           # Enable some Ubsan options
+    debug = false
+  }
+  configs = [
+    ":fusion_connectivity_config"
+  ]
+
+  defines =  [
+    "LOG_DOMAIN = 0xD000100",
+  ]
+
+  sources = partner_device_agent_source
+  deps = partner_device_agent_deps
+  external_deps = partner_device_agent_external_deps
+
+  external_deps += [ "ffrt:libffrt" ]
+
+  defines += [
+  ]
+
+  part_name = "fusion_connectivity"
+  subsystem_name = "communication"
+}

@@ -1,0 +1,66 @@
+# Copyright (C) 2026 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/test.gni")
+import("//build/ohos_var.gni")
+
+module_output_path = "fusion_connectivity/fusion_connectivity"
+PART_DIR = "//foundation/communication/fusion_connectivity"
+
+config("unittest_config") {
+  include_dirs = [
+    "${target_gen_dir}",
+    "$PART_DIR/services/server/include",
+    "$PART_DIR/services/common/include",
+  ]
+
+  defines = [
+    "LOG_DOMAIN = 0xD000100",
+    "private = public",
+    "protected = public",
+  ]
+}
+
+ohos_unittest("fusion_connectivity_test") {
+  module_out_path = module_output_path
+
+  sources = [
+    "fusion_connectivity_test.cpp",
+    "$PART_DIR/services/server/src/partner_device_agent_server.cpp",
+    "$PART_DIR/services/common/src/log_util.cpp",
+  ]
+
+  configs = [ ":unittest_config" ]
+
+  deps = [
+    "$PART_DIR/idl:libpartner_device_agent_stub",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+    "ffrt:libffrt",
+    "bluetooth:btframework",
+    "preferences:native_preferences",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+  ]
+}
+
+group("unit_test") {
+  testonly = true
+
+  deps = [
+    ":fusion_connectivity_test",
+  ]
+}

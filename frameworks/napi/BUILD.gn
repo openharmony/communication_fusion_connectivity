@@ -1,0 +1,79 @@
+# Copyright (C) 2026 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+
+FUSION_CONN = "//foundation/communication/fusion_connectivity"
+
+config("fusion_connectivity_inner_cfg") {
+  include_dirs = [
+    "$FUSION_CONN/frameworks/inner/include",
+    "$FUSION_CONN/frameworks/napi/include",
+    "$FUSION_CONN/services/common/include",
+    "$FUSION_CONN/idl/include",
+  ]
+}
+
+group("napi_partner_agent_extension") {
+  deps = [
+    "src/extension:partner_agent_extension",
+    "src/extension:partner_agent_extension_module",
+  ]
+}
+
+ohos_shared_library("partneragent") {
+  branch_protector_ret = "pac_ret"  # Enable PAC CFI
+
+  sanitize = {
+    cfi = true  # Enable/disable control flow integrity detection
+    boundary_sanitize = true  # Enable boundary san detection
+    cfi_cross_dso = true  # Cross-SO CFI Checks
+    integer_overflow = true  # Enable integer overflow detection
+    ubsan = true  # Enable some Ubsan options
+    debug = false
+  }
+
+  defines = [
+    "LOG_DOMAIN = 0xD000100",
+  ]
+
+  configs = [ ":fusion_connectivity_inner_cfg" ]
+
+  sources = [
+    "$FUSION_CONN/frameworks/napi/src/native_module_fusion_connectivity.cpp",
+    "$FUSION_CONN/frameworks/napi/src/napi_partner_device_agent.cpp",
+    "$FUSION_CONN/frameworks/napi/src/napi_fusion_connectivity_error.cpp",
+    "$FUSION_CONN/frameworks/napi/src/napi_parser_utils.cpp",
+    "$FUSION_CONN/frameworks/napi/src/napi_async_callback.cpp",
+    "$FUSION_CONN/frameworks/napi/src/napi_async_work.cpp",
+    "$FUSION_CONN/frameworks/napi/src/napi_native_object.cpp",
+    "$FUSION_CONN/frameworks/napi/src/napi_timer.cpp",
+  ]
+
+  deps = [
+    "$FUSION_CONN/frameworks/inner:partner_device_agent_framework",
+    "$FUSION_CONN/idl:libpartner_device_agent_proxy",
+    "$FUSION_CONN/idl:libpartner_device_agent_stub",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+    "libuv:uv",
+    "napi:ace_napi",
+  ]
+
+  relative_install_dir = "module/fusionconnectivity"
+  part_name = "fusion_connectivity"
+  subsystem_name = "communication"
+}

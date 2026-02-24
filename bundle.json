@@ -1,0 +1,102 @@
+{
+    "name": "@ohos/fusion_connectivity",
+    "description": "Provide fusional service for connectivity",
+    "version": "6.0",
+    "license": "",
+    "repository": "",
+    "homePage": "",
+    "domain": "os",
+    "language": "",
+    "private": false,
+    "tags": ["foundation"],
+    "keywords":[
+        "communication",
+        "fusion_connectivity"
+    ],
+    "publishAs": "code-segment",
+    "segment": {
+        "destPath": "//foundation/communication/fusion_connectivity"
+    },
+    "envs": [],
+    "dirs": [],
+    "scripts": {},
+    "author": {},
+    "contributors": {},
+    "component": {
+        "name": "fusion_connectivity",
+        "subsystem": "communication",
+        "syscap": [
+            "SystemCapability.Communication.FusionConnectivity.Core"
+        ],
+        "features": [
+            "fusion_connectivity_partner_agent_feature",
+            "fusion_connectivity_settings_bundle_name",
+            "fusion_connectivity_settings_main_ability"
+        ],
+        "adapted_system_type": [
+            "standard"
+        ],
+        "rom": "",
+        "ram": "",
+        "hisysevent_config": [
+        ],
+        "deps": {
+            "components": [
+                "hilog",
+                "ipc",
+                "samgr",
+                "c_utils",
+                "ffrt",
+                "bluetooth",
+                "safwk",
+                "libuv",
+                "ets_frontend",
+                "napi",
+                "access_token",
+                "ability_base",
+                "ability_runtime",
+                "bundle_framework",
+                "eventhandler",
+                "init",
+                "common_event_service",
+                "cJSON",
+                "preferences",
+                "os_account",
+                "distributed_notification_service"
+              ],
+              "third_party": [
+              ]
+        },
+        "build": {
+            "group_type": {
+                "base_group": [],
+                "fwk_group": [
+                    "//foundation/communication/fusion_connectivity/frameworks/inner:partner_device_agent_framework",
+                    "//foundation/communication/fusion_connectivity/frameworks/napi:napi_partner_agent_extension",
+                    "//foundation/communication/fusion_connectivity/frameworks/napi:partneragent",
+                    "//foundation/communication/fusion_connectivity/interfaces/extension:napi_packages"
+                ],
+                "service_group": [
+                    "//foundation/communication/fusion_connectivity/sa_profile:partner_device_agent_sa_profile",
+                    "//foundation/communication/fusion_connectivity/services/server:partner_device_agent_server",
+                    "//foundation/communication/fusion_connectivity/services/server:libpartner_agent_extension_service",
+                    "//foundation/communication/fusion_connectivity/idl:partner_device_agent"
+                ]
+            },
+            "inner_api": [
+                {
+                    "header": {
+                        "header_base": "//foundation/communication/fusion_connectivity/interfaces/inner_api",
+                        "header_files": [
+                            "partner_device_agent.h"
+                        ]
+                    },
+                    "name": "//foundation/communication/fusion_connectivity/frameworks/inner:partner_device_agent_framework"
+                }
+            ],
+            "test": [
+                "//foundation/communication/fusion_connectivity/test:fusion_connectivity_test"
+            ]
+        }
+    }
+}

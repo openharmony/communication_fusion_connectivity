@@ -1,0 +1,58 @@
+# Copyright (C) 2026 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//build/ohos_var.gni")
+import("//build/config/components/idl_tool/idl.gni")
+
+# 使用idl_gen_interface生成模板文件、输入的参数名在deps中会使用
+idl_gen_interface("partner_device_agent") {
+  # 开发者定义的.idl名，须与gn文件在同一路径下
+  sources = [
+   "IPartnerDeviceAgent.idl",
+  ]
+  sources_common = [ "IFusionConnectivityTypes.idl" ]
+  sources_callback = []
+  part_name = "fusion_connectivity"
+  subsystem_name = "communication"
+  # 根据idl文件中对自定义对象的使用，编译为so时需要增加自定义对应使用的cpp的编译，默认为空
+  sources_cpp = [
+    "src/partner_device_address.cpp",
+  ]
+  # 根据idl文件中对自定义对象的使用，需要引入的头文件目录，默认为空
+  sub_include = [
+    "include",
+    "../services/common/include",
+    "../interfaces/inner_api"
+  ]
+  configs = []
+  sequenceable_ext_deps = []
+
+  # 编译so时增加sanitize
+  # CFI
+  # branch_protector_ret = "pac_ret"  # Enable PAC CFI
+  sanitize = {
+      cfi = true                            # Enable/disable control flow integrity detection
+      boundary_sanitize = true               # Enable boundary san detection
+      cfi_cross_dso = true                   # Cross-SO CFI Checks
+      integer_overflow = true                # Enable integer overflow detection
+      ubsan = true                           # Enable some Ubsan options
+      debug = false
+  }
+  # 开启hitrace，值是hitrace_meter.h文件中定义的uint64_t类型标识,需要填入常量的变量名
+
+  # 开启hilog，Domain ID 使用16进制的整数
+  log_domainid = "0xD000100"
+  # 开启hilog，字符串类型tag名、一般为子系统名称
+  log_tag = "partner_device_agent"
+}
