@@ -1,8 +1,8 @@
-# 融合短距服务子系统
+# 融合短距服务
 
 ## 简介
 
-该仓主要存放融合短距服务子系统的源码信息。融合短距服务子系统为应用提供设备发现与设备下线的通知功能。
+该仓主要存放融合短距服务的源码信息。融合短距服务为应用提供设备发现与设备下线的通知功能。
 
 ### 内容介绍
 
@@ -22,7 +22,7 @@
 - extension管理模块主要负责提供设备发现与设备下线的通知功能，需要应用继承实现。应用模块级配置文件module.json5 中的extensionabilities的type属性应该配置为partnerAgent。
 - SA动态启停模块提供本服务的动态启停，防止资源浪费。
 - 代理通知模块主要提供发送通知的能力，该通知的生命周期和extension一致，为了给用户通知系统中的extension活动。所有的配置项均支持用户级绑定与持久化存储。
-- 有关融合短距服务及其他相关模块的详细介绍可参见[融合短距服务子系统概述](https://gitcode.com/openharmony/docs/blob/master/zh-cn/application-dev/reference/apis-connectivity-kit/js-apis-fusionConnectivity-partnerAgent.md)。
+- 有关融合短距服务及其他相关模块的详细介绍可参见[融合短距服务概述](https://gitcode.com/openharmony/docs/blob/master/zh-cn/application-dev/reference/apis-connectivity-kit/js-apis-fusionConnectivity-partnerAgent.md)。
 
 
 ## 目录
