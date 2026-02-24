@@ -1,0 +1,73 @@
+# Copyright (C) 2026 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/config/features.gni")
+import("//build/test.gni")
+PART_DIR = "//foundation/communication/fusion_connectivity"
+
+module_output_path = "fusion_connectivity/"
+
+##############################fuzztest##########################################
+ohos_fuzztest("FusionConnectivityFuzzTest") {
+  module_out_path = module_output_path
+  fuzz_config_file = "//foundation/communication/fusion_connectivity/test/fuzztest/fusion_connectivity_fuzzer"
+
+  cflags = [
+    "-g",
+    "-O0",
+    "-Wno-unused-variable",
+    "-fno-omit-frame-pointer",
+  ]
+
+  branch_protector_ret = "pac_ret"
+  sanitize = {
+    cfi = true                             # Enable/disable control flow integrity detection
+    cfi_cross_dso = true                   # Cross-SO CFI Checks
+    debug = true
+  }
+
+  include_dirs = [
+    "$PART_DIR/services/common/include",
+    "$PART_DIR/services/server/include",
+  ]
+
+  sources = [ "fusion_connectivity_fuzzer.cpp" ]
+
+  deps = [
+    "$PART_DIR/services/server:partner_device_agent_server_static",
+    "$PART_DIR/idl:libpartner_device_agent_proxy",
+    "$PART_DIR/idl:libpartner_device_agent_stub",
+  ]
+
+  external_deps = [
+    "hilog:libhilog",
+    "ipc:ipc_single",
+    "c_utils:utils",
+    "bluetooth:btframework",
+    "ability_base:zuri",
+    "access_token:libaccesstoken_sdk",
+    "access_token:libtokenid_sdk",
+    "access_token:libprivacy_sdk",
+  ]
+}
+
+###############################################################################
+group("fuzztest") {
+  testonly = true
+  deps = []
+  deps += [
+    # deps file
+    ":FusionConnectivityFuzzTest",
+  ]
+}
+###############################################################################

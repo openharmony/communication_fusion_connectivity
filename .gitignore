@@ -1,0 +1,5 @@
+.vscode/
+.codecheck/
+CodeCheckOutputReport.json
+new_build.sh
+.codemate

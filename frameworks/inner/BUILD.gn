@@ -1,0 +1,83 @@
+
+# Copyright (C) 2026 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//build/ohos_var.gni")
+import("//foundation/communication/fusion_connectivity/fusion_connectivity.gni")
+
+FUSION_CONN = "//foundation/communication/fusion_connectivity"
+
+config("fusion_connectivity_fwk_inner_cfg") {
+  include_dirs = [
+    "$FUSION_CONN/frameworks/inner/include",
+    "$FUSION_CONN/services/common/include",
+    "$FUSION_CONN/idl/include",
+  ]
+
+  if (fusion_connectivity_partner_agent_feature) {
+    defines = [
+      "ENABLE_PARTNER_AGENT_FEATURE"
+    ]
+  }
+}
+
+config("fusion_connectivity_fwk_public_cfg") {
+  include_dirs = [
+    "$FUSION_CONN/interfaces/inner_api",
+    "$FUSION_CONN/idl/include",
+  ]
+}
+
+ohos_shared_library("partner_device_agent_framework") {
+  sanitize = {
+    cfi = true
+    boundary_sanitize = true
+    integer_overflow = true
+    cfi_cross_dso = true
+    debug = false
+    ubsan = true
+  }
+  branch_protector_ret = "pac_ret"
+
+  install_enable = true
+
+  sources = [
+    "src/partner_device_agent.cpp",
+  ]
+
+  deps = [
+    "$FUSION_CONN/idl:libpartner_device_agent_proxy",
+    "$FUSION_CONN/idl:libpartner_device_agent_stub",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+    "ipc:ipc_core",
+    "ipc:ipc_napi",
+    "samgr:samgr_proxy",
+    "init:libbegetutil",
+  ]
+
+  defines = [
+    "LOG_DOMAIN = 0xD000100",
+  ]
+
+  configs = [ ":fusion_connectivity_fwk_inner_cfg" ]
+  public_configs = [ ":fusion_connectivity_fwk_public_cfg" ]
+
+  part_name = "fusion_connectivity"
+  innerapi_tags = [ "platformsdk" ]
+  subsystem_name = "communication"
+}
