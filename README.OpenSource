@@ -1,0 +1,11 @@
+[
+  {
+    "Name": "fusion_connectivity",
+    "License": "Apache-2.0",
+    "License File": "LICENSE",
+    "Version Number": "v1.0.0",
+    "Owner": tangjia15@huawei.com",
+    "Upstream URL": "https://gitcode.com/openharmony/communication_fusion_connectivity",
+    "Description": "融合短距服务为应用的穿戴提供设备连接后拉起应用进程、断连后销毁应用进程的功能。"
+  }
+]

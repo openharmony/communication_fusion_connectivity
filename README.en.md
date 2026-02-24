@@ -3,7 +3,7 @@
 
 ## Introduction
 
-This repository contains the source code for the Fusion Connectivity Subsystem. The Fusion Connectivity Subsystem provides applications with device discovery and device offline notification capabilities.
+This repository contains the source code for the Fusion Connectivity. The Fusion Connectivity provides applications with device discovery and device offline notification capabilities.
 
 ### Content Introduction
 
@@ -24,7 +24,7 @@ As shown in the diagram above, the Fusion Connectiviry mainly consists of four m
 - The Extension Management module is mainly responsible for providing device discovery and offline notification capabilities, which applications need to inherit and implement. The type attribute in the extensionabilities section of the application’s module-level configuration file (module.json5) should be configured as partnerAgent.
 - The SA Dynamic Start/Stop module provides dynamic starting and stopping of this service to prevent resource wastage.
 - The Proxy Notification module primarily provides the capability to send notifications. The lifecycle of these notifications is consistent with the extension, intended to inform users about extension activities within the system. All configuration items support user-level binding and persistent storage.
-- For detailed information about the Fusion Short-Range Service and other related modules, please refer to the [Fusion Connectivity Subsystem Overview](https://gitcode.com/openharmony/docs/blob/master/zh-cn/application-dev/reference/apis-connectivity-kit/js-apis-fusionConnectivity-partnerAgent.md).
+- For detailed information about the Fusion Short-Range Service and other related modules, please refer to the [Fusion Connectivity Overview](https://gitcode.com/openharmony/docs/blob/master/zh-cn/application-dev/reference/apis-connectivity-kit/js-apis-fusionConnectivity-partnerAgent.md).
 
 ## Directory Structure
 
