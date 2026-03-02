@@ -35,6 +35,10 @@ idl_gen_interface("partner_agent_extension_interface") {
   configs = [
     ":partner_agent_extension_interface_config",
   ]
+  sequenceable_ext_deps = [ 
+    "c_utils:utils",
+    "ipc:ipc_single"
+  ]
 }
 
 config("partner_agent_extension_ipc_public_config") {
