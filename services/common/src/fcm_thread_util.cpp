@@ -117,7 +117,7 @@ FcmThreadUtil::~FcmThreadUtil()
 void FcmThreadUtil::impl::TaskQueue::PostDelayTask(const ThreadUtilFunc &func,
     uint64_t delayTime, const std::string &name)
 {
-    FCM_CHECK_RETURN(delayTime < DELAY_TIME_MS_MAX, "Invalid delaytime(%{public}lu), taskName(%{public}s)",
+    FCM_CHECK_RETURN(delayTime < DELAY_TIME_MS_MAX, "Invalid delaytime(%{public}llu), taskName(%{public}s)",
         delayTime, name.c_str());
 
     {

@@ -36,7 +36,10 @@ idl_gen_interface("partner_device_agent") {
     "../interfaces/inner_api"
   ]
   configs = []
-  sequenceable_ext_deps = []
+  sequenceable_ext_deps = [ 
+    "c_utils:utils",
+    "ipc:ipc_single"
+  ]
 
   # 编译so时增加sanitize
   # CFI

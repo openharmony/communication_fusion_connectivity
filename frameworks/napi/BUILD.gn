@@ -68,6 +68,7 @@ ohos_shared_library("partneragent") {
 
   external_deps = [
     "c_utils:utils",
+    "ipc:ipc_single",
     "hilog:libhilog",
     "libuv:uv",
     "napi:ace_napi",
