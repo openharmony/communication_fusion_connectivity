@@ -15,6 +15,7 @@
 
 #include "partner_device_config.h"
 #include "log.h"
+#include "log_util.h"
 #include "file_ex.h"
 #include "datetime_ex.h"
 #include "accesstoken_kit.h"
@@ -22,6 +23,7 @@
 #include "common_utils.h"
 #include "cJSON.h"
 #include "bluetooth_host.h"
+#include "bluetooth_errorcode.h"
 #include "parameter.h"
 #include "parameters.h"
 
@@ -39,11 +41,11 @@ const int MAX_PARTNER_DEVICE_CONFIG_SIZE = 100;
 const int MAX_LOST_TIME_DAYS = 30;
 std::mutex g_configFileMutex;
 
-static bool IsPairedDevice(const PartnerDeviceAddress &deviceAddress)
+static bool IsPairedDevice(const PartnerDeviceAddress &realDeviceAddress)
 {
     int pairState = PAIR_NONE;
     auto device = BluetoothHost::GetDefaultHost().GetRemoteDevice(
-        deviceAddress.GetAddress(), Bluetooth::BTTransport::ADAPTER_BREDR);
+        realDeviceAddress.GetAddress(), Bluetooth::BTTransport::ADAPTER_BREDR);
     device.GetPairState(pairState);
     return pairState == PAIR_PAIRED;
 }
@@ -212,7 +214,7 @@ static bool IsValidAppTokenId(uint32_t tokenId)
 }
 
 int ParseLostTimestamp(
-    const cJSON *lostTimestamp, const PartnerDeviceAddress &deviceAddress, PartnerDevice::DeviceInfo &deviceInfo)
+    const cJSON *lostTimestamp, const PartnerDeviceAddress &realDeviceAddress, PartnerDevice::DeviceInfo &deviceInfo)
 {
     if (cJSON_IsNumber(lostTimestamp)) {
         int64_t now = GetDaysSince1970ToNow();
@@ -225,7 +227,7 @@ int ParseLostTimestamp(
         deviceInfo.lostTimestamp = 0;
     }
     // 在SA下电期间，该设备已重新配对上
-    if (IsPairedDevice(deviceAddress)) {
+    if (IsPairedDevice(realDeviceAddress)) {
         deviceInfo.lostTimestamp = 0;
     }
     return FCM_NO_ERROR;
@@ -250,15 +252,14 @@ int ParsePartnerDeviceInfo(cJSON *root, int index, PartnerDevice::DeviceInfo &de
     bool isCheckFail = !cJSON_IsString(version) || !cJSON_IsString(bundleName) || !cJSON_IsString(abilityName) ||
         !cJSON_IsObject(addressInfo) || !cJSON_IsNumber(tokenId) || !cJSON_IsNumber(registerTimestamp) ||
         !cJSON_IsObject(capability) || !cJSON_IsBool(isUserEnabled);
-    if (isCheckFail) {
-        HILOGE("Invalid JSON format.");
-        return FCM_ERR_INTERNAL_ERROR;
-    }
+    FCM_CHECK_RETURN_RET(!isCheckFail, FCM_ERR_INTERNAL_ERROR, "Invalid JSON format.");
+
     // 解析 addressInfo 对象
     PartnerDeviceAddress deviceAddress;
     if (ParseAddressInfoJsonObject(addressInfo, deviceAddress) != FCM_NO_ERROR) {
         return FCM_ERR_INTERNAL_ERROR;
     }
+    PartnerDeviceAddress realDeviceAddress = GetRealDeviceAddress(deviceAddress);
     // 解析 capability 对象
     DeviceCapability deviceCapability;
     if (ParseDeviceCapability(capability, deviceCapability) != FCM_NO_ERROR) {
@@ -275,13 +276,14 @@ int ParsePartnerDeviceInfo(cJSON *root, int index, PartnerDevice::DeviceInfo &de
         return FCM_ERR_INTERNAL_ERROR;
     }
     // 检查 lostTimestamp 注册是否失效
-    if (ParseLostTimestamp(lostTimestamp, deviceAddress, deviceInfo) != FCM_NO_ERROR) {
+    if (ParseLostTimestamp(lostTimestamp, realDeviceAddress, deviceInfo) != FCM_NO_ERROR) {
         return FCM_ERR_INTERNAL_ERROR;
     }
 
     deviceInfo.bundleName = bundleName->valuestring;
     deviceInfo.abilityName = abilityName->valuestring;
     deviceInfo.deviceAddress = deviceAddress;
+    deviceInfo.realDeviceAddress = realDeviceAddress;
     deviceInfo.tokenId = tokenId->valueint;
     deviceInfo.registerTimestamp = registerTimestamp->valueint;
     deviceInfo.isUserEnabled = static_cast<bool>(isUserEnabled->valueint);
@@ -324,6 +326,7 @@ void LoadPartnerDeviceConfig(PartnerDeviceMap &deviceMap, CreatePartnerDeviceFun
         int ret = ParsePartnerDeviceInfo(root, i, deviceInfo);
         if (ret != FCM_NO_ERROR) {
             // 清除虚拟MAC固化
+            DeletePersistentDeviceId(deviceInfo.deviceAddress.GetAddress());
             continue;
         }
         auto key = std::make_pair(deviceInfo.tokenId, deviceInfo.deviceAddress.GetAddress());
@@ -334,6 +337,37 @@ void LoadPartnerDeviceConfig(PartnerDeviceMap &deviceMap, CreatePartnerDeviceFun
     cJSON_Delete(root);
     // 重新刷新配置文件
     UpdatePartnerDeviceConfig(deviceMap);
+}
+
+PartnerDeviceAddress GetRealDeviceAddress(const PartnerDeviceAddress &deviceAddress)
+{
+    if (deviceAddress.GetAddressType() == BluetoothAddressType::REAL) {
+        return deviceAddress;
+    }
+    // BluetoothAddressType::VIRTUAL scense
+    std::string realAddr;
+    int ret = BluetoothHost::GetDefaultHost().GetRealAddress(deviceAddress.GetAddress(), realAddr);
+    if (ret != Bluetooth::BT_NO_ERROR) {
+        HILOGW("%{public}s get real address failed", GET_ENCRYPT_ADDR(deviceAddress));
+        return deviceAddress;
+    }
+    return PartnerDeviceAddress(realAddr, BluetoothAddressType::REAL);
+}
+
+void AddPersistentDeviceId(const std::string &deviceId)
+{
+    bool isValid = false;
+    std::vector<std::string> deviceIdVec = { deviceId };
+    int32_t ret = BluetoothHost::GetDefaultHost().ProcessRandomDeviceIdCommand(
+        static_cast<int32_t>(RandomDeviceIdCommand::ADD), deviceIdVec, isValid);
+}
+
+void DeletePersistentDeviceId(const std::string &deviceId)
+{
+    bool isValid = false;
+    std::vector<std::string> deviceIdVec = { deviceId };
+    int32_t ret = BluetoothHost::GetDefaultHost().ProcessRandomDeviceIdCommand(
+        static_cast<int32_t>(RandomDeviceIdCommand::DELETE), deviceIdVec, isValid);
 }
 
 #ifdef __cplusplus

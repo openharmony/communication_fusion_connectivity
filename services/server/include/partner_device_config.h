@@ -31,6 +31,10 @@ void UpdatePartnerDeviceConfig(PartnerDeviceMap &deviceMap);
 void LoadPartnerDeviceConfig(PartnerDeviceMap &deviceMap, CreatePartnerDeviceFunc createPartnerDeviceFunc);
 void ClearPartnerDeviceConfig();
 
+PartnerDeviceAddress GetRealDeviceAddress(const PartnerDeviceAddress &deviceAddress);
+void AddPersistentDeviceId(const std::string &deviceId);
+void DeletePersistentDeviceId(const std::string &deviceId);
+
 #ifdef __cplusplus
 }
 #endif

@@ -50,13 +50,13 @@ PartnerDevice::~PartnerDevice()
 
 void PartnerDevice::UpdatePartnerDeviceIsAllowStarted(const DeviceInfo &info)
 {
-    bool isPaired = IsPairedDevice(info.deviceAddress.GetAddress());
+    bool isPaired = IsPairedDevice(info.realDeviceAddress.GetAddress());
     if (!isPaired || !info.isUserEnabled) {
         HILOGI("The partner device %{public}s is closed due to (isPaired: %{public}d, isUserEnabled: %{public}d)",
-            GET_ENCRYPT_ADDR(info.deviceAddress), isPaired, info.isUserEnabled);
+            GET_ENCRYPT_ADDR(info.realDeviceAddress), isPaired, info.isUserEnabled);
         isAllowed_ = false;
     } else {
-        HILOGI("The partner device %{public}s is started", GET_ENCRYPT_ADDR(info.deviceAddress));
+        HILOGI("The partner device %{public}s is started", GET_ENCRYPT_ADDR(info.realDeviceAddress));
         isAllowed_ = true;
     }
 }
@@ -71,7 +71,7 @@ void PartnerDevice::SetUserEnableAbility(bool isEnabled)
     DeviceInfo info = GetDeviceInfo();
     if (isEnabled) {
         UpdatePartnerDeviceIsAllowStarted(info);
-        InitDeviceAgentCapability(info.deviceAddress.GetAddress(), info.capability.isSupportBleAdvertiser);
+        InitDeviceAgentCapability(info.realDeviceAddress.GetAddress(), info.capability.isSupportBleAdvertiser);
     } else {
         UpdatePartnerDeviceIsAllowStarted(info);
         CloseDeviceAgentCapability(ABILITY_DESTROY_USER_CLOSED_ABILITY);
@@ -116,7 +116,8 @@ void PartnerDevice::BluetoothStateObserver::OnStateChanged(const int transport, 
     if (transport == BTTransport::ADAPTER_BREDR && status == BTStateID::STATE_TURN_ON) {
         DeviceInfo info = ownerSptr->GetDeviceInfo();
         ownerSptr->UpdatePartnerDeviceIsAllowStarted(info);
-        ownerSptr->InitDeviceAgentCapability(info.deviceAddress.GetAddress(), info.capability.isSupportBleAdvertiser);
+        ownerSptr->InitDeviceAgentCapability(
+            info.realDeviceAddress.GetAddress(), info.capability.isSupportBleAdvertiser);
     }
     if (transport == BTTransport::ADAPTER_BLE && status == BTStateID::STATE_TURN_OFF) {
         ownerSptr->CloseDeviceAgentCapability(ABILITY_DESTROY_BLUETOOTH_DISABLED);
@@ -146,7 +147,7 @@ void PartnerDevice::Init()
 
     DeviceInfo info = GetDeviceInfo();
     UpdatePartnerDeviceIsAllowStarted(info);
-    InitDeviceAgentCapability(info.deviceAddress.GetAddress(), info.capability.isSupportBleAdvertiser);
+    InitDeviceAgentCapability(info.realDeviceAddress.GetAddress(), info.capability.isSupportBleAdvertiser);
 
     // 监听蓝牙开关状态
     bluetoothStateObserver_ = std::make_shared<BluetoothStateObserver>(weak_from_this());
@@ -220,7 +221,7 @@ void PartnerDevice::OnBluetoothDeviceAclStateChange(const OHOS::EventFwk::Common
     }
     HILOGI("%{public}s acl state change, isConnect: %{public}d", GetEncryptAddr(addr).c_str(), isConnect);
     DeviceInfo deviceInfo = GetDeviceInfo();
-    if (deviceInfo.deviceAddress.GetAddress() != addr) {
+    if (deviceInfo.realDeviceAddress.GetAddress() != addr) {
         return;
     }
 
@@ -243,7 +244,7 @@ void PartnerDevice::OnBluetoothDevicePairStateChange(const OHOS::EventFwk::Commo
     }
 
     DeviceInfo deviceInfo = GetDeviceInfo();
-    if (deviceInfo.deviceAddress.GetAddress() != addr) {
+    if (deviceInfo.realDeviceAddress.GetAddress() != addr) {
         return;
     }
     int state = want.GetIntParam("state", BOND_STATE_NONE);
@@ -262,7 +263,7 @@ void PartnerDevice::OnBluetoothDevicePairStateChange(const OHOS::EventFwk::Commo
         if (deviceInfo.isUserEnabled) {
             isAllowed_ = true;
             InitDeviceAgentCapability(
-                deviceInfo.deviceAddress.GetAddress(), deviceInfo.capability.isSupportBleAdvertiser);
+                deviceInfo.realDeviceAddress.GetAddress(), deviceInfo.capability.isSupportBleAdvertiser);
         }
 
         UpdateLostTimestamp(0);

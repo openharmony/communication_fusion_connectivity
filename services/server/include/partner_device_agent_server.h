@@ -64,6 +64,7 @@ private:
     bool IsDeviceBoundByCallingApp(const PartnerDeviceAddress &deviceAddress);
     bool IsDeviceBoundByAll(const PartnerDeviceAddress &deviceAddress);
     bool IsPairedDevice(const PartnerDeviceAddress &deviceAddress);
+    bool IsAllDeviceDisabled();
 
     void Init();
     std::shared_ptr<PartnerDevice> CreatePartnerDeviceInstance(PartnerDevice::DeviceInfo &deviceInfo);

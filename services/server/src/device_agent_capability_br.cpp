@@ -20,6 +20,7 @@
 #include "device_agent_capability_br.h"
 #include "log_util.h"
 #include "bluetooth_host.h"
+#include "bluetooth_remote_device.h"
 #include "partner_device.h"
 
 namespace OHOS {
@@ -30,6 +31,11 @@ void DeviceAgentCapabilityBr::Init(const std::string &addr)
 {
     HILOGI("Init br capability");
     isInit_ = true;
+
+    BluetoothRemoteDevice device(addr);
+    if (device.IsAclConnected()) {
+        OnBluetoothDeviceAclConnected();
+    }
 }
 
 void DeviceAgentCapabilityBr::Close()
