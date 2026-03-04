@@ -2,7 +2,7 @@
     "name": "@ohos/fusion_connectivity",
     "description": "Provide fusional service for connectivity",
     "version": "6.0",
-    "license": "",
+    "license": "Apache License 2.0",
     "repository": "",
     "homePage": "",
     "domain": "os",
