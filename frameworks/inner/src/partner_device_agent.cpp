@@ -181,7 +181,7 @@ int PartnerDeviceAgent::BindDevice(const PartnerDeviceAddress &deviceAddress, co
     }
 
     auto proxy = LoadRemoteSa();
-    FCM_CHECK_RETURN_RET(proxy != nullptr, FCM_ERR_INTERNAL_ERROR, "proxy is nullptr");
+    FCM_CHECK_RETURN_RET(proxy != nullptr, FCM_ERR_API_NOT_SUPPORT, "proxy is nullptr");
     return proxy->BindDevice(deviceAddress, capability, businessCapability, abilityName);
 }
 
@@ -192,7 +192,7 @@ int PartnerDeviceAgent::UnbindDevice(const PartnerDeviceAddress &deviceAddress)
     }
 
     auto proxy = LoadRemoteSa();
-    FCM_CHECK_RETURN_RET(proxy != nullptr, FCM_ERR_INTERNAL_ERROR, "proxy is nullptr");
+    FCM_CHECK_RETURN_RET(proxy != nullptr, FCM_ERR_API_NOT_SUPPORT, "proxy is nullptr");
     return proxy->UnbindDevice(deviceAddress);
 }
 
@@ -255,7 +255,7 @@ int PartnerDeviceAgent::GetBoundDevices(std::vector<PartnerDeviceAddress> &devic
     }
 
     auto proxy = LoadRemoteSa();
-    FCM_CHECK_RETURN_RET(proxy != nullptr, FCM_ERR_INTERNAL_ERROR, "proxy is nullptr");
+    FCM_CHECK_RETURN_RET(proxy != nullptr, FCM_ERR_API_NOT_SUPPORT, "proxy is nullptr");
     return proxy->GetBoundDevices(deviceAddressVec);
 }
 
