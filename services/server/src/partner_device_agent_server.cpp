@@ -180,12 +180,30 @@ int PartnerDeviceAgentServer::ChangeDeviceControlState(
         }
     });
     UpdatePartnerDeviceConfig(partnerDeviceMap_);
+    AttemptUnloadPartnerAgent();
     return ret;
+}
+
+bool PartnerDeviceAgentServer::IsAllDeviceDisabled()
+{
+    bool isAllDisabled = true;
+    partnerDeviceMap_.Iterate(
+        [&isAllDisabled](const PartnerDeviceMapKey &key, std::shared_ptr<PartnerDevice> &deviceSptr) {
+        if (!deviceSptr) {
+            return;
+        }
+        PartnerDevice::DeviceInfo deviceInfo = deviceSptr->GetDeviceInfo();
+        if (deviceInfo.isUserEnabled) {
+            isAllDisabled = false;
+        }
+    });
+    return isAllDisabled;
 }
 
 void PartnerDeviceAgentServer::AttemptUnloadPartnerAgent()
 {
-    if (partnerDeviceMap_.IsEmpty()) {
+    bool isNeedUnload = partnerDeviceMap_.IsEmpty() || IsAllDeviceDisabled();
+    if (isNeedUnload) {
         HILOGI("Attempt unload sa after 30s");
         // 变更系统参数值，触发一次系统参数事件变化卸载SA，SaMgr自动延迟30s卸载SA
         SetParameter(SYS_PARAM_ENABLE_PARTNER_AGENT, SYS_PARAM_ENABLE_PARTNER_AGENT_ENABLED);
@@ -202,12 +220,6 @@ ErrCode PartnerDeviceAgentServer::BindDevice(
         AttemptUnloadPartnerAgent();
         return FCM_ERR_BLUETOOTH_IS_OFF;
     }
-    // 是否支持绑定虚拟地址，固化虚拟地址？
-    if (deviceAddress.GetAddressType() == BluetoothAddressType::VIRTUAL) {
-        HILOGE("not support this address");
-        AttemptUnloadPartnerAgent();
-        return FCM_ERR_API_NOT_SUPPORT;
-    }
     // 检查设备是否配对
     if (!IsPairedDevice(deviceAddress)) {
         HILOGE("%{public}s device is not paired", GET_ENCRYPT_ADDR(deviceAddress));
@@ -220,6 +232,10 @@ ErrCode PartnerDeviceAgentServer::BindDevice(
         AttemptUnloadPartnerAgent();
         return FCM_ERR_DEVICE_ALREADY_BOUNDED;
     }
+    // 应用注册虚拟地址，partnerAgent服务需要固化该虚拟地址
+    if (deviceAddress.GetAddressType() == BluetoothAddressType::VIRTUAL) {
+        AddPersistentDeviceId(deviceAddress.GetAddress());
+    }
 
     HILOGI("%{public}s bind device %{public}s",
         PermissionManager::GetCallingName().c_str(), GET_ENCRYPT_ADDR(deviceAddress));
@@ -228,14 +244,14 @@ ErrCode PartnerDeviceAgentServer::BindDevice(
         .bundleName = PermissionManager::GetCallingName(),
         .abilityName = partnerAgentExtensionAbilityName,
         .deviceAddress = deviceAddress,
+        .realDeviceAddress = GetRealDeviceAddress(deviceAddress),
         .tokenId = IPCSkeleton::GetCallingTokenID(),
         .registerTimestamp = GetSecondsSince1970ToNow(),
         .lostTimestamp = 0,
+        .isUserEnabled = true,
         .capability = capability,
         .businessCapability = businessCapability,
     };
-
-    // 固化虚拟地址
     auto deviceSptr = CreatePartnerDeviceInstance(deviceInfo);
     partnerDeviceMap_.EnsureInsert(key, deviceSptr);
     UpdatePartnerDeviceConfig(partnerDeviceMap_);
@@ -255,17 +271,15 @@ bool PartnerDeviceAgentServer::IsPairedDevice(const PartnerDeviceAddress &device
 
 ErrCode PartnerDeviceAgentServer::UnbindDevice(const PartnerDeviceAddress &deviceAddress)
 {
-    if (deviceAddress.GetAddressType() == BluetoothAddressType::VIRTUAL ||
-        deviceAddress.GetRawAddressType() == BluetoothRawAddressType::RANDOM) {
-        HILOGE("not support this address");
-        AttemptUnloadPartnerAgent();
-        return FCM_ERR_API_NOT_SUPPORT;
-    }
     // 检查设备是否已注册过
     if (!IsDeviceBoundByCallingApp(deviceAddress)) {
         HILOGE("%{public}s device is not bound", GET_ENCRYPT_ADDR(deviceAddress));
         AttemptUnloadPartnerAgent();
         return FCM_ERR_DEVICE_NOT_FOUND;
+    }
+    // 应用注册虚拟地址，partnerAgent服务需要解固化该虚拟地址
+    if (deviceAddress.GetAddressType() == BluetoothAddressType::VIRTUAL) {
+        DeletePersistentDeviceId(deviceAddress.GetAddress());
     }
 
     HILOGI("%{public}s unbind device %{public}s",
@@ -276,7 +290,6 @@ ErrCode PartnerDeviceAgentServer::UnbindDevice(const PartnerDeviceAddress &devic
     if (deviceSptr) {
         deviceSptr->Close();
     }
-    // 清除虚拟MAC固化
     partnerDeviceMap_.Erase(key);
     UpdatePartnerDeviceConfig(partnerDeviceMap_);
     AttemptUnloadPartnerAgent();
@@ -285,13 +298,6 @@ ErrCode PartnerDeviceAgentServer::UnbindDevice(const PartnerDeviceAddress &devic
 
 ErrCode PartnerDeviceAgentServer::IsDeviceBound(const PartnerDeviceAddress &deviceAddress, bool &isBound)
 {
-    if (deviceAddress.GetAddressType() == BluetoothAddressType::VIRTUAL ||
-        deviceAddress.GetRawAddressType() == BluetoothRawAddressType::RANDOM) {
-        HILOGE("not support this address");
-        AttemptUnloadPartnerAgent();
-        return FCM_ERR_API_NOT_SUPPORT;
-    }
-
     isBound = PermissionManager::IsSystemCaller() ?
         IsDeviceBoundByAll(deviceAddress) : IsDeviceBoundByCallingApp(deviceAddress);
 

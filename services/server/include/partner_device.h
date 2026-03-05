@@ -54,7 +54,8 @@ public:
     struct DeviceInfo {
         std::string bundleName = "";
         std::string abilityName = "";
-        PartnerDeviceAddress deviceAddress;
+        PartnerDeviceAddress deviceAddress;  // 伙伴应用注册的设备地址
+        PartnerDeviceAddress realDeviceAddress;  // PartnerDevice模块和蓝牙服务交互使用的真实设备地址
         uint32_t tokenId = 0;
         int64_t registerTimestamp = 0;
         int64_t lostTimestamp = 0;

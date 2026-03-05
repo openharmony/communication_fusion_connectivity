@@ -64,6 +64,10 @@ config("fusion_connectivity_config") {
     "$FUSION_CONN/interfaces/inner_api",
     "include",
   ]
+
+  cflags_cc = [
+    "-Wno-return-type-c-linkage",
+  ]
 }
 
 #################################### partner_device_agent_server ########################################
