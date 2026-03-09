@@ -35,7 +35,6 @@ public:
     void OnBluetoothDeviceAclDisconnected() override;
     void OnScreenOn() override {}
     void OnScreenOff() override {}
-    void OnExtensionDestroy() override {}
 
 private:
     std::atomic_bool isInit_ { false };

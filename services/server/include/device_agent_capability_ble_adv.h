@@ -37,7 +37,6 @@ public:
     void OnBluetoothDeviceAclDisconnected() override;
     void OnScreenOn() override;
     void OnScreenOff() override;
-    void OnExtensionDestroy() override;
 
 private:
     class BluetoothScanCallback : public Bluetooth::BleCentralManagerCallback {
@@ -54,6 +53,8 @@ private:
 
     void StartBleScan();
     void StopBleScan();
+    void StartPowerInhibitTimer();
+    void HandleScanTimeout();
 
     std::atomic_bool isScanStarted_ = false;
     std::string address_ = "";
@@ -65,6 +66,11 @@ private:
     std::mutex timerMutex_;
     int extensionKeepAliveTimeout_ = 3 * 60 * 1000;  // 3min
     std::unique_ptr<Timer> scanTimer_ { nullptr };  // BLE扫描到设备，但未触发ACL连接的超时定时器
+    std::unique_ptr<Timer> powerInhibitTimer_ { nullptr };  // 10分钟功耗抑制定时器
+    std::atomic<int> timeoutCount_ { 0 };  // 连续超时计数器
+    const int timeoutCountMax_ = 5;
+    int powerInhibitTimeout_ = 10 * 60 * 1000;  // 10分钟超时常量
+    std::atomic<bool> isAclConnected_ { false };  // 是否和伙伴设备之间建立ACL连接
 };
 }  // namespace FusionConnectivity
 }  // namespace OHOS
