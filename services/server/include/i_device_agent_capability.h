@@ -40,7 +40,6 @@ public:
     virtual void OnBluetoothDeviceAclDisconnected() = 0;
     virtual void OnScreenOn() = 0;
     virtual void OnScreenOff() = 0;
-    virtual void OnExtensionDestroy() = 0;
 
 protected:
     DependencyFuncs funcs_;

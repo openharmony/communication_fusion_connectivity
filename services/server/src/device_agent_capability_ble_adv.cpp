@@ -41,8 +41,13 @@ void DeviceAgentCapabilityBleAdv::BluetoothScanCallback::OnScanCallback(const Bl
     auto func = [ptr = ownerWptr_]() {
         auto partnerDeviceSptr = ptr.lock();
         if (partnerDeviceSptr) {
+            if (partnerDeviceSptr->isAclConnected_.load()) {
+                HILOGI("ACL is connected, no need start power inhibit.");
+                return;
+            }
+            // 触发功耗抑制逻辑
+            partnerDeviceSptr->HandleScanTimeout();
             partnerDeviceSptr->funcs_.destroyExtension(ABILITY_DESTROY_DEVICE_LOST);
-            // 起10分钟定时器，功耗抑制方案
         };
     };
     std::lock_guard<std::mutex> lock(ownerSptr->timerMutex_);
@@ -65,13 +70,22 @@ void DeviceAgentCapabilityBleAdv::Init(const std::string &addr)
 void DeviceAgentCapabilityBleAdv::Close()
 {
     HILOGI("Close ble capability");
-    std::lock_guard<std::mutex> lock(bleScanMutex_);
-    if (bleCentralManager_) {
-        bleCentralManager_->StopScan();
-        isScanStarted_ = false;
+    {
+        std::lock_guard<std::mutex> lock(bleScanMutex_);
+        if (bleCentralManager_) {
+            bleCentralManager_->StopScan();
+            isScanStarted_ = false;
+        }
+        bluetoothScanCallback_ = nullptr;
+        bleCentralManager_ = nullptr;
     }
-    bluetoothScanCallback_ = nullptr;
-    bleCentralManager_ = nullptr;
+
+    {
+        std::lock_guard<std::mutex> timerLock(timerMutex_);
+        scanTimer_ = nullptr;
+        powerInhibitTimer_ = nullptr;
+        timeoutCount_.store(0);
+    }
 }
 
 void DeviceAgentCapabilityBleAdv::StartBleScan()
@@ -103,12 +117,20 @@ void DeviceAgentCapabilityBleAdv::OnBluetoothDeviceAclConnected()
 {
     StopBleScan();
 
-    std::lock_guard<std::mutex> lock(timerMutex_);
-    scanTimer_ = nullptr;
+    isAclConnected_ = true;  // 解决 OnScanCallback 和 AclConnected 的多线程冲突
+    {
+        std::lock_guard<std::mutex> lock(timerMutex_);
+        scanTimer_ = nullptr;
+        powerInhibitTimer_ = nullptr;
+        timeoutCount_.store(0);
+        HILOGI("ACL connected, reset timeoutCount to 0");
+    }
 }
 
 void DeviceAgentCapabilityBleAdv::OnBluetoothDeviceAclDisconnected()
-{}
+{
+    StartBleScan();
+}
 
 void DeviceAgentCapabilityBleAdv::OnScreenOn()
 {
@@ -128,9 +150,34 @@ void DeviceAgentCapabilityBleAdv::OnScreenOff()
     }
 }
 
-void DeviceAgentCapabilityBleAdv::OnExtensionDestroy()
+void DeviceAgentCapabilityBleAdv::StartPowerInhibitTimer()
 {
-    StartBleScan();
+    HILOGI("Starting power inhibit timer: %{public}d ms", powerInhibitTimeout_);
+    std::lock_guard<std::mutex> lock(timerMutex_);
+    auto func = [ptr = weak_from_this()]() {
+        auto ownerSptr = ptr.lock();
+        if (ownerSptr) {
+            HILOGI("Power inhibit timer timeout, restarting BLE scan");
+            ownerSptr->StartBleScan();
+        }
+    };
+    powerInhibitTimer_ = std::make_unique<Timer>(func);
+    powerInhibitTimer_->Start(powerInhibitTimeout_);
+}
+
+// Is protected by timerMutex_
+void DeviceAgentCapabilityBleAdv::HandleScanTimeout()
+{
+    HILOGI("scanTimer timeout, timeoutCount: %{public}d", timeoutCount_.load() + 1);
+    timeoutCount_++;
+
+    if (timeoutCount_.load() >= timeoutCountMax_) {
+        HILOGI("timeoutCount >= timeoutCountMax_, it's can't start ble scan");
+        powerInhibitTimer_ = nullptr;
+        return;
+    }
+
+    StartPowerInhibitTimer();
 }
 }  // namespace FusionConnectivity
 }  // namespace OHOS

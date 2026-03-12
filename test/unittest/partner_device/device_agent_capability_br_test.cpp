@@ -179,15 +179,3 @@ HWTEST_F(DeviceAgentCapabilityBrTest, ScreenOnOffEventsShouldDoNothing, TestSize
     deviceAgent_->OnScreenOn();
     deviceAgent_->OnScreenOff();
 }
-
-/**
- * @tc.name: ExtensionDestroyEventShouldDoNothing
- * @tc.desc: 测试用例8：扩展销毁事件空实现
- * @tc.type: FUNC
- */
-HWTEST_F(DeviceAgentCapabilityBrTest, ExtensionDestroyEventShouldDoNothing, TestSize.Level0)
-{
-    EXPECT_CALL(*funcs_, startExtension()).Times(0);
-    EXPECT_CALL(*funcs_, destroyExtension(_)).Times(0);
-    deviceAgent_->OnExtensionDestroy();
-}

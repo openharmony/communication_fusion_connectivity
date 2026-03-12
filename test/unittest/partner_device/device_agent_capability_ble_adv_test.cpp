@@ -14,7 +14,7 @@
  */
 
 #ifndef LOG_TAG
-#define LOG_TAG "DeviceAgentCapBrTest"
+#define LOG_TAG "DeviceAgentCapBleAdvTest"
 #endif
 
 #include <gmock/gmock.h>
@@ -69,7 +69,10 @@ void DeviceAgentCapabilityBleAdvTest::SetUp()
 }
 
 void DeviceAgentCapabilityBleAdvTest::TearDown()
-{}
+{
+    deviceAgent_->Close();
+    deviceAgent_ = nullptr;
+}
 
 // 测试用例1：初始化测试
 /**
@@ -174,5 +177,158 @@ HWTEST_F(DeviceAgentCapabilityBleAdvTest, ThreadSafetyTest, TestSize.Level1) {
     thread1.join();
     thread2.join();
 
+    EXPECT_FALSE(deviceAgent_->isScanStarted_.load());
+}
+
+// 测试用例7：scanTimer超时流程
+/**
+ * @tc.name: ScanTimeoutShouldStartPowerInhibitTimer
+ * @tc.desc: 验证scanTimer超时后正确启动功耗抑制定时器
+ * @tc.type: FUNC
+ */
+HWTEST_F(DeviceAgentCapabilityBleAdvTest, ScanTimeoutShouldStartPowerInhibitTimer, TestSize.Level1) {
+    HILOGI("ScanTimeoutShouldStartPowerInhibitTimer enter");
+    deviceAgent_->Init("00:11:22:33:44:55");
+    deviceAgent_->extensionKeepAliveTimeout_ = 1;
+    Bluetooth::BleScanResult scanResult;
+
+    EXPECT_CALL(*funcs_, startExtension()).Times(1);
+    EXPECT_CALL(*funcs_, destroyExtension(_)).Times(1);
+
+    deviceAgent_->bluetoothScanCallback_->OnScanCallback(scanResult);
+
+    EXPECT_NE(deviceAgent_->scanTimer_, nullptr);
+    EXPECT_TRUE(deviceAgent_->scanTimer_->IsStarted());
+    EXPECT_EQ(deviceAgent_->timeoutCount_.load(), 0);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+    EXPECT_EQ(deviceAgent_->timeoutCount_.load(), 1);
+    EXPECT_NE(deviceAgent_->powerInhibitTimer_, nullptr);
+    EXPECT_TRUE(deviceAgent_->powerInhibitTimer_->IsStarted());
+    HILOGI("ScanTimeoutShouldStartPowerInhibitTimer end");
+}
+
+// 测试用例8：连续5次超时解注册
+/**
+ * @tc.name: FiveConsecutiveTimeoutsShouldStopScan
+ * @tc.desc: 验证连续5次超时后停止扫描
+ * @tc.type: FUNC
+ */
+HWTEST_F(DeviceAgentCapabilityBleAdvTest, FiveConsecutiveTimeoutsShouldStopScan, TestSize.Level1) {
+    deviceAgent_->Init("00:11:22:33:44:55");
+    deviceAgent_->extensionKeepAliveTimeout_ = 1;
+    Bluetooth::BleScanResult scanResult;
+
+    EXPECT_CALL(*funcs_, startExtension()).Times(5);
+    EXPECT_CALL(*funcs_, destroyExtension(_)).Times(5);
+
+    for (int i = 0; i < 5; i++) {
+        deviceAgent_->bluetoothScanCallback_->OnScanCallback(scanResult);
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+
+    EXPECT_EQ(deviceAgent_->timeoutCount_.load(), 5);
+    EXPECT_EQ(deviceAgent_->powerInhibitTimer_, nullptr);
+}
+
+// 测试用例9：ACL连接重置计数器
+/**
+ * @tc.name: AclConnectedShouldResetCounter
+ * @tc.desc: 验证ACL连接后重置计数器并取消功耗抑制定时器
+ * @tc.type: FUNC
+ */
+HWTEST_F(DeviceAgentCapabilityBleAdvTest, AclConnectedShouldResetCounter, TestSize.Level1) {
+    deviceAgent_->Init("00:11:22:33:44:55");
+    deviceAgent_->extensionKeepAliveTimeout_ = 1;
+    Bluetooth::BleScanResult scanResult;
+
+    deviceAgent_->bluetoothScanCallback_->OnScanCallback(scanResult);
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+    EXPECT_EQ(deviceAgent_->timeoutCount_.load(), 1);
+    EXPECT_NE(deviceAgent_->powerInhibitTimer_, nullptr);
+
+    deviceAgent_->OnBluetoothDeviceAclConnected();
+
+    EXPECT_EQ(deviceAgent_->timeoutCount_.load(), 0);
+    EXPECT_EQ(deviceAgent_->powerInhibitTimer_, nullptr);
+}
+
+// 测试用例10：功耗抑制定时器超时重启扫描
+/**
+ * @tc.name: PowerInhibitTimerShouldRestartScan
+ * @tc.desc: 验证功耗抑制定时器超时后重启扫描
+ * @tc.type: FUNC
+ */
+HWTEST_F(DeviceAgentCapabilityBleAdvTest, PowerInhibitTimerShouldRestartScan, TestSize.Level1) {
+    deviceAgent_->Init("00:11:22:33:44:55");
+    deviceAgent_->extensionKeepAliveTimeout_ = 1;
+    deviceAgent_->powerInhibitTimeout_ = 10;
+    Bluetooth::BleScanResult scanResult;
+
+    deviceAgent_->bluetoothScanCallback_->OnScanCallback(scanResult);
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+    EXPECT_EQ(deviceAgent_->timeoutCount_.load(), 1);
+    EXPECT_NE(deviceAgent_->powerInhibitTimer_, nullptr);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+
+    EXPECT_TRUE(deviceAgent_->isScanStarted_.load());
+}
+
+// 测试用例11：并发定时器操作线程安全
+/**
+ * @tc.name: ConcurrentTimerOperationsShouldBeThreadSafe
+ * @tc.desc: 验证并发定时器操作的线程安全性
+ * @tc.type: FUNC
+ */
+HWTEST_F(DeviceAgentCapabilityBleAdvTest, ConcurrentTimerOperationsShouldBeThreadSafe, TestSize.Level2) {
+    deviceAgent_->Init("00:11:22:33:44:55");
+    deviceAgent_->extensionKeepAliveTimeout_ = 10;
+    Bluetooth::BleScanResult scanResult;
+
+    auto thread1 = std::thread([&] {
+        for (int i = 0; i < 100; ++i) {
+            deviceAgent_->bluetoothScanCallback_->OnScanCallback(scanResult);
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+    });
+
+    auto thread2 = std::thread([&] {
+        for (int i = 0; i < 100; ++i) {
+            deviceAgent_->OnBluetoothDeviceAclConnected();
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+    });
+
+    thread1.join();
+    thread2.join();
+
+    EXPECT_GE(deviceAgent_->timeoutCount_.load(), 0);
+    EXPECT_LE(deviceAgent_->timeoutCount_.load(), 5);
+}
+
+// 测试用例12：设备关闭时清理定时器
+/**
+ * @tc.name: CloseShouldCleanUpAllTimers
+ * @tc.desc: 验证Close方法正确清理所有定时器
+ * @tc.type: FUNC
+ */
+HWTEST_F(DeviceAgentCapabilityBleAdvTest, CloseShouldCleanUpAllTimers, TestSize.Level0) {
+    deviceAgent_->Init("00:11:22:33:44:55");
+    deviceAgent_->extensionKeepAliveTimeout_ = 1000;
+    Bluetooth::BleScanResult scanResult;
+
+    deviceAgent_->bluetoothScanCallback_->OnScanCallback(scanResult);
+
+    EXPECT_NE(deviceAgent_->scanTimer_, nullptr);
+
+    deviceAgent_->Close();
+
+    EXPECT_EQ(deviceAgent_->scanTimer_, nullptr);
+    EXPECT_EQ(deviceAgent_->powerInhibitTimer_, nullptr);
+    EXPECT_EQ(deviceAgent_->timeoutCount_.load(), 0);
     EXPECT_FALSE(deviceAgent_->isScanStarted_.load());
 }
