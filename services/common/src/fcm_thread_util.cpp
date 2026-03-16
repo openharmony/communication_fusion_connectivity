@@ -15,6 +15,8 @@
 
 #include "fcm_thread_util.h"
 
+#include <cinttypes>
+
 #include "datetime_ex.h"
 #include "log.h"
 #include "ffrt_inner.h"
@@ -117,7 +119,8 @@ FcmThreadUtil::~FcmThreadUtil()
 void FcmThreadUtil::impl::TaskQueue::PostDelayTask(const ThreadUtilFunc &func,
     uint64_t delayTime, const std::string &name)
 {
-    FCM_CHECK_RETURN(delayTime < DELAY_TIME_MS_MAX, "Invalid delaytime(%{public}llu), taskName(%{public}s)",
+    FCM_CHECK_RETURN(delayTime < DELAY_TIME_MS_MAX,
+        "Invalid delaytime(%{public}" PRIu64 "), taskName(%{public}s)",
         delayTime, name.c_str());
 
     {
