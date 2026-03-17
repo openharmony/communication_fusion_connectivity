@@ -18,9 +18,26 @@
 
 #include "log.h"
 #include "partner_agent_extension_stub_impl.h"
+#ifndef CROSS_PLATFORM
+#include "hiappevent/hiappevent.h"
+#endif
 
 namespace OHOS {
 namespace FusionConnectivity {
+
+constexpr const char* SDK_NAME = "FusionConnectivityKit";
+
+#ifndef CROSS_PLATFORM
+static void WriteHaEvent(const char* apiName, int32_t errCode)
+{
+    ParamList list = OH_HiAppEvent_CreateParamList();
+    OH_HiAppEvent_AddStringParam(list, "api_name", apiName);
+    OH_HiAppEvent_AddStringParam(list, "sdk_name", SDK_NAME);
+    OH_HiAppEvent_AddInt32Param(list, "error_code", errCode);
+    OH_HiAppEvent_Write("api_diagnostic", "api_exec_end", BEHAVIOR, list);
+    OH_HiAppEvent_DestroyParamList(list);
+}
+#endif
 
 int32_t PartnerAgentExtensionStubImpl::CallbackEnter(uint32_t code)
 {
@@ -38,6 +55,9 @@ ErrCode PartnerAgentExtensionStubImpl::OnDeviceDiscovered(const PartnerDeviceAdd
     int32_t& retResult)
 {
     HILOGI("OnDeviceDiscovered begin.");
+#ifndef CROSS_PLATFORM
+    WriteHaEvent("extension.OnDeviceDiscovered", retResult);
+#endif
     if (deviceAddress.GetAddress().empty()) {
         HILOGE("deviceAddress is empty.");
         return ERR_INVALID_DATA;
@@ -55,6 +75,9 @@ ErrCode PartnerAgentExtensionStubImpl::OnDeviceDiscovered(const PartnerDeviceAdd
 ErrCode PartnerAgentExtensionStubImpl::OnDestroyWithReason(const int32_t reason, int32_t& retResult)
 {
     HILOGI("OnDestroyWithReason begin.");
+#ifndef CROSS_PLATFORM
+    WriteHaEvent("extension.OnDestroyWithReason", retResult);
+#endif
     auto extension = extension_.lock();
     if (extension != nullptr) {
         retResult = static_cast<int32_t>(extension->OnDestroyWithReason(reason));

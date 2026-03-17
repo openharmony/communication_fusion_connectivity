@@ -209,6 +209,7 @@ ohos_source_set("partner_agent_extension_common") {
     "c_utils:utils",
     "eventhandler:libeventhandler",
     "hilog:libhilog",
+    "hiappevent:hiappevent_ndk",
     "ipc:ipc_napi",
     "napi:ace_napi",
   ]
