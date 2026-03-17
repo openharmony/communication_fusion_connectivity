@@ -30,6 +30,7 @@ public:
     ~NapiHaEventUtils();
     void WriteErrCode(const int32_t errCode);
     static void WriteErrCode(napi_env env, const int32_t errCode);
+    static void WriteHaEvent(const char* apiName, int32_t errCode);
 
 private:
     NapiHaEventUtils() = delete;

@@ -187,6 +187,7 @@ ohos_source_set("partner_agent_extension_common") {
 
   deps = [
     ":partner_agent_extension_ipc",
+    "$FUSION_CONN/frameworks/napi:partneragent",
     "$FUSION_CONN/idl:libpartner_device_agent_proxy",
     "$FUSION_CONN/idl:libpartner_device_agent_stub",  
   ]
