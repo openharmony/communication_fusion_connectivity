@@ -18,7 +18,7 @@
 
 #include <iostream>
 #include <string>
-#include "utils/mutex/safe_map.h"
+#include "safe_map.h"
 #include "napi/native_api.h"
 
 namespace OHOS {
