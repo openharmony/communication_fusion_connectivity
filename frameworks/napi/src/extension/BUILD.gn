@@ -60,6 +60,7 @@ ohos_shared_library("partner_agent_extension") {
     "c_utils:utils",
     "eventhandler:libeventhandler",
     "hilog:libhilog",
+    "hiappevent:hiappevent_innerapi",
     "ipc:ipc_core",
     "ipc:ipc_napi",
     "napi:ace_napi",
