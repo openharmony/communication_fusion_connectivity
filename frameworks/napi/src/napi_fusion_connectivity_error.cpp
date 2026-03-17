@@ -20,6 +20,7 @@
 #include "napi_fusion_connectivity_error.h"
 
 #include <map>
+#include "napi_ha_event_utils.h"
 
 namespace OHOS {
 namespace FusionConnectivity {
@@ -66,7 +67,7 @@ void HandleSyncErr(napi_env env, int32_t errCode)
     if (errCode == FcmErrCode::FCM_NO_ERROR) {
         return;
     }
-
+    NapiHaEventUtils::WriteErrCode(env, errCode);
     int ret = -1;
     std::string errMsg = GetNapiErrMsg(env, errCode);
     ret = napi_throw(env, GenerateBusinessError(env, errCode, errMsg));
