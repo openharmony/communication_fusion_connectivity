@@ -62,7 +62,8 @@
                 "cJSON",
                 "preferences",
                 "os_account",
-                "distributed_notification_service"
+                "distributed_notification_service",
+                "hiappevent"
               ],
               "third_party": [
               ]
