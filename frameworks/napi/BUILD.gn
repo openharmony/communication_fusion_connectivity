@@ -58,6 +58,7 @@ ohos_shared_library("partneragent") {
     "$FUSION_CONN/frameworks/napi/src/napi_async_work.cpp",
     "$FUSION_CONN/frameworks/napi/src/napi_native_object.cpp",
     "$FUSION_CONN/frameworks/napi/src/napi_timer.cpp",
+    "$FUSION_CONN/frameworks/napi/src/napi_ha_event_utils.cpp",
   ]
 
   deps = [
