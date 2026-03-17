@@ -32,6 +32,7 @@
 #include "partner_agent_extension_stub_impl.h"
 #include "napi_parser_utils.h"
 #include "napi_ha_event_utils.h"
+#include "fusion_connectivity_errorcode.h"
 
 namespace OHOS {
 namespace FusionConnectivity {
@@ -273,7 +274,7 @@ PartnerAgentExtensionResult JsPartnerAgentExtension::OnDestroyWithReason(const i
 
     if (handler_ == nullptr) {
         HILOGE("handler is invalid");
-        haUtils.WriteErrCode(PartnerAgentExtensionResult::INTERNAL_ERROR);
+        haUtils.WriteErrCode(FCM_ERR_INTERNAL_ERROR);
         return PartnerAgentExtensionResult::INTERNAL_ERROR;
     }
 
@@ -308,7 +309,7 @@ PartnerAgentExtensionResult JsPartnerAgentExtension::OnDestroyWithReason(const i
         NapiCallFunctionWithMethod(env, obj, method, ARGC_ONE, argv);
     };
     handler_->PostTask(task, "OnDestroyWithReason");
-    haUtils.WriteErrCode(PartnerAgentExtensionResult::OK);
+    haUtils.WriteErrCode(FCM_NO_ERROR);
     return PartnerAgentExtensionResult::OK;
 }
 
@@ -319,12 +320,12 @@ PartnerAgentExtensionResult JsPartnerAgentExtension::OnDeviceDiscovered(const Pa
     NapiHaEventUtils haUtils(nullptr, "extension.JsOnDeviceDiscovered");
     if (deviceAddress.GetAddress().empty()) {
         HILOGE("deviceAddress is invalid");
-        haUtils.WriteErrCode(PartnerAgentExtensionResult::INVALID_PARAM);
+        haUtils.WriteErrCode(FCM_ERR_INVALID_PARAM);
         return PartnerAgentExtensionResult::INVALID_PARAM;
     }
     if (handler_ == nullptr) {
         HILOGE("handler is invalid");
-        haUtils.WriteErrCode(PartnerAgentExtensionResult::INTERNAL_ERROR);
+        haUtils.WriteErrCode(FCM_ERR_INTERNAL_ERROR);
         return PartnerAgentExtensionResult::INTERNAL_ERROR;
     }
     std::weak_ptr<JsPartnerAgentExtension> wThis = GetWeakPtr();
@@ -358,7 +359,7 @@ PartnerAgentExtensionResult JsPartnerAgentExtension::OnDeviceDiscovered(const Pa
         NapiCallFunctionWithMethod(env, obj, method, ARGC_ONE, argv);
     };
     handler_->PostTask(task, "onDeviceDiscovered");
-    haUtils.WriteErrCode(PartnerAgentExtensionResult::OK);
+    haUtils.WriteErrCode(FCM_NO_ERROR);
     return PartnerAgentExtensionResult::OK;
 }
 }  // namespace FusionConnectivity
