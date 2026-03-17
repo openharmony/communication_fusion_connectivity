@@ -121,36 +121,5 @@ void NapiHaEventUtils::WriteEndEvent() const
 #endif
 }
 
-void NapiHaEventUtils::WriteHaEvent(const char* apiName, int32_t errCode)
-{
-#ifndef CROSS_PLATFORM
-    HiviewDFX::HiAppEvent::Event event("api_diagnostic", "api_exec_end", HiviewDFX::HiAppEvent::BEHAVIOR);
-    event.AddParam("api_name", std::string(apiName));
-    event.AddParam("sdk_name", SDK_NAME);
-    event.AddParam("result", (errCode == FCM_NO_ERROR ? 0 : 1));
-    event.AddParam("error_code", errCode);
-    int ret = Write(event);
-    HILOGD("WriteHaEvent apiName:%{public}s, errCode:%{public}d, ret:%{public}d", apiName, errCode, ret);
-#endif
-}
-
-void NapiHaEventUtils::WriteHaEvent(const char* apiName, int32_t errCode, int64_t beginTime)
-{
-#ifndef CROSS_PLATFORM
-    HiviewDFX::HiAppEvent::Event event("api_diagnostic", "api_exec_end", HiviewDFX::HiAppEvent::BEHAVIOR);
-    std::string transId = std::string("transId_") + std::to_string(std::rand());
-    event.AddParam("trans_id", transId);
-    event.AddParam("api_name", std::string(apiName));
-    event.AddParam("sdk_name", SDK_NAME);
-    event.AddParam("begin_time", beginTime);
-    event.AddParam("end_time", GetNowTimeMs());
-    event.AddParam("result", (errCode == FCM_NO_ERROR ? 0 : 1));
-    event.AddParam("error_code", errCode);
-    int ret = Write(event);
-    HILOGD("WriteHaEvent transId:%{public}s, apiName:%{public}s, errCode:%{public}d, ret:%{public}d",
-        transId.c_str(), apiName, errCode, ret);
-#endif
-}
-
 } // namespace FusionConnectivity
 } // namespace OHOS
