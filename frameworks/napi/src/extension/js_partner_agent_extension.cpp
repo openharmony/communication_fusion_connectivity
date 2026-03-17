@@ -31,6 +31,7 @@
 #include "log.h"
 #include "partner_agent_extension_stub_impl.h"
 #include "napi_parser_utils.h"
+#include "napi_ha_event_utils.h"
 
 namespace OHOS {
 namespace FusionConnectivity {
@@ -268,9 +269,11 @@ napi_value CreatePartnerDeviceAddress(napi_env env, const PartnerDeviceAddress& 
 PartnerAgentExtensionResult JsPartnerAgentExtension::OnDestroyWithReason(const int32_t reason)
 {
     HILOGI("enter OnDestroyWithReason is %{public}d", reason);
+    NapiHaEventUtils haUtils(nullptr, "extension.JsOnDestroyWithReason");
 
     if (handler_ == nullptr) {
         HILOGE("handler is invalid");
+        haUtils.WriteErrCode(PartnerAgentExtensionResult::INTERNAL_ERROR);
         return PartnerAgentExtensionResult::INTERNAL_ERROR;
     }
 
@@ -305,6 +308,7 @@ PartnerAgentExtensionResult JsPartnerAgentExtension::OnDestroyWithReason(const i
         NapiCallFunctionWithMethod(env, obj, method, ARGC_ONE, argv);
     };
     handler_->PostTask(task, "OnDestroyWithReason");
+    haUtils.WriteErrCode(PartnerAgentExtensionResult::OK);
     return PartnerAgentExtensionResult::OK;
 }
 
@@ -312,12 +316,15 @@ PartnerAgentExtensionResult JsPartnerAgentExtension::OnDestroyWithReason(const i
 PartnerAgentExtensionResult JsPartnerAgentExtension::OnDeviceDiscovered(const PartnerDeviceAddress& deviceAddress)
 {
     HILOGI("OnDeviceDiscovered");
+    NapiHaEventUtils haUtils(nullptr, "extension.JsOnDeviceDiscovered");
     if (deviceAddress.GetAddress().empty()) {
         HILOGE("deviceAddress is invalid");
+        haUtils.WriteErrCode(PartnerAgentExtensionResult::INVALID_PARAM);
         return PartnerAgentExtensionResult::INVALID_PARAM;
     }
     if (handler_ == nullptr) {
         HILOGE("handler is invalid");
+        haUtils.WriteErrCode(PartnerAgentExtensionResult::INTERNAL_ERROR);
         return PartnerAgentExtensionResult::INTERNAL_ERROR;
     }
     std::weak_ptr<JsPartnerAgentExtension> wThis = GetWeakPtr();
@@ -351,6 +358,7 @@ PartnerAgentExtensionResult JsPartnerAgentExtension::OnDeviceDiscovered(const Pa
         NapiCallFunctionWithMethod(env, obj, method, ARGC_ONE, argv);
     };
     handler_->PostTask(task, "onDeviceDiscovered");
+    haUtils.WriteErrCode(PartnerAgentExtensionResult::OK);
     return PartnerAgentExtensionResult::OK;
 }
 }  // namespace FusionConnectivity
