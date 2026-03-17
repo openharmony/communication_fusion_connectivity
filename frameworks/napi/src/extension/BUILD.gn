@@ -42,6 +42,7 @@ ohos_shared_library("partner_agent_extension") {
   deps = [
     "$FUSION_CONN/frameworks/extension:partner_agent_extension_common",
     "$FUSION_CONN/frameworks/extension:partner_agent_extension_ipc",
+    "$FUSION_CONN/frameworks/napi:partneragent",
     "$FUSION_CONN/idl:libpartner_device_agent_proxy",
     "$FUSION_CONN/idl:libpartner_device_agent_stub",
   ]
