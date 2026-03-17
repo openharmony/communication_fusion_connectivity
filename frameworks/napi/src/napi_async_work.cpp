@@ -23,12 +23,13 @@
 #include "napi_async_callback.h"
 #include "napi_timer.h"
 #include "napi_parser_utils.h"
+#include "napi_ha_event_utils.h"
 
 namespace OHOS {
 namespace FusionConnectivity {
 
 std::shared_ptr<NapiAsyncWork> NapiAsyncWorkFactory::CreateAsyncWork(napi_env env, napi_callback_info info,
-    std::function<NapiAsyncWorkRet(void)> asyncWork, bool needCallback)
+    std::function<NapiAsyncWorkRet(void)> asyncWork, bool needCallback, std::shared_ptr<NapiHaEventUtils> haUtils)
 {
     auto asyncCallback = NapiParseAsyncCallback(env, info);
     if (!asyncCallback) {
@@ -37,7 +38,7 @@ std::shared_ptr<NapiAsyncWork> NapiAsyncWorkFactory::CreateAsyncWork(napi_env en
     }
     // add custom deleter for destructing in JS thread.
     std::shared_ptr<NapiAsyncWork> napiAsyncWork(
-        new NapiAsyncWork(env, asyncWork, asyncCallback, needCallback),
+        new NapiAsyncWork(env, asyncWork, asyncCallback, needCallback, haUtils),
         [env](NapiAsyncWork *ptr) {
             DoInJsMainThread(env, [ptr]() {
                 if (ptr) {
@@ -67,6 +68,10 @@ void NapiAsyncWork::Info::Complete(void)
     if (napiAsyncWork == nullptr) {
         HILOGE("napiAsyncWork is nullptr");
         return;
+    }
+
+    if (napiAsyncWork->haUtils_) {
+        napiAsyncWork->haUtils_->WriteErrCode(errCode);
     }
 
     // need wait callback
@@ -182,6 +187,11 @@ napi_value NapiAsyncWork::GetRet(void)
         return NapiGetUndefined(env_);
     }
     return napiAsyncCallback_->GetRet();
+}
+
+std::shared_ptr<NapiHaEventUtils> NapiAsyncWork::GetHaUtilsPtr(void) const
+{
+    return haUtils_;
 }
 
 void AsyncWorkCallFunction(NapiAsyncWorkMap &map, NapiAsyncType type, std::shared_ptr<NapiNativeObject> nativeObject,

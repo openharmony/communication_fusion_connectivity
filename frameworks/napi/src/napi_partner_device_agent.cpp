@@ -20,6 +20,7 @@
 #include "hilog/log.h"
 #include "napi_partner_device_agent.h"
 #include "napi_fusion_connectivity_error.h"
+#include "napi_ha_event_utils.h"
 
 #include <memory>
 
@@ -167,12 +168,13 @@ napi_value BindDevice(napi_env env, napi_callback_info info)
     NAPI_FCM_ASSERT_RETURN_UNDEF(
         env, NapiCheckBindDevice(env, info, deviceAddress, capability, abilityName) == napi_ok, FCM_ERR_INVALID_PARAM);
 
+    std::shared_ptr<NapiHaEventUtils> haUtils = std::make_shared<NapiHaEventUtils>(env, "fusion.BindDevice");
     auto func = [deviceAddress, capability, businessCapability, abilityName]() {
         int ret = PartnerDeviceAgent::GetInstance()->BindDevice(
             deviceAddress, capability, businessCapability, abilityName);
         return NapiAsyncWorkRet(ret);
     };
-    auto asyncWork = NapiAsyncWorkFactory::CreateAsyncWork(env, info, func, ASYNC_WORK_NO_NEED_CALLBACK);
+    auto asyncWork = NapiAsyncWorkFactory::CreateAsyncWork(env, info, func, ASYNC_WORK_NO_NEED_CALLBACK, haUtils);
     NAPI_FCM_ASSERT_RETURN_UNDEF(env, asyncWork, FCM_ERR_INTERNAL_ERROR);
     asyncWork->Run();
     return asyncWork->GetRet();
@@ -196,11 +198,12 @@ napi_value UnbindDevice(napi_env env, napi_callback_info info)
     NAPI_FCM_ASSERT_RETURN_UNDEF(
         env, NapiCheckPartnerDeviceAddress(env, info, deviceAddress) == napi_ok, FCM_ERR_INVALID_PARAM);
 
+    std::shared_ptr<NapiHaEventUtils> haUtils = std::make_shared<NapiHaEventUtils>(env, "fusion.UnbindDevice");
     auto func = [deviceAddress]() {
         int ret = PartnerDeviceAgent::GetInstance()->UnbindDevice(deviceAddress);
         return NapiAsyncWorkRet(ret);
     };
-    auto asyncWork = NapiAsyncWorkFactory::CreateAsyncWork(env, info, func, ASYNC_WORK_NO_NEED_CALLBACK);
+    auto asyncWork = NapiAsyncWorkFactory::CreateAsyncWork(env, info, func, ASYNC_WORK_NO_NEED_CALLBACK, haUtils);
     NAPI_FCM_ASSERT_RETURN_UNDEF(env, asyncWork, FCM_ERR_INTERNAL_ERROR);
     asyncWork->Run();
     return asyncWork->GetRet();
@@ -212,8 +215,10 @@ napi_value IsDeviceBound(napi_env env, napi_callback_info info)
     NAPI_FCM_ASSERT_RETURN_UNDEF(
         env, NapiCheckPartnerDeviceAddress(env, info, deviceAddress) == napi_ok, FCM_ERR_INVALID_PARAM);
 
+    NapiHaEventUtils haUtils(env, "fusion.IsDeviceBound");
     bool isBound = false;
     int ret = PartnerDeviceAgent::GetInstance()->IsDeviceBound(deviceAddress, isBound);
+    haUtils.WriteErrCode(ret);
     NAPI_FCM_ASSERT_RETURN_UNDEF(env, ret == FCM_NO_ERROR, ret);
     return NapiGetBooleanRet(env, isBound);
 }
@@ -255,8 +260,10 @@ static napi_status CreatePartnerDeviceAddress(
 napi_value GetBoundDevices(napi_env env, napi_callback_info info)
 {
     NAPI_FCM_ASSERT_RETURN_UNDEF(env, CheckEmptyParams(env, info) == napi_ok, FCM_ERR_INVALID_PARAM);
+    NapiHaEventUtils haUtils(env, "fusion.GetBoundDevices");
     std::vector<PartnerDeviceAddress> vec {};
     int ret = PartnerDeviceAgent::GetInstance()->GetBoundDevices(vec);
+    haUtils.WriteErrCode(ret);
     NAPI_FCM_ASSERT_RETURN_UNDEF(env, ret == FCM_NO_ERROR, ret);
 
     napi_value napiObject;
@@ -268,6 +275,7 @@ napi_value GetBoundDevices(napi_env env, napi_callback_info info)
 napi_value IsPartnerAgentSupported(napi_env env, napi_callback_info info)
 {
     NAPI_FCM_ASSERT_RETURN_UNDEF(env, CheckEmptyParams(env, info) == napi_ok, FCM_ERR_INVALID_PARAM);
+    NapiHaEventUtils haUtils(env, "fusion.IsPartnerAgentSupported");
     bool ret = PartnerDeviceAgent::GetInstance()->IsPartnerAgentSupported();
     HILOGI("IsPartnerAgentSupported enter result is %{public}d", ret);
     return NapiGetBooleanRet(env, ret);
@@ -279,11 +287,12 @@ napi_value EnableDeviceControl(napi_env env, napi_callback_info info)
     NAPI_FCM_ASSERT_RETURN_UNDEF(
         env, NapiCheckPartnerDeviceAddress(env, info, deviceAddress) == napi_ok, FCM_ERR_INVALID_PARAM);
 
+    std::shared_ptr<NapiHaEventUtils> haUtils = std::make_shared<NapiHaEventUtils>(env, "fusion.EnableDeviceControl");
     auto func = [deviceAddress]() {
         int ret = PartnerDeviceAgent::GetInstance()->EnableDeviceControl(deviceAddress);
         return NapiAsyncWorkRet(ret);
     };
-    auto asyncWork = NapiAsyncWorkFactory::CreateAsyncWork(env, info, func, ASYNC_WORK_NO_NEED_CALLBACK);
+    auto asyncWork = NapiAsyncWorkFactory::CreateAsyncWork(env, info, func, ASYNC_WORK_NO_NEED_CALLBACK, haUtils);
     NAPI_FCM_ASSERT_RETURN_UNDEF(env, asyncWork, FCM_ERR_INTERNAL_ERROR);
     asyncWork->Run();
     return asyncWork->GetRet();
@@ -295,11 +304,12 @@ napi_value DisableDeviceControl(napi_env env, napi_callback_info info)
     NAPI_FCM_ASSERT_RETURN_UNDEF(
         env, NapiCheckPartnerDeviceAddress(env, info, deviceAddress) == napi_ok, FCM_ERR_INVALID_PARAM);
 
+    std::shared_ptr<NapiHaEventUtils> haUtils = std::make_shared<NapiHaEventUtils>(env, "fusion.DisableDeviceControl");
     auto func = [deviceAddress]() {
         int ret = PartnerDeviceAgent::GetInstance()->DisableDeviceControl(deviceAddress);
         return NapiAsyncWorkRet(ret);
     };
-    auto asyncWork = NapiAsyncWorkFactory::CreateAsyncWork(env, info, func, ASYNC_WORK_NO_NEED_CALLBACK);
+    auto asyncWork = NapiAsyncWorkFactory::CreateAsyncWork(env, info, func, ASYNC_WORK_NO_NEED_CALLBACK, haUtils);
     NAPI_FCM_ASSERT_RETURN_UNDEF(env, asyncWork, FCM_ERR_INTERNAL_ERROR);
     asyncWork->Run();
     return asyncWork->GetRet();
@@ -311,8 +321,10 @@ napi_value IsDeviceControlEnabled(napi_env env, napi_callback_info info)
     NAPI_FCM_ASSERT_RETURN_UNDEF(
         env, NapiCheckPartnerDeviceAddress(env, info, deviceAddress) == napi_ok, FCM_ERR_INVALID_PARAM);
 
+    NapiHaEventUtils haUtils(env, "fusion.IsDeviceControlEnabled");
     bool isEnabled = true;
     int ret = PartnerDeviceAgent::GetInstance()->IsDeviceControlEnabled(deviceAddress, isEnabled);
+    haUtils.WriteErrCode(ret);
     NAPI_FCM_ASSERT_RETURN_UNDEF(env, ret == FCM_NO_ERROR, ret);
     return NapiGetBooleanRet(env, isEnabled);
 }
