@@ -18,12 +18,11 @@
 #endif
 
 #include "napi_ha_event_utils.h"
-#include "hilog/log.h"
+#include "log.h"
 #include "fusion_connectivity_errorcode.h"
 #ifndef CROSS_PLATFORM
 #include "app_event.h"
 #include "app_event_processor_mgr.h"
-#include "hiappevent/hiappevent.h"
 #endif
 
 namespace OHOS {
