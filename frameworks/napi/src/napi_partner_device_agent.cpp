@@ -29,6 +29,13 @@
 namespace OHOS {
 namespace FusionConnectivity {
 
+struct BindDeviceParams {
+    PartnerDeviceAddress deviceAddress;
+    DeviceCapability capability;
+    BusinessCapability businessCapability;
+    std::string abilityName;
+};
+
 void DefinePartnerDeviceAgentInterface(napi_env env, napi_value exports)
 {
     DefinePartnerDeviceAgentProperty(env, exports);
@@ -134,8 +141,7 @@ static napi_status NapiParseBusinessCapability(napi_env env, napi_value object, 
     return napi_ok;
 }
 
-static napi_status NapiCheckBindDevice(napi_env env, napi_callback_info info, PartnerDeviceAddress &outDeviceAddress,
-    DeviceCapability &outCapability, std::string &outAbilityName)
+static napi_status NapiCheckBindDevice(napi_env env, napi_callback_info info, BindDeviceParams &outBindDeviceParams)
 {
     size_t argc = ARGS_SIZE_FOUR;
     napi_value argv[ARGS_SIZE_FOUR] = {nullptr};
@@ -152,20 +158,23 @@ static napi_status NapiCheckBindDevice(napi_env env, napi_callback_info info, Pa
     std::string abilityName;
     NAPI_FCM_CALL_RETURN(NapiParseString(env, argv[PARAM3], abilityName));
 
-    outDeviceAddress = deviceAddress;
-    outCapability = capability;
-    outAbilityName = abilityName;
+    outBindDeviceParams.deviceAddress = deviceAddress;
+    outBindDeviceParams.capability = capability;
+    outBindDeviceParams.abilityName = abilityName;
+    outBindDeviceParams.businessCapability = businessCapability;
     return napi_ok;
 }
 
 napi_value BindDevice(napi_env env, napi_callback_info info)
 {
-    PartnerDeviceAddress deviceAddress;
-    DeviceCapability capability;
-    BusinessCapability businessCapability;
-    std::string abilityName;
+    BindDeviceParams bindDeviceParams;
     NAPI_FCM_ASSERT_RETURN_UNDEF(
-        env, NapiCheckBindDevice(env, info, deviceAddress, capability, abilityName) == napi_ok, FCM_ERR_INVALID_PARAM);
+        env, NapiCheckBindDevice(env, info, bindDeviceParams) == napi_ok, FCM_ERR_INVALID_PARAM);
+
+    PartnerDeviceAddress deviceAddress = bindDeviceParams.deviceAddress;
+    DeviceCapability capability = bindDeviceParams.capability;
+    BusinessCapability businessCapability = bindDeviceParams.businessCapability;
+    std::string abilityName = bindDeviceParams.abilityName;
 
     auto func = [deviceAddress, capability, businessCapability, abilityName]() {
         int ret = PartnerDeviceAgent::GetInstance()->BindDevice(

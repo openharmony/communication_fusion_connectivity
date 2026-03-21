@@ -36,6 +36,10 @@ void ExtensionServiceConnectionService::NotifyOnDeviceDiscovered(
     const std::shared_ptr<ExtensionSubscriberInfo> subscriberInfo,
     const PartnerDeviceAddress& deviceAddress, const NotificationType& type)
 {
+    if (type == NotificationType::INVALID_TYPE) {
+        HILOGE("invalid notification type, ignore start extension");
+        return;
+    }
     auto connection = GetConnection(subscriberInfo);
     if (connection == nullptr) {
         HILOGE("null connection");

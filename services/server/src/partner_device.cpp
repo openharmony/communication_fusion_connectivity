@@ -18,6 +18,7 @@
 #endif
 
 #include "partner_device.h"
+#include "partner_device_agent_server.h"
 #include "log.h"
 #include "log_util.h"
 #include "datetime_ex.h"
@@ -28,6 +29,7 @@
 
 namespace OHOS {
 namespace FusionConnectivity {
+static constexpr int INVALID_EVENT_CODE = -1;
 namespace {
 enum BondState : int {
     BOND_STATE_NONE = 0,
@@ -129,7 +131,8 @@ void PartnerDevice::Init()
     auto startExtension = [this]() {
         HILOGI("start extension");
         DeviceInfo info = GetDeviceInfo();
-        dependencyFuncs_.discoverExtension(info.bundleName, info.abilityName, info.deviceAddress);
+        dependencyFuncs_.discoverExtension(info.bundleName,
+            info.abilityName, info.deviceAddress, info.businessCapability);
     };
     auto destroyExtension = [this](int destroyReason) {
         HILOGI("destroy extension");
@@ -163,6 +166,7 @@ void PartnerDevice::Init()
         COMMON_EVENT_BLUETOOTH_REMOTEDEVICE_ACL_CONNECTED_REALMAC,
         COMMON_EVENT_BLUETOOTH_REMOTEDEVICE_ACL_DISCONNECTED_REALMAC,
         COMMON_EVENT_BLUETOOTH_REMOTEDEVICE_PAIR_STATE_CHANGE_REALMAC,
+        COMMON_EVENT_BLUETOOTH_HOST_STATE_UPDATE,
     };
     std::vector<std::string> permissionVec = {
         "ohos.permission.ACCESS_BLUETOOTH",
@@ -284,6 +288,23 @@ void PartnerDevice::OnScreenStateChange(bool isScreenOn)
     }
 }
 
+void PartnerDevice::OnBluetoothStateChanged(const OHOS::EventFwk::CommonEventData &data)
+{
+    AAFwk::Want want = data.GetWant();
+    int state = data.GetCode();
+    if (state == INVALID_EVENT_CODE) {
+        HILOGE("Invalid event code");
+        return;
+    }
+    HILOGI("bluetooth switch state change, state: %{public}d (1: TURN_ON, 3: TURN_OFF)", state);
+    if (state == BTStateID::STATE_TURN_ON) {
+        if (dependencyFuncs_.updateExpiredDevice) {
+            dependencyFuncs_.updateExpiredDevice();
+        }
+    }
+    return;
+}
+
 void PartnerDevice::OnCommonEventReceived(const OHOS::EventFwk::CommonEventData &data)
 {
     auto want = data.GetWant();
@@ -296,6 +317,9 @@ void PartnerDevice::OnCommonEventReceived(const OHOS::EventFwk::CommonEventData 
     }
     if (action == COMMON_EVENT_BLUETOOTH_REMOTEDEVICE_PAIR_STATE_CHANGE_REALMAC) {
         OnBluetoothDevicePairStateChange(data);
+    }
+    if (action == COMMON_EVENT_BLUETOOTH_HOST_STATE_UPDATE) {
+        OnBluetoothStateChanged(data);
     }
     if (action == EventFwk::CommonEventSupport::COMMON_EVENT_SCREEN_ON) {
         OnScreenStateChange(true);
