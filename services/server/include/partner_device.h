@@ -44,11 +44,14 @@ public:
         "usual.event.bluetooth.remotedevice.ACL_DISCONNECTED_REALMAC";
     static constexpr const char* COMMON_EVENT_BLUETOOTH_REMOTEDEVICE_PAIR_STATE_CHANGE_REALMAC =
         "usual.event.bluetooth.remotedevice.PAIR_STATE_CHANGE_REALMAC";
+    static constexpr const char* COMMON_EVENT_BLUETOOTH_HOST_STATE_UPDATE =
+        "usual.event.bluetooth.host.STATE_UPDATE";
 
     struct DependencyFuncs {
         std::function<void(void)> updateConfig;
-        std::function<void(std::string, std::string, PartnerDeviceAddress)> discoverExtension;
+        std::function<void(std::string, std::string, PartnerDeviceAddress, BusinessCapability)> discoverExtension;
         std::function<void(std::string, std::string, int)> destroyExtension;
+        std::function<void()> updateExpiredDevice;
     };
 
     struct DeviceInfo {
@@ -108,6 +111,7 @@ private:
     void InitDeviceAgentCapability(const std::string &addr, bool isSupportBleAdvertiser);
     void CloseDeviceAgentCapability(int destroyReason);
     void OnCommonEventReceived(const OHOS::EventFwk::CommonEventData &data);
+    void OnBluetoothStateChanged(const OHOS::EventFwk::CommonEventData &data);
     void OnBluetoothDeviceAclStateChange(const OHOS::EventFwk::CommonEventData &data, bool isConnect);
     void OnBluetoothDevicePairStateChange(const OHOS::EventFwk::CommonEventData &data);
     void OnScreenStateChange(bool isScreenOn);

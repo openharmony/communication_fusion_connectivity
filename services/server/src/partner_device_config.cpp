@@ -38,7 +38,6 @@ extern "C" {
 static constexpr const char *PARTNER_DEVICE_CONFIG_PATH =
         "/data/service/el1/public/partner_device_agent/partner_agent_device.xml";
 const int MAX_PARTNER_DEVICE_CONFIG_SIZE = 100;
-const int MAX_LOST_TIME_DAYS = 30;
 std::mutex g_configFileMutex;
 
 static bool IsPairedDevice(const PartnerDeviceAddress &realDeviceAddress)

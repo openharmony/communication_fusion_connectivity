@@ -65,7 +65,6 @@ struct PartnerDeviceAgentServer::impl {
 
 PartnerDeviceAgentServer::PartnerDeviceAgentServer() : SystemAbility(PARTNER_DEVICE_AGENT_SYS_ABILITY_ID, true)
 {
-    HILOGI("PartnerDeviceAgentServer enter");
     // 该注册仅仅为向sa_main进程注册（即需要向samgr注册请求的SA，onStart 调用Publish才真正完成SAMGR的注册）
     pimpl = std::make_unique<impl>();
 
@@ -102,16 +101,16 @@ PartnerDeviceAgentServer::PartnerDeviceAgentServer() : SystemAbility(PARTNER_DEV
 }
 
 std::mutex PartnerDeviceAgentServer::instanceMutex_;
-sptr<PartnerDeviceAgentServer> PartnerDeviceAgentServer::instance_ = nullptr;
+sptr<PartnerDeviceAgentServer> PartnerDeviceAgentServer::instance_;
 
 sptr<PartnerDeviceAgentServer> PartnerDeviceAgentServer::GetInstance()
 {
-    std::lock_guard<std::mutex> locker(instanceMutex_);
+    std::lock_guard<std::mutex> lock(instanceMutex_);
     if (instance_ == nullptr) {
-        instance_ = new (std::nothrow) PartnerDeviceAgentServer();
-        if (instance_ == nullptr) {
+        sptr<PartnerDeviceAgentServer> temp = new (std::nothrow) PartnerDeviceAgentServer();
+        if (temp != nullptr) {
             HILOGE("Failed to create PartnerDeviceAgentServer instance.");
-            return nullptr;
+            instance_ = temp;
         }
     }
     return instance_;
@@ -149,17 +148,22 @@ std::shared_ptr<PartnerDevice> PartnerDeviceAgentServer::CreatePartnerDeviceInst
         });
     };
     auto discoverExtension = [this](std::string bundleName,
-        std::string abilityName, PartnerDeviceAddress deviceAddress) {
-        OnDeviceDiscoveredExtensionService(bundleName, abilityName, deviceAddress);
+        std::string abilityName, PartnerDeviceAddress deviceAddress, BusinessCapability businessCapability) {
+        OnDeviceDiscoveredExtensionService(bundleName, abilityName, deviceAddress, businessCapability);
     };
     auto destroyExtension = [this](std::string bundleName, std::string abilityName, int destroyReason) {
         OnDestroyWithReasonExtensionService(bundleName, abilityName, destroyReason);
+    };
+
+    auto updateExpiredDevice = [this]() {
+        UpdateExpiredDevice();
     };
 
     PartnerDevice::DependencyFuncs funcs = {
         .updateConfig = updateConfig,
         .discoverExtension = discoverExtension,
         .destroyExtension = destroyExtension,
+        .updateExpiredDevice = updateExpiredDevice,
     };
     return PartnerDevice::CreateInstance(deviceInfo, funcs);
 }
@@ -182,6 +186,24 @@ int PartnerDeviceAgentServer::ChangeDeviceControlState(
     UpdatePartnerDeviceConfig(partnerDeviceMap_);
     AttemptUnloadPartnerAgent();
     return ret;
+}
+
+void PartnerDeviceAgentServer::UpdateExpiredDevice()
+{
+    std::vector<PartnerDeviceMapKey> deleteKeys {};
+    partnerDeviceMap_.Iterate(
+        [&deleteKeys](const PartnerDeviceMapKey &key, std::shared_ptr<PartnerDevice> &deviceSptr) {
+            int64_t now = GetDaysSince1970ToNow();
+            if (deviceSptr->GetDeviceInfo().lostTimestamp != 0 &&
+                now - deviceSptr->GetDeviceInfo().lostTimestamp > MAX_LOST_TIME_DAYS) {
+                HILOGE("The device has been unpaired for more than 30 days; delete it.");
+                deleteKeys.push_back(key);
+            }
+    });
+    for (PartnerDeviceMapKey key : deleteKeys) {
+        partnerDeviceMap_.Erase(key);
+    }
+    UpdatePartnerDeviceConfig(partnerDeviceMap_);
 }
 
 bool PartnerDeviceAgentServer::IsAllDeviceDisabled()
@@ -455,8 +477,8 @@ int32_t PartnerDeviceAgentServer::OnDestroyWithReasonExtensionService(
     return 0;
 }
 
-int32_t PartnerDeviceAgentServer::OnDeviceDiscoveredExtensionService(
-    const std::string &bundleName, const std::string &abilityName, PartnerDeviceAddress deviceAddress)
+int32_t PartnerDeviceAgentServer::OnDeviceDiscoveredExtensionService(const std::string &bundleName,
+    const std::string &abilityName, PartnerDeviceAddress &deviceAddress, BusinessCapability &businessCapability)
 {
     std::string path_ = PARTNER_AGENT_EXTENSION_SERVICE_MODULE_NAME;
     partnerAgentExtensionHandler_ =
@@ -465,7 +487,6 @@ int32_t PartnerDeviceAgentServer::OnDeviceDiscoveredExtensionService(
         HILOGW("notificationExtensionHandle init failed.");
         return -1;
     }
-    HILOGW("onDeviceDiscovered begin.");
     // 一个partnerAgentSA可以拉起多个extension
     ONDEVICEDISCOVERED onDeviceDiscovered =
         reinterpret_cast<ONDEVICEDISCOVERED>(partnerAgentExtensionHandler_->GetProxyFunc("OnDeviceDiscovered"));
@@ -474,10 +495,24 @@ int32_t PartnerDeviceAgentServer::OnDeviceDiscoveredExtensionService(
         return -1;
     }
     onDeviceDiscovered(bundleName,
-        abilityName, GetCurrentActiveUserId(), deviceAddress, NotificationType::TELEPHONY_CONTROL_ONLY);
-    HILOGW("onDeviceDiscovered end.");
+        abilityName, GetCurrentActiveUserId(), deviceAddress, GetNotificationType(businessCapability));
     partnerAgentExtensionLoaded_.store(true);
     return 0;
+}
+
+NotificationType PartnerDeviceAgentServer::GetNotificationType(const BusinessCapability &businessCapability)
+{
+    NotificationType result = NotificationType::INVALID_TYPE;
+    if (businessCapability.isSupportTelephonyControl == true && businessCapability.isSupportMediaControl == true) {
+        result = NotificationType::MEDIA_AND_TELEPHONY_CONTROL;
+    } else if (businessCapability.isSupportTelephonyControl == true &&
+        businessCapability.isSupportMediaControl == false) {
+        result = NotificationType::TELEPHONY_CONTROL_ONLY;
+    } else if (businessCapability.isSupportTelephonyControl == false &&
+        businessCapability.isSupportMediaControl == true) {
+        result = NotificationType::MEDIA_CONTROL_ONLY;
+    }
+    return result;
 }
 }  // namespace FusionConnectivity
 }  // namespace OHOS

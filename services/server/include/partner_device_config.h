@@ -21,6 +21,8 @@
 namespace OHOS {
 namespace FusionConnectivity {
 
+static const int MAX_LOST_TIME_DAYS = 30;
+
 #ifdef __cplusplus
 extern "C" {
 #endif

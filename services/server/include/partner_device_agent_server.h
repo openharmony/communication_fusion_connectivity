@@ -36,6 +36,7 @@ class PartnerDeviceAgentServer : public SystemAbility, public PartnerDeviceAgent
 public:
     ~PartnerDeviceAgentServer() override;
     static sptr<PartnerDeviceAgentServer> GetInstance();
+    void UpdateExpiredDevice();
     void OnStart() override;
     void OnStop() override;
     int32_t OnIdle(const SystemAbilityOnDemandReason& idleReason) override;
@@ -56,8 +57,8 @@ public:
 private:
     PartnerDeviceAgentServer();
     int32_t ConnectExtensionService(const std::string &bundleName, const std::string &abilityName);
-    int32_t OnDeviceDiscoveredExtensionService(
-        const std::string &bundleName, const std::string &abilityName, PartnerDeviceAddress deviceAddress);
+    int32_t OnDeviceDiscoveredExtensionService(const std::string &bundleName,
+        const std::string &abilityName, PartnerDeviceAddress &deviceAddress, BusinessCapability &businessCapability);
     int32_t OnDestroyWithReasonExtensionService(
         const std::string &bundleName, const std::string &abilityName, int destroyReason);
 
@@ -70,6 +71,7 @@ private:
     std::shared_ptr<PartnerDevice> CreatePartnerDeviceInstance(PartnerDevice::DeviceInfo &deviceInfo);
     void AttemptUnloadPartnerAgent();
     int ChangeDeviceControlState(const std::string &addr, bool isEnabled);
+    NotificationType GetNotificationType(const BusinessCapability &businessCapability);
 
     std::map<int, PermissionItem> permissionsMap_ {};
 

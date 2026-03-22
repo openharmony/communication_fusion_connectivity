@@ -23,9 +23,10 @@ namespace FusionConnectivity {
 
 static const int32_t INVALID_NOTIFICATION_ID = 0;
 enum class NotificationType {
+    INVALID_TYPE = 0,
     TELEPHONY_CONTROL_ONLY = 1,
-    MEDIA_CONTROL_ONLY,
-    MEDIA_AND_TELEPHONY_CONTROL
+    MEDIA_CONTROL_ONLY = 2,
+    MEDIA_AND_TELEPHONY_CONTROL = 3
 };
 
 enum class DeviceMode {
