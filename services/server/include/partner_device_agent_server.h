@@ -70,7 +70,7 @@ private:
     void Init();
     std::shared_ptr<PartnerDevice> CreatePartnerDeviceInstance(PartnerDevice::DeviceInfo &deviceInfo);
     void AttemptUnloadPartnerAgent();
-    int ChangeDeviceControlState(const std::string &addr, bool isEnabled);
+    int ChangeDeviceControlState(const PartnerDeviceAddress &addr, bool isEnabled);
     NotificationType GetNotificationType(const BusinessCapability &businessCapability);
 
     std::map<int, PermissionItem> permissionsMap_ {};

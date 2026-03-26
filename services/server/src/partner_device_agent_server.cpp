@@ -169,7 +169,7 @@ std::shared_ptr<PartnerDevice> PartnerDeviceAgentServer::CreatePartnerDeviceInst
 }
 
 int PartnerDeviceAgentServer::ChangeDeviceControlState(
-    const std::string &addr, bool isEnabled)
+    const PartnerDeviceAddress &addr, bool isEnabled)
 {
     int ret = FCM_ERR_DEVICE_NOT_FOUND;
     partnerDeviceMap_.Iterate(
@@ -178,7 +178,7 @@ int PartnerDeviceAgentServer::ChangeDeviceControlState(
             return;
         }
         PartnerDevice::DeviceInfo deviceInfo = deviceSptr->GetDeviceInfo();
-        if (deviceInfo.deviceAddress.GetAddress() == addr) {
+        if (deviceInfo.realDeviceAddress.GetAddress() == GetRealDeviceAddress(addr).GetAddress()) {
             deviceSptr->SetUserEnableAbility(isEnabled);
             ret = FCM_NO_ERROR;
         }
@@ -357,7 +357,7 @@ bool PartnerDeviceAgentServer::IsDeviceBoundByAll(const PartnerDeviceAddress &de
             return;
         }
         PartnerDevice::DeviceInfo deviceInfo = deviceSptr->GetDeviceInfo();
-        if (deviceInfo.deviceAddress.GetAddress() == deviceAddress.GetAddress()) {
+        if (deviceInfo.realDeviceAddress.GetAddress() == GetRealDeviceAddress(deviceAddress).GetAddress()) {
             isBound = true;
         }
     });
@@ -368,14 +368,14 @@ ErrCode PartnerDeviceAgentServer::EnableDeviceControl(const PartnerDeviceAddress
 {
     HILOGI("%{public}s enable device control %{public}s",
         PermissionManager::GetCallingName().c_str(), GET_ENCRYPT_ADDR(deviceAddress));
-    return ChangeDeviceControlState(deviceAddress.GetAddress(), true);
+    return ChangeDeviceControlState(deviceAddress, true);
 }
 
 ErrCode PartnerDeviceAgentServer::DisableDeviceControl(const PartnerDeviceAddress &deviceAddress)
 {
     HILOGI("%{public}s disable device control %{public}s",
         PermissionManager::GetCallingName().c_str(), GET_ENCRYPT_ADDR(deviceAddress));
-    return ChangeDeviceControlState(deviceAddress.GetAddress(), false);
+    return ChangeDeviceControlState(deviceAddress, false);
 }
 
 ErrCode PartnerDeviceAgentServer::IsDeviceControlEnabled(const PartnerDeviceAddress &deviceAddress, bool &isEnabled)
@@ -387,7 +387,7 @@ ErrCode PartnerDeviceAgentServer::IsDeviceControlEnabled(const PartnerDeviceAddr
             return;
         }
         PartnerDevice::DeviceInfo deviceInfo = deviceSptr->GetDeviceInfo();
-        if (deviceInfo.deviceAddress.GetAddress() == deviceAddress.GetAddress()) {
+        if (deviceInfo.realDeviceAddress.GetAddress() == GetRealDeviceAddress(deviceAddress).GetAddress()) {
             isEnabled = deviceInfo.isUserEnabled;
         }
     });
