@@ -15,7 +15,7 @@
     ],
     "publishAs": "code-segment",
     "segment": {
-        "destPath": "//foundation/communication/fusion_connectivity"
+        "destPath": "foundation/communication/fusion_connectivity"
     },
     "envs": [],
     "dirs": [],

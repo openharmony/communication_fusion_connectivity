@@ -102,7 +102,7 @@ std::string NapiHaEventUtils::RandomTransId() const
 void NapiHaEventUtils::WriteEndEvent() const
 {
 #ifndef CROSS_PLATFORM
-    HiviewDFX::HiAppEvent::Event event("api_diagnostic", "api_exec_end", HiviewDFX::HiAppEvent::BEHAVIOR);
+    HiviewDFX::HiAppEvent::Event event("api_diagnostic", "api_called_stat", HiviewDFX::HiAppEvent::BEHAVIOR);
     std::string transId = RandomTransId();
     int32_t errCode = FCM_NO_ERROR;
     errCode = envErrCodeMap_.ReadVal(env_);

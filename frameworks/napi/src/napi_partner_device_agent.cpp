@@ -218,7 +218,6 @@ napi_value IsDeviceBound(napi_env env, napi_callback_info info)
     NapiHaEventUtils haUtils(env, "fusion.IsDeviceBound");
     bool isBound = false;
     int ret = PartnerDeviceAgent::GetInstance()->IsDeviceBound(deviceAddress, isBound);
-    haUtils.WriteErrCode(ret);
     NAPI_FCM_ASSERT_RETURN_UNDEF(env, ret == FCM_NO_ERROR, ret);
     return NapiGetBooleanRet(env, isBound);
 }
@@ -263,7 +262,6 @@ napi_value GetBoundDevices(napi_env env, napi_callback_info info)
     NapiHaEventUtils haUtils(env, "fusion.GetBoundDevices");
     std::vector<PartnerDeviceAddress> vec {};
     int ret = PartnerDeviceAgent::GetInstance()->GetBoundDevices(vec);
-    haUtils.WriteErrCode(ret);
     NAPI_FCM_ASSERT_RETURN_UNDEF(env, ret == FCM_NO_ERROR, ret);
 
     napi_value napiObject;
@@ -324,7 +322,6 @@ napi_value IsDeviceControlEnabled(napi_env env, napi_callback_info info)
     NapiHaEventUtils haUtils(env, "fusion.IsDeviceControlEnabled");
     bool isEnabled = true;
     int ret = PartnerDeviceAgent::GetInstance()->IsDeviceControlEnabled(deviceAddress, isEnabled);
-    haUtils.WriteErrCode(ret);
     NAPI_FCM_ASSERT_RETURN_UNDEF(env, ret == FCM_NO_ERROR, ret);
     return NapiGetBooleanRet(env, isEnabled);
 }

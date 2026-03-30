@@ -37,6 +37,7 @@ ohos_shared_library("partner_agent_extension") {
   sources = [
     "js_partner_agent_extension.cpp",
     "js_partner_agent_extension_context.cpp",
+    "$FUSION_CONN/frameworks/napi/src/napi_ha_event_utils.cpp",
   ]
 
   deps = [
