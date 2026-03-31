@@ -36,6 +36,7 @@ ohos_unittest("fusion_connectivity_test") {
 
   sources = [
     "fusion_connectivity_test.cpp",
+    "napi_ha_event_utils_test.cpp",
     "$PART_DIR/services/server/src/partner_device_agent_server.cpp",
     "$PART_DIR/services/common/src/log_util.cpp",
   ]
@@ -43,6 +44,7 @@ ohos_unittest("fusion_connectivity_test") {
   configs = [ ":unittest_config" ]
 
   deps = [
+    "$PART_DIR/frameworks/napi:partneragent",
     "$PART_DIR/idl:libpartner_device_agent_stub",
   ]
 
@@ -52,6 +54,7 @@ ohos_unittest("fusion_connectivity_test") {
     "ffrt:libffrt",
     "bluetooth:btframework",
     "preferences:native_preferences",
+    "hiappevent:hiappevent_innerapi",
     "googletest:gmock_main",
     "googletest:gtest_main",
   ]

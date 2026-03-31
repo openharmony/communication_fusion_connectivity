@@ -37,11 +37,13 @@ ohos_shared_library("partner_agent_extension") {
   sources = [
     "js_partner_agent_extension.cpp",
     "js_partner_agent_extension_context.cpp",
+    "$FUSION_CONN/frameworks/napi/src/napi_ha_event_utils.cpp",
   ]
 
   deps = [
     "$FUSION_CONN/frameworks/extension:partner_agent_extension_common",
     "$FUSION_CONN/frameworks/extension:partner_agent_extension_ipc",
+    "$FUSION_CONN/frameworks/napi:partneragent",
     "$FUSION_CONN/idl:libpartner_device_agent_proxy",
     "$FUSION_CONN/idl:libpartner_device_agent_stub",
   ]
@@ -59,6 +61,7 @@ ohos_shared_library("partner_agent_extension") {
     "c_utils:utils",
     "eventhandler:libeventhandler",
     "hilog:libhilog",
+    "hiappevent:hiappevent_innerapi",
     "ipc:ipc_core",
     "ipc:ipc_napi",
     "napi:ace_napi",
