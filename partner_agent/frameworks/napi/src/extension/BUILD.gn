@@ -27,7 +27,7 @@ ohos_shared_library("partner_agent_extension") {
 
   include_dirs = [
     "$FUSION_CONN/partner_agent/frameworks/inner/include",
-    "$FUSION_CONN/partner_agent/frameworks/extension/include",
+    "$FUSION_CONN/partner_agent/frameworks/inner/extension/include",
     "$FUSION_CONN/partner_agent/frameworks/napi/include",
     "$FUSION_CONN/partner_agent/frameworks/napi/include/extension",
     "$FUSION_CONN/partner_agent/interfaces/inner_api",
@@ -41,8 +41,8 @@ ohos_shared_library("partner_agent_extension") {
   ]
 
   deps = [
-    "$FUSION_CONN/partner_agent/frameworks/extension:partner_agent_extension_common",
-    "$FUSION_CONN/partner_agent/frameworks/extension:partner_agent_extension_ipc",
+    "$FUSION_CONN/partner_agent/frameworks/inner/extension:partner_agent_extension_common",
+    "$FUSION_CONN/partner_agent/frameworks/inner/extension:partner_agent_extension_ipc",
     "$FUSION_CONN/partner_agent/frameworks/napi:partneragent",
     "$FUSION_CONN/partner_agent/idl:libpartner_device_agent_proxy",
     "$FUSION_CONN/partner_agent/idl:libpartner_device_agent_stub",
@@ -88,7 +88,7 @@ ohos_shared_library("partner_agent_extension_module") {
 
   include_dirs = [
     "$FUSION_CONN/partner_agent/frameworks/inner/include",
-    "$FUSION_CONN/partner_agent/frameworks/extension/include",
+    "$FUSION_CONN/partner_agent/frameworks/inner/extension/include",
     "$FUSION_CONN/partner_agent/frameworks/napi/include/extension",
     "$FUSION_CONN/partner_agent/idl/include",
   ]

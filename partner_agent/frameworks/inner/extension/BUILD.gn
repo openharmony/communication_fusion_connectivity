@@ -169,18 +169,18 @@ ohos_source_set("partner_agent_extension_common") {
   }
   branch_protector_ret = "pac_ret"
 
-  include_dirs = [ 
-    "$FUSION_CONN/partner_agent/frameworks/extension/include",
+include_dirs = [ 
+    "$FUSION_CONN/partner_agent/frameworks/inner/extension/include",
     "$FUSION_CONN/partner_agent/frameworks/inner/include",
     "$FUSION_CONN/partner_agent/frameworks/napi/include/extension",
     "$FUSION_CONN/partner_agent/idl/include",
  ]
 
-  sources = [
-    "$FUSION_CONN/partner_agent/frameworks/extension/src/partner_agent_extension.cpp",
-    "$FUSION_CONN/partner_agent/frameworks/extension/src/partner_agent_extension_context.cpp",
-    "$FUSION_CONN/partner_agent/frameworks/extension/src/partnre_agent_extension_stub_impl.cpp",
-  ]
+ sources = [
+    "$FUSION_CONN/partner_agent/frameworks/inner/extension/src/partner_agent_extension.cpp",
+    "$FUSION_CONN/partner_agent/frameworks/inner/extension/src/partner_agent_extension_context.cpp",
+    "$FUSION_CONN/partner_agent/frameworks/inner/extension/src/partnre_agent_extension_stub_impl.cpp",
+ ]
 
   configs = []
   public_configs = []

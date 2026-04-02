@@ -20,8 +20,8 @@ PART_DIR = "//foundation/communication/fusion_connectivity"
 config("unittest_config") {
   include_dirs = [
     "${target_gen_dir}",
-    "$PART_DIR/partner_agent/partner_agent/services/server/include",
-    "$PART_DIR/partner_agent/partner_agent/services/common/include",
+    "$PART_DIR/partner_agent/services/server/include",
+    "$PART_DIR/partner_agent/services/common/include",
   ]
 
   defines = [

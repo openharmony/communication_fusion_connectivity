@@ -13,6 +13,7 @@
 
 import("//build/ohos.gni")
 import("//build/ohos_var.gni")
+import("//foundation/communication/fusion_connectivity/fusion_connectivity.gni")
 
 FUSION_CONN = "//foundation/communication/fusion_connectivity/"
 
@@ -154,7 +155,7 @@ ohos_shared_library("libpartner_agent_extension_service") {
   ]
 
   deps = [
-    "$FUSION_CONN/partner_agent/frameworks/extension:partner_agent_extension_ipc",
+    "$FUSION_CONN/partner_agent/frameworks/inner/extension:partner_agent_extension_ipc",
     "$FUSION_CONN/partner_agent/idl:libpartner_device_agent_proxy",
     "$FUSION_CONN/partner_agent/idl:libpartner_device_agent_stub",
   ]
