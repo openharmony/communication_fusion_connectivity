@@ -17,8 +17,8 @@ group("napi_packages") {
   deps = []
   if (support_jsapi) {
     deps += [
-      "//foundation/communication/fusion_connectivity/interfaces/extension/ability:partneragentextensionability_napi",
-      "//foundation/communication/fusion_connectivity/interfaces/extension/context:partneragentextensioncontext_napi",
+      "//foundation/communication/fusion_connectivity/partner_agent/interfaces/extension/ability:partneragentextensionability_napi",
+      "//foundation/communication/fusion_connectivity/partner_agent/interfaces/extension/context:partneragentextensioncontext_napi",
     ]
   }
 }

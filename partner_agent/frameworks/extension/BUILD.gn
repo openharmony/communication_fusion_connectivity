@@ -14,19 +14,19 @@
 import("//build/ohos.gni")
 import("//build/config/components/idl_tool/idl.gni")
 
-FUSION_CONN = "//foundation/communication/fusion_connectivity"
+FUSION_CONN = "//foundation/communication/fusion_connectivity/"
 
 config("partner_agent_extension_interface_config") {
   include_dirs = [
     "${target_gen_dir}",
-    "$FUSION_CONN/idl",
+    "$FUSION_CONN/partner_agent/idl",
   ]
 }
 
 idl_gen_interface("partner_agent_extension_interface") {
   sources = [ "IPartnerAgentExtension.idl" ]
   sources_common = [
-    "$FUSION_CONN/idl/IFusionConnectivityTypes.idl",
+    "$FUSION_CONN/partner_agent/idl/IFusionConnectivityTypes.idl",
   ]
   log_domainid = "0xD000100"
   log_tag = "PartnerAgentExtension"
@@ -63,12 +63,12 @@ ohos_source_set("partner_agent_extension_proxy") {
     "LOG_DOMAIN = 0xD000100",
   ]
   include_dirs = [
-    "$FUSION_CONN/idl/include",
+    "$FUSION_CONN/partner_agent/idl/include",
   ]
   deps = [
     ":partner_agent_extension_interface",
-    "$FUSION_CONN/idl:libpartner_device_agent_proxy",
-    "$FUSION_CONN/idl:libpartner_device_agent_stub",
+    "$FUSION_CONN/partner_agent/idl:libpartner_device_agent_proxy",
+    "$FUSION_CONN/partner_agent/idl:libpartner_device_agent_stub",
   ]
   external_deps = [
     "ability_base:configuration",
@@ -94,12 +94,12 @@ ohos_source_set("partner_agent_extension_stub") {
   output_values = get_target_outputs(":partner_agent_extension_interface")
   sources = filter_include(output_values, [ "*_stub.cpp" ])
   include_dirs = [
-    "$FUSION_CONN/idl/include",
+    "$FUSION_CONN/partner_agent/idl/include",
   ]
   deps = [
     ":partner_agent_extension_interface",
-    "$FUSION_CONN/idl:libpartner_device_agent_proxy",
-    "$FUSION_CONN/idl:libpartner_device_agent_stub",
+    "$FUSION_CONN/partner_agent/idl:libpartner_device_agent_proxy",
+    "$FUSION_CONN/partner_agent/idl:libpartner_device_agent_stub",
   ]
   external_deps = [
     "ability_base:configuration",
@@ -128,7 +128,7 @@ ohos_shared_library("partner_agent_extension_ipc") {
   branch_protector_ret = "pac_ret"
 
   include_dirs = [
-    "$FUSION_CONN/idl/include",
+    "$FUSION_CONN/partner_agent/idl/include",
   ]
 
   sources = []
@@ -139,8 +139,8 @@ ohos_shared_library("partner_agent_extension_ipc") {
   deps = [
     ":partner_agent_extension_proxy",
     ":partner_agent_extension_stub",
-    "$FUSION_CONN/idl:libpartner_device_agent_proxy",
-    "$FUSION_CONN/idl:libpartner_device_agent_stub",
+    "$FUSION_CONN/partner_agent/idl:libpartner_device_agent_proxy",
+    "$FUSION_CONN/partner_agent/idl:libpartner_device_agent_stub",
   ]
 
   external_deps = [
@@ -170,16 +170,16 @@ ohos_source_set("partner_agent_extension_common") {
   branch_protector_ret = "pac_ret"
 
   include_dirs = [ 
-    "$FUSION_CONN/frameworks/extension/include",
-    "$FUSION_CONN/frameworks/inner/include",
-    "$FUSION_CONN/frameworks/napi/include/extension",
-    "$FUSION_CONN/idl/include",
+    "$FUSION_CONN/partner_agent/frameworks/extension/include",
+    "$FUSION_CONN/partner_agent/frameworks/inner/include",
+    "$FUSION_CONN/partner_agent/frameworks/napi/include/extension",
+    "$FUSION_CONN/partner_agent/idl/include",
  ]
 
   sources = [
-    "$FUSION_CONN/frameworks/extension/src/partner_agent_extension.cpp",
-    "$FUSION_CONN/frameworks/extension/src/partner_agent_extension_context.cpp",
-    "$FUSION_CONN/frameworks/extension/src/partnre_agent_extension_stub_impl.cpp",
+    "$FUSION_CONN/partner_agent/frameworks/extension/src/partner_agent_extension.cpp",
+    "$FUSION_CONN/partner_agent/frameworks/extension/src/partner_agent_extension_context.cpp",
+    "$FUSION_CONN/partner_agent/frameworks/extension/src/partnre_agent_extension_stub_impl.cpp",
   ]
 
   configs = []
@@ -187,8 +187,8 @@ ohos_source_set("partner_agent_extension_common") {
 
   deps = [
     ":partner_agent_extension_ipc",
-    "$FUSION_CONN/idl:libpartner_device_agent_proxy",
-    "$FUSION_CONN/idl:libpartner_device_agent_stub",  
+    "$FUSION_CONN/partner_agent/idl:libpartner_device_agent_proxy",
+    "$FUSION_CONN/partner_agent/idl:libpartner_device_agent_stub",  
   ]
 
   defines = [

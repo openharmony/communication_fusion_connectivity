@@ -72,31 +72,31 @@
             "group_type": {
                 "base_group": [],
                 "fwk_group": [
-                    "//foundation/communication/fusion_connectivity/frameworks/inner:partner_device_agent_framework",
-                    "//foundation/communication/fusion_connectivity/frameworks/napi:napi_partner_agent_extension",
-                    "//foundation/communication/fusion_connectivity/frameworks/napi:partneragent",
-                    "//foundation/communication/fusion_connectivity/interfaces/extension:napi_packages"
+                    "//foundation/communication/fusion_connectivity/partner_agent/frameworks/inner:partner_device_agent_framework",
+                    "//foundation/communication/fusion_connectivity/partner_agent/frameworks/napi:napi_partner_agent_extension",
+                    "//foundation/communication/fusion_connectivity/partner_agent/frameworks/napi:partneragent",
+                    "//foundation/communication/fusion_connectivity/partner_agent/interfaces/extension:napi_packages"
                 ],
                 "service_group": [
-                    "//foundation/communication/fusion_connectivity/sa_profile:partner_device_agent_sa_profile",
-                    "//foundation/communication/fusion_connectivity/services/server:partner_device_agent_server",
-                    "//foundation/communication/fusion_connectivity/services/server:libpartner_agent_extension_service",
-                    "//foundation/communication/fusion_connectivity/idl:partner_device_agent"
+                    "//foundation/communication/fusion_connectivity/partner_agent/sa_profile:partner_device_agent_sa_profile",
+                    "//foundation/communication/fusion_connectivity/partner_agent/services/server:partner_device_agent_server",
+                    "//foundation/communication/fusion_connectivity/partner_agent/services/server:libpartner_agent_extension_service",
+                    "//foundation/communication/fusion_connectivity/partner_agent/idl:partner_device_agent"
                 ]
             },
             "inner_api": [
                 {
                     "header": {
-                        "header_base": "//foundation/communication/fusion_connectivity/interfaces/inner_api",
+                        "header_base": "//foundation/communication/fusion_connectivity/partner_agent/interfaces/inner_api",
                         "header_files": [
                             "partner_device_agent.h"
                         ]
                     },
-                    "name": "//foundation/communication/fusion_connectivity/frameworks/inner:partner_device_agent_framework"
+                    "name": "//foundation/communication/fusion_connectivity/partner_agent/frameworks/inner:partner_device_agent_framework"
                 }
             ],
             "test": [
-                "//foundation/communication/fusion_connectivity/test:fusion_connectivity_test"
+                "//foundation/communication/fusion_connectivity/partner_agent/test:fusion_connectivity_test"
             ]
         }
     }

@@ -12,7 +12,7 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
-FUSION_CONN = "//foundation/communication/fusion_connectivity"
+FUSION_CONN = "//foundation/communication/fusion_connectivity/"
 
 ohos_shared_library("partner_agent_extension") {
   sanitize = {
@@ -26,26 +26,26 @@ ohos_shared_library("partner_agent_extension") {
   branch_protector_ret = "pac_ret"
 
   include_dirs = [
-    "$FUSION_CONN/frameworks/inner/include",
-    "$FUSION_CONN/frameworks/extension/include",
-    "$FUSION_CONN/frameworks/napi/include",
-    "$FUSION_CONN/frameworks/napi/include/extension",
-    "$FUSION_CONN/interfaces/inner_api",
-    "$FUSION_CONN/idl/include",
+    "$FUSION_CONN/partner_agent/frameworks/inner/include",
+    "$FUSION_CONN/partner_agent/frameworks/extension/include",
+    "$FUSION_CONN/partner_agent/frameworks/napi/include",
+    "$FUSION_CONN/partner_agent/frameworks/napi/include/extension",
+    "$FUSION_CONN/partner_agent/interfaces/inner_api",
+    "$FUSION_CONN/partner_agent/idl/include",
   ]
 
   sources = [
     "js_partner_agent_extension.cpp",
     "js_partner_agent_extension_context.cpp",
-    "$FUSION_CONN/frameworks/napi/src/napi_ha_event_utils.cpp",
+    "$FUSION_CONN/partner_agent/frameworks/napi/src/napi_ha_event_utils.cpp",
   ]
 
   deps = [
-    "$FUSION_CONN/frameworks/extension:partner_agent_extension_common",
-    "$FUSION_CONN/frameworks/extension:partner_agent_extension_ipc",
-    "$FUSION_CONN/frameworks/napi:partneragent",
-    "$FUSION_CONN/idl:libpartner_device_agent_proxy",
-    "$FUSION_CONN/idl:libpartner_device_agent_stub",
+    "$FUSION_CONN/partner_agent/frameworks/extension:partner_agent_extension_common",
+    "$FUSION_CONN/partner_agent/frameworks/extension:partner_agent_extension_ipc",
+    "$FUSION_CONN/partner_agent/frameworks/napi:partneragent",
+    "$FUSION_CONN/partner_agent/idl:libpartner_device_agent_proxy",
+    "$FUSION_CONN/partner_agent/idl:libpartner_device_agent_stub",
   ]
 
   external_deps = [
@@ -87,18 +87,18 @@ ohos_shared_library("partner_agent_extension_module") {
   branch_protector_ret = "pac_ret"
 
   include_dirs = [
-    "$FUSION_CONN/frameworks/inner/include",
-    "$FUSION_CONN/frameworks/extension/include",
-    "$FUSION_CONN/frameworks/napi/include/extension",
-    "$FUSION_CONN/idl/include",
+    "$FUSION_CONN/partner_agent/frameworks/inner/include",
+    "$FUSION_CONN/partner_agent/frameworks/extension/include",
+    "$FUSION_CONN/partner_agent/frameworks/napi/include/extension",
+    "$FUSION_CONN/partner_agent/idl/include",
   ]
 
   sources = [ "partner_agent_extension_module_loader.cpp" ]
 
   deps = [
     ":partner_agent_extension",
-    "$FUSION_CONN/idl:libpartner_device_agent_proxy",
-    "$FUSION_CONN/idl:libpartner_device_agent_stub",
+    "$FUSION_CONN/partner_agent/idl:libpartner_device_agent_proxy",
+    "$FUSION_CONN/partner_agent/idl:libpartner_device_agent_stub",
   ]
 
   external_deps = [

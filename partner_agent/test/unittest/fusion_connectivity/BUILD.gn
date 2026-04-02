@@ -20,8 +20,8 @@ PART_DIR = "//foundation/communication/fusion_connectivity"
 config("unittest_config") {
   include_dirs = [
     "${target_gen_dir}",
-    "$PART_DIR/services/server/include",
-    "$PART_DIR/services/common/include",
+    "$PART_DIR/partner_agent/partner_agent/services/server/include",
+    "$PART_DIR/partner_agent/partner_agent/services/common/include",
   ]
 
   defines = [
@@ -37,15 +37,15 @@ ohos_unittest("fusion_connectivity_test") {
   sources = [
     "fusion_connectivity_test.cpp",
     "napi_ha_event_utils_test.cpp",
-    "$PART_DIR/services/server/src/partner_device_agent_server.cpp",
-    "$PART_DIR/services/common/src/log_util.cpp",
+    "$PART_DIR/partner_agent/services/server/src/partner_device_agent_server.cpp",
+    "$PART_DIR/partner_agent/services/common/src/log_util.cpp",
   ]
 
   configs = [ ":unittest_config" ]
 
   deps = [
-    "$PART_DIR/frameworks/napi:partneragent",
-    "$PART_DIR/idl:libpartner_device_agent_stub",
+    "$PART_DIR/partner_agent/frameworks/napi:partneragent",
+    "$PART_DIR/partner_agent/idl:libpartner_device_agent_stub",
   ]
 
   external_deps = [

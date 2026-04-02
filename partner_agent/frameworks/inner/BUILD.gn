@@ -16,13 +16,13 @@ import("//build/ohos.gni")
 import("//build/ohos_var.gni")
 import("//foundation/communication/fusion_connectivity/fusion_connectivity.gni")
 
-FUSION_CONN = "//foundation/communication/fusion_connectivity"
+FUSION_CONN = "//foundation/communication/fusion_connectivity/"
 
 config("fusion_connectivity_fwk_inner_cfg") {
   include_dirs = [
-    "$FUSION_CONN/frameworks/inner/include",
-    "$FUSION_CONN/services/common/include",
-    "$FUSION_CONN/idl/include",
+    "$FUSION_CONN/partner_agent/frameworks/inner/include",
+    "$FUSION_CONN/partner_agent/services/common/include",
+    "$FUSION_CONN/partner_agent/idl/include",
   ]
 
   if (fusion_connectivity_partner_agent_feature) {
@@ -34,8 +34,8 @@ config("fusion_connectivity_fwk_inner_cfg") {
 
 config("fusion_connectivity_fwk_public_cfg") {
   include_dirs = [
-    "$FUSION_CONN/interfaces/inner_api",
-    "$FUSION_CONN/idl/include",
+    "$FUSION_CONN/partner_agent/interfaces/inner_api",
+    "$FUSION_CONN/partner_agent/idl/include",
   ]
 }
 
@@ -57,8 +57,8 @@ ohos_shared_library("partner_device_agent_framework") {
   ]
 
   deps = [
-    "$FUSION_CONN/idl:libpartner_device_agent_proxy",
-    "$FUSION_CONN/idl:libpartner_device_agent_stub",
+    "$FUSION_CONN/partner_agent/idl:libpartner_device_agent_proxy",
+    "$FUSION_CONN/partner_agent/idl:libpartner_device_agent_stub",
   ]
 
   external_deps = [

@@ -20,7 +20,7 @@ module_output_path = "fusion_connectivity/"
 ##############################fuzztest##########################################
 ohos_fuzztest("FusionConnectivityFuzzTest") {
   module_out_path = module_output_path
-  fuzz_config_file = "//foundation/communication/fusion_connectivity/test/fuzztest/fusion_connectivity_fuzzer"
+  fuzz_config_file = "//foundation/communication/fusion_connectivity/partner_agent/test/fuzztest/fusion_connectivity_fuzzer"
 
   cflags = [
     "-g",
@@ -37,16 +37,16 @@ ohos_fuzztest("FusionConnectivityFuzzTest") {
   }
 
   include_dirs = [
-    "$PART_DIR/services/common/include",
-    "$PART_DIR/services/server/include",
+    "$PART_DIR/partner_agent/services/common/include",
+    "$PART_DIR/partner_agent/services/server/include",
   ]
 
   sources = [ "fusion_connectivity_fuzzer.cpp" ]
 
   deps = [
-    "$PART_DIR/services/server:partner_device_agent_server_static",
-    "$PART_DIR/idl:libpartner_device_agent_proxy",
-    "$PART_DIR/idl:libpartner_device_agent_stub",
+    "$PART_DIR/partner_agent/services/server:partner_device_agent_server_static",
+    "$PART_DIR/partner_agent/idl:libpartner_device_agent_proxy",
+    "$PART_DIR/partner_agent/idl:libpartner_device_agent_stub",
   ]
 
   external_deps = [
