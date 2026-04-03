@@ -75,7 +75,7 @@
                     "//foundation/communication/fusion_connectivity/partner_agent/frameworks/inner:partner_device_agent_framework",
                     "//foundation/communication/fusion_connectivity/partner_agent/frameworks/napi:napi_partner_agent_extension",
                     "//foundation/communication/fusion_connectivity/partner_agent/frameworks/napi:partneragent",
-                    "//foundation/communication/fusion_connectivity/partner_agent/interfaces/extension:napi_packages"
+                    "//foundation/communication/fusion_connectivity/partner_agent/frameworks/napi/src/extension:napi_packages"
                 ],
                 "service_group": [
                     "//foundation/communication/fusion_connectivity/partner_agent/sa_profile:partner_device_agent_sa_profile",
