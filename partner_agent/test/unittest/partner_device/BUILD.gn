@@ -20,8 +20,8 @@ PART_DIR = "//foundation/communication/fusion_connectivity"
 config("unittest_config") {
   include_dirs = [
     "${target_gen_dir}",
-    "$PART_DIR/services/server/include",
-    "$PART_DIR/services/common/include",
+    "$PART_DIR/partner_agent/services/server/include",
+    "$PART_DIR/partner_agent/services/common/include",
   ]
 
   defines = [
@@ -31,32 +31,61 @@ config("unittest_config") {
   ]
 }
 
-ohos_unittest("fusion_connectivity_test") {
+ohos_unittest("device_agent_capability_br_test") {
   module_out_path = module_output_path
 
   sources = [
-    "fusion_connectivity_test.cpp",
-    "napi_ha_event_utils_test.cpp",
-    "$PART_DIR/services/server/src/partner_device_agent_server.cpp",
-    "$PART_DIR/services/common/src/log_util.cpp",
+    "device_agent_capability_br_test.cpp",
   ]
 
   configs = [ ":unittest_config" ]
 
   deps = [
-    "$PART_DIR/frameworks/napi:partneragent",
-    "$PART_DIR/idl:libpartner_device_agent_stub",
+    "$PART_DIR/partner_agent/idl:libpartner_device_agent_stub",
+    "$PART_DIR/partner_agent/services/server:partner_device_agent_server_static",
   ]
 
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
     "ffrt:libffrt",
-    "bluetooth:btframework",
-    "preferences:native_preferences",
-    "hiappevent:hiappevent_innerapi",
     "googletest:gmock_main",
     "googletest:gtest_main",
+    "ipc:ipc_core",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
+    "ability_base:zuri",
+    "common_event_service:cesfwk_innerkits",
+    "bluetooth:btframework",
+  ]
+}
+
+ohos_unittest("device_agent_capability_ble_adv_test") {
+  module_out_path = module_output_path
+
+  sources = [
+    "device_agent_capability_ble_adv_test.cpp",
+  ]
+
+  configs = [ ":unittest_config" ]
+
+  deps = [
+    "$PART_DIR/partner_agent/idl:libpartner_device_agent_stub",
+    "$PART_DIR/partner_agent/services/server:partner_device_agent_server_static",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+    "ffrt:libffrt",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+    "ipc:ipc_core",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
+    "ability_base:zuri",
+    "common_event_service:cesfwk_innerkits",
+    "bluetooth:btframework",
   ]
 }
 
@@ -64,6 +93,7 @@ group("unit_test") {
   testonly = true
 
   deps = [
-    ":fusion_connectivity_test",
+    ":device_agent_capability_br_test",
+    ":device_agent_capability_ble_adv_test",
   ]
 }

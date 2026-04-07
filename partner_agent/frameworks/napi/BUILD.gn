@@ -13,14 +13,14 @@
 
 import("//build/ohos.gni")
 
-FUSION_CONN = "//foundation/communication/fusion_connectivity"
+FUSION_CONN = "//foundation/communication/fusion_connectivity/"
 
 config("fusion_connectivity_inner_cfg") {
   include_dirs = [
-    "$FUSION_CONN/frameworks/inner/include",
-    "$FUSION_CONN/frameworks/napi/include",
-    "$FUSION_CONN/services/common/include",
-    "$FUSION_CONN/idl/include",
+    "$FUSION_CONN/partner_agent/frameworks/inner/include",
+    "$FUSION_CONN/partner_agent/frameworks/napi/include",
+    "$FUSION_CONN/partner_agent/services/common/include",
+    "$FUSION_CONN/partner_agent/idl/include",
   ]
 }
 
@@ -50,21 +50,21 @@ ohos_shared_library("partneragent") {
   configs = [ ":fusion_connectivity_inner_cfg" ]
 
   sources = [
-    "$FUSION_CONN/frameworks/napi/src/native_module_fusion_connectivity.cpp",
-    "$FUSION_CONN/frameworks/napi/src/napi_partner_device_agent.cpp",
-    "$FUSION_CONN/frameworks/napi/src/napi_fusion_connectivity_error.cpp",
-    "$FUSION_CONN/frameworks/napi/src/napi_parser_utils.cpp",
-    "$FUSION_CONN/frameworks/napi/src/napi_async_callback.cpp",
-    "$FUSION_CONN/frameworks/napi/src/napi_async_work.cpp",
-    "$FUSION_CONN/frameworks/napi/src/napi_native_object.cpp",
-    "$FUSION_CONN/frameworks/napi/src/napi_timer.cpp",
-    "$FUSION_CONN/frameworks/napi/src/napi_ha_event_utils.cpp",
+    "$FUSION_CONN/partner_agent/frameworks/napi/src/native_module_fusion_connectivity.cpp",
+    "$FUSION_CONN/partner_agent/frameworks/napi/src/napi_partner_device_agent.cpp",
+    "$FUSION_CONN/partner_agent/frameworks/napi/src/napi_fusion_connectivity_error.cpp",
+    "$FUSION_CONN/partner_agent/frameworks/napi/src/napi_parser_utils.cpp",
+    "$FUSION_CONN/partner_agent/frameworks/napi/src/napi_async_callback.cpp",
+    "$FUSION_CONN/partner_agent/frameworks/napi/src/napi_async_work.cpp",
+    "$FUSION_CONN/partner_agent/frameworks/napi/src/napi_native_object.cpp",
+    "$FUSION_CONN/partner_agent/frameworks/napi/src/napi_timer.cpp",
+    "$FUSION_CONN/partner_agent/frameworks/napi/src/napi_ha_event_utils.cpp",
   ]
 
   deps = [
-    "$FUSION_CONN/frameworks/inner:partner_device_agent_framework",
-    "$FUSION_CONN/idl:libpartner_device_agent_proxy",
-    "$FUSION_CONN/idl:libpartner_device_agent_stub",
+    "$FUSION_CONN/partner_agent/frameworks/inner:partner_device_agent_framework",
+    "$FUSION_CONN/partner_agent/idl:libpartner_device_agent_proxy",
+    "$FUSION_CONN/partner_agent/idl:libpartner_device_agent_stub",
   ]
 
   external_deps = [

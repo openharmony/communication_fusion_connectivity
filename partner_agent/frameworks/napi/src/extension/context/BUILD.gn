@@ -14,6 +14,8 @@
 import("//build/config/components/ets_frontend/es2abc_config.gni")
 import("//build/ohos.gni")
 
+FUSION_CONN = "//foundation/communication/fusion_connectivity/"
+
 es2abc_gen_abc("gen_partner_agent_extension_context_abc") {
   src_js = rebase_path("partner_agent_extension_context.js")
   dst_file = rebase_path(
@@ -48,14 +50,31 @@ ohos_shared_library("partneragentextensioncontext_napi") {
   }
   branch_protector_ret = "pac_ret"
 
+  include_dirs = [
+    "$FUSION_CONN/partner_agent/frameworks/inner/include",
+    "$FUSION_CONN/partner_agent/frameworks/inner/include/extension",
+    "$FUSION_CONN/partner_agent/frameworks/napi/include",
+    "$FUSION_CONN/partner_agent/frameworks/napi/include/extension",
+    "$FUSION_CONN/partner_agent/interfaces/inner_api",
+    "$FUSION_CONN/partner_agent/idl/include",
+  ]
+
   sources = [ "partner_agent_extension_context_module.cpp" ]
 
   deps = [
     ":partner_agent_extension_context_abc",
     ":partner_agent_extension_context_js",
+    "$FUSION_CONN/partner_agent/frameworks/inner:partner_agent_extension_common",
+    "$FUSION_CONN/partner_agent/frameworks/napi:partneragent",
+    "$FUSION_CONN/partner_agent/idl:partner_agent_extension_ipc",
   ]
 
-  external_deps = [ "napi:ace_napi" ]
+  external_deps = [
+    "hilog:libhilog",
+    "ipc:ipc_core",
+    "ipc:ipc_napi",
+    "napi:ace_napi",
+  ]
 
   relative_install_dir = "module/fusionconnectivity"
   subsystem_name = "communication"

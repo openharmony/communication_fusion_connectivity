@@ -15,12 +15,12 @@ import("//build/ohos.gni")
 import("//build/ohos_var.gni")
 import("//foundation/communication/fusion_connectivity/fusion_connectivity.gni")
 
-FUSION_CONN = "//foundation/communication/fusion_connectivity"
+FUSION_CONN = "//foundation/communication/fusion_connectivity/"
 
 partner_device_agent_deps = [
-  "$FUSION_CONN/services/etc/init:etc",
-  "$FUSION_CONN/services/etc/param:etc",
-  "$FUSION_CONN/idl:libpartner_device_agent_stub",
+  "$FUSION_CONN/partner_agent/services/etc/init:etc",
+  "$FUSION_CONN/partner_agent/services/etc/param:etc",
+  "$FUSION_CONN/partner_agent/idl:libpartner_device_agent_stub",
 ]
 
 partner_device_agent_external_deps = [
@@ -60,8 +60,8 @@ partner_device_agent_source = [
 config("fusion_connectivity_config") {
   include_dirs = [
     "${target_gen_dir}",
-    "$FUSION_CONN/services/common/include",
-    "$FUSION_CONN/interfaces/inner_api",
+    "$FUSION_CONN/partner_agent/services/common/include",
+    "$FUSION_CONN/partner_agent/interfaces/inner_api",
     "include",
   ]
 
@@ -147,17 +147,17 @@ ohos_shared_library("libpartner_agent_extension_service") {
   ]
 
   include_dirs = [
-    "$FUSION_CONN/services/server/include",
-    "$FUSION_CONN/services/server/include/extension",
-    "$FUSION_CONN/services/common/include",
-    "$FUSION_CONN/interfaces/inner_api",
-    "$FUSION_CONN/idl/include",
+    "$FUSION_CONN/partner_agent/services/server/include",
+    "$FUSION_CONN/partner_agent/services/server/include/extension",
+    "$FUSION_CONN/partner_agent/services/common/include",
+    "$FUSION_CONN/partner_agent/interfaces/inner_api",
+    "$FUSION_CONN/partner_agent/idl/include",
   ]
 
   deps = [
-    "$FUSION_CONN/frameworks/extension:partner_agent_extension_ipc",
-    "$FUSION_CONN/idl:libpartner_device_agent_proxy",
-    "$FUSION_CONN/idl:libpartner_device_agent_stub",
+    "$FUSION_CONN/partner_agent/idl:partner_agent_extension_ipc",
+    "$FUSION_CONN/partner_agent/idl:libpartner_device_agent_proxy",
+    "$FUSION_CONN/partner_agent/idl:libpartner_device_agent_stub",
   ]
 
   defines =  [
