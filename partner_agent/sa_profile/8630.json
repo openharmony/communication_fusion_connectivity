@@ -17,6 +17,7 @@
                         "value":"1",
                         "conditions": [
                             {
+                                "eventId": "param",
                                 "name":"persist.fusion_connectivity.enable_partner_agent",
                                 "value":"1"
                             }
@@ -27,6 +28,7 @@
             "stop-on-demand": {
                 "param":[
                     {
+                        "eventId": "param",
                         "name":"persist.fusion_connectivity.enable_partner_agent",
                         "value":"0"
                     }
