@@ -62,7 +62,8 @@ public:
 
 private:
     std::function<void()> removeCallback_;
-}
-}
-}
+};
+
+} // namespace FusionRanging
+} // namespace OHOS
 #endif FUSION_RANGING_OBSERVER_H

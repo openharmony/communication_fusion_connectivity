@@ -12,3 +12,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#ifndef NAPI_FUSION_RANGING_CONSTANT_H
+#define NAPI_FUSION_RANGING_CONSTANT_H
+
+#include "napi/native_api.h"
+#include "napi/native_node_api.h"
+
+namespace OHOS {
+namespace FusionRanging {
+namespace NapiFusionRangingConstant {
+public:
+    static napi_value DefineJSConstant(napi_env env, napi_value exports);
+
+private:
+    static napi_value ConstantPropertyValueInit(napi_env env, napi_value exports);
+    static napi_value RangingTypesInit(napi_env env);
+    static napi_value RangingStateInit(napi_env env);
+    static napi_value RangingRoleInit(napi_env env);
+    static napi_value RangingStoppedCauseInit(napi_env env);
+    static napi_value RangingConfidenceInit(napi_env env);
+};
+} // namespace FusionRanging
+} // namespace OHOS
+#endif /* NAPI_FUSION_RANGING_CONSTANT_H */

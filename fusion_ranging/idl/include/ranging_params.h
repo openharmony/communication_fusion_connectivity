@@ -13,22 +13,28 @@
  * limitations under the License.
  */
 
-#ifndef FUSION_RANGING_RESULT_H
-#define FUSION_RANGING_RESULT_H
+#ifndef FUSION_RANGING_PARAMS_H
+#define FUSION_RANGING_PARAMS_H
 
 #include "parcel.h"
-#include "ranging_measurement.h"
+#include "fusion_ranging_types.h"
 
 namespace OHOS {
 namespace FusionRanging {
 
-class RangingResult : public Parcelable {
+class RangingParams : public Parcelable {
 public:
-    RangingResult() = default;
-    ~RangingResult() = default;
+    RangingParams(std::string deviceId, RangingRole role, RangingTypes capabilityType)
+        : deviceId_(deviceId),
+          role_(role),
+          capabilityType_(capabilityType)
+    {
+    }
+    RangingParams() = default;
+    ~RangingParams() = default;
 
     bool Marshalling(Parcel &parcel) const override;
-    static RangingResult *Unmarshalling(Parcel &parcel);
+    static RangingParams *Unmarshalling(Parcel &parcel);
 
     std::string GetDeviceId() const
     {
@@ -40,43 +46,32 @@ public:
         deviceId_ = deviceId;
     }
 
-    RangingMeasurement GetDistance() const
+    RangingRole GetRole() const
     {
-        return distance_;
+        return role_;
     }
 
-    void SetDistance(const RangingMeasurement &distance)
+    void SetRole(RangingRole role)
     {
-        distance_ = distance;
+        role_ = role;
     }
 
-    RangingMeasurement GetAngle() const
+    RangingTypes GetCapabilityType() const
     {
-        return angle_;
+        return capabilityType_;
     }
 
-    void SetAngle(const RangingMeasurement &angle)
+    void SetCapabilityType(RangingTypes capabilityType)
     {
-        angle_ = angle;
-    }
-
-    int32_t GetRssi() const
-    {
-        return rssi_;
-    }
-
-    void SetRssi(int32_t rssi)
-    {
-        rssi_ = rssi;
+        capabilityType_ = capabilityType;
     }
 
 private:
     std::string deviceId_ = "";
-    RangingMeasurement distance_;
-    RangingMeasurement angle_;
-    int rssi_ = 0;
+    RangingRole role_ = RangingRole::ROLE_INITIATOR;
+    RangingTypes capabilityType_ = RangingTypes::NEARLINK_HADM;
 };
 } // namespace FusionRanging
 } // namespace OHOS
 
-#endif // FUSION_RANGING_RESULT_H
+#endif // FUSION_RANGING_PARAMS_H

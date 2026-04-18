@@ -12,3 +12,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#ifndef NAPI_FUSION_RANGING_H
+#define NAPI_FUSION_RANGING_H
+
+#include "napi/native_api.h"
+
+namespace OHOS {
+namespace FusionRanging {
+
+void DefineRangingInterface(napi_env env, napi_value exports);
+
+napi_value IsRangingSupported(napi_env env, napi_callback_info info);
+napi_value GetRangingCapability(napi_env env, napi_callback_info info);
+napi_value StartRanging(napi_env env, napi_callback_info info);
+napi_value StopRanging(napi_env env, napi_callback_info info);
+napi_value OnRangingStateChange(napi_env env, napi_callback_info info);
+napi_value OffRangingStateChange(napi_env env, napi_callback_info info);
+
+} // namespace FusionRanging
+} // namespace OHOS
+#endif /* NAPI_FUSION_RANGING_H */
