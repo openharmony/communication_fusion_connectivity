@@ -16,10 +16,55 @@
 #ifndef FUSION_RANGING_APP_STATE_OBSERVER_H
 #define FUSION_RANGING_APP_STATE_OBSERVER_H
 
+#include <memory>
+#include <map>
+#include <string>
+#include <mutex>
+
+#include "iremote_object.h"
+#include "singleton.h"
+#include "app_mgr_interface.h"
+#include "application_state_observer_stub.h"
+
 namespace OHOS {
 namespace FusionRanging {
 
+class FusionRangingServer;
+
+class RangingAppStateObserver {
+public:
+    RangingAppStateObserver() = default;
+    ~RangingAppStateObserver() = default;
+
+    bool SubscribeAppState();
+    bool UnSubscribeAppState();
+    void SetServer(const sptr<FusionRangingServer> &server);
+
+private:
+    class AppStateAwareObserver : public AppExecFwk::ApplicationStateObserverStub {
+    public:
+        explicit AppStateAwareObserver(RangingAppStateObserver *observer) : observer_(observer) {}
+
+        void OnForeGroundApplicationChanged(cosnt AppExecFwk::AppStateData &appStateData) override;
+
+    private:
+        RangingAppStateObserver *observer_;
+    };
+
+    sptr<AppExecFwk::IAppMgr> GetAppMgrProxy();
+    void HandleAppForeground(int32_t uid, [[maybe_unused]] const std::string &bundleName);
+    void HandleAppBackground(int32_t uid, [[maybe_unused]] const std::string &bundleName);
+    void HandleAppTerminate(int32_t uid, [[maybe_unused]] const std::string &bundleName);
+    int32_t GetUidByBundleName(const std::string &bundleName);
+
+    sptr<FusionRangingServer> GetServer() const;
+
+    mutable std::mutex mutex_;
+    sptr<AppStateAwareObserver> appStateAwareObserver_;
+    sptr<FusionRangingServer> server_;
+    std::map<int32_t, std::string> uidToBundleName_;
+};
+
 } // namespace FusionRanging
 } // namespace OHOS
-
 #endif // FUSION_RANGING_APP_STATE_OBSERVER_H
