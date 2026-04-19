@@ -12,8 +12,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include "ranging_capability_supported.h"
+
 namespace OHOS {
 namespace FusionRanging {
 
+bool RangingCapabilitySupported::Marshalling(Parcel &parcel) const
+{
+    if (!parcel.WriteBool(nearlinkHadm_)) {
+        return false;
+    }
+    return true;
+}
+
+RangingCapabilitySupported *RangingCapabilitySupported::Unmarshalling(Parcel &parcel)
+{
+    bool nearlinkHadm = false;
+    if (!parcel.ReadBool(nearlinkHadm)) {
+        return nullptr;
+    }
+    auto *capability = new (std::northrow) RangingCapabilitySupported();
+    if (capability != nullptr) {
+        capability->SetNearlinkHadm(nearlinkHadm);
+    }
+    return capability;
+}
 } // namespace FusionRanging
 } // namespace OHOS
