@@ -1,0 +1,75 @@
+# Copyright (C) 2026 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/config/features.gni")
+import("//build/test.gni")
+FUSION_RANGING = "//foundation/communication/fusion_connectivity/fusion_ranging"
+
+module_output_path = "fusion_ranging/"
+
+##############################fuzztest##########################################
+ohos_fuzztest("FusionRangingFuzzTest") {
+  module_out_path = module_output_path
+  fuzz_config_file = "//foundation/communication/fusion_connectivity/fusion_ranging/test/fuzztest/fusion_ranging_fuzzer"
+
+  cflags = [
+    "-g",
+    "-O0",
+    "-Wno-unused-variable",
+    "-fno-omit-frame-pointer",
+  ]
+
+  branch_protector_ret = "pac_ret"
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = true
+  }
+
+  include_dirs = [
+    "$FUSION_RANGING/services/common/include",
+    "$FUSION_RANGING/services/service/include",
+    "$FUSION_RANGING/services/ranging_adapter/include",
+    "$FUSION_RANGING/interfaces/inner_api",
+    "$FUSION_RANGING/idl/include",
+  ]
+
+  sources = [ "fusion_ranging_fuzzer.cpp" ]
+
+  deps = [
+    "$FUSION_RANGING/services/service:fusion_ranging_service",
+    "$FUSION_RANGING/services/ranging_adapter:fusion_ranging_adapter",
+    "$FUSION_RANGING/services/common:fusion_ranging_common",
+    "$FUSION_RANGING/idl:libfusion_ranging_stub",
+    "$FUSION_RANGING/idl:libfusion_ranging_proxy",
+  ]
+
+  external_deps = [
+    "hilog:libhilog",
+    "ipc:ipc_single",
+    "c_utils:utils",
+    "access_token:libaccesstoken_sdk",
+    "access_token:libtokenid_sdk",
+    "access_token:libprivacy_sdk",
+  ]
+}
+
+###############################################################################
+group("fuzztest") {
+  testonly = true
+  deps = []
+  deps += [
+    ":FusionRangingFuzzTest",
+  ]
+}
+###############################################################################
