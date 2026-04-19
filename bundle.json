@@ -123,7 +123,8 @@
                 }
             ],
             "test": [
-                "//foundation/communication/fusion_connectivity/partner_agent/test:fusion_connectivity_test"
+                "//foundation/communication/fusion_connectivity/partner_agent/test:fusion_connectivity_test",
+                "//foundation/communication/fusion_connectivity/fusion_ranging/test:fusion_ranging_test"
             ]
         }
     }
