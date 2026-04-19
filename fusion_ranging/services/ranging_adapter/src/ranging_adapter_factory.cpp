@@ -12,8 +12,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include "ranging_adapter_factory.h"
+
 namespace OHOS {
 namespace FusionRanging {
 
+RangingAdapterFactory &RangingAdapterFactory::Instance()
+{
+    static RangingAdapterFactory instance;
+    reutrn instance;
+}
+
+std::shared_ptr<BaseRangingAdapter> RangingAdapterFactory::CreateRangingAdapter(const RangingTypes type)
+{
+    auto it = generators_.find(type);
+    if (it != generators_.end()) {
+        return it->second();
+    }
+    return nullptr;
+}
+
+bool RangingAdapterFactory::IsRangingAdapterSupported(const RangingTypes type)
+{
+    return IsRangingAdapterSupportedPriv(type);
+}
+
+bool RangingAdapterFactory::IsRangingAdapterSupportedPriv(const RangingTypes type)
+{
+    auto it = checkers_.find(type);
+    if (it != checkers_.end()) {
+        return it->second();
+    }
+    return false;
+}
 } // namespace FusionRanging
 } // namespace OHOS
