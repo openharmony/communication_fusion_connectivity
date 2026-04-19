@@ -12,17 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-<<<<<<< HEAD
-#ifndef BASE_RANGING_ADAPTER_H
-#define BASE_RANGING_ADAPTER_H
-
-namespace OHOS {
-namespace FusionRanging {
-
-} // namespace FusionRanging
-} // namespace OHOS
-
-=======
 
 #ifndef BASE_RANGING_ADAPTER_H
 #define BASE_RANGING_ADAPTER_H
@@ -114,5 +103,4 @@ public:
 };
 } // namespace FusionRanging
 } // namespace OHOS
->>>>>>> f026980... add fusion_ranging
 #endif // BASE_RANGING_ADAPTER_H
