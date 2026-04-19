@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Huawei Device Co., Ltd.
+ * Copyright (C) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -7,7 +7,7 @@
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributd under the License is distributed on an "AS IS" BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -55,7 +55,7 @@ public:
     FusionRangingSaStatusChange();
     ~FusionRangingSaStatusChange() = default;
 
-    void SetRemoveCallback(std::fuction<void()> callback);
+    void SetRemoveCallback(std::function<void()> callback);
 
     void OnAddSystemAbility(int32_t systemAbilityId, const std::string &deviceId) override;
     void OnRemoveSystemAbility(int32_t systemAbilityId, const std::string &deviceId) override;
@@ -64,6 +64,6 @@ private:
     std::function<void()> removeCallback_;
 };
 
-} // namespace FusionRanging
-} // namespace OHOS
-#endif FUSION_RANGING_OBSERVER_H
+}  // namespace FusionRanging
+}  // namespace OHOS
+#endif  // FUSION_RANGING_OBSERVER_H
