@@ -62,9 +62,9 @@ public:
         if (adapter) {
             RangingResult result;
             result.SetDeviceId(data.GetDeviceId());
-            RangingMeasurement dist(data.IsVaild(), data.GetDistance(), RangingConfidence::MEDIUM);
+            RangingMeasurement dist(data.IsValid(), data.GetDistance(), RangingConfidence::MEDIUM);
             result.SetDistance(dist);
-            RangingMeasurement ang(data.IsVaild(), data.GetAngle(), RangingConfidence::LOW);
+            RangingMeasurement ang(data.IsValid(), data.GetAngle(), RangingConfidence::LOW);
             result.SetAngle(ang);
             result.SetRssi(data.GetRssi());
             adapter->OnRangingResult(result);
