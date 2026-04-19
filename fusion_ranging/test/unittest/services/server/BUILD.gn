@@ -74,6 +74,7 @@ ohos_unittest("session_manager_test") {
 
   deps = [
     "$FUSION_RANGING/services/server:fusion_ranging_server",
+    "$FUSION_RANGING/services/common:fusion_ranging_common",
     "$FUSION_RANGING/idl:libfusion_ranging_stub",
   ]
 

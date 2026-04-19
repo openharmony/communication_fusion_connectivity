@@ -32,7 +32,7 @@ using namespace testing::ext;
 
 class MockRangingResultObserver : public IRangingResultObserver {
 public:
-    MOCK_METHOD(void, OnRangingResult, (const RangingResult &result), (override));
+    MOCK_METHOD(ErrCode, OnRangingResult, (const RangingResult &result), (override));
     MOCK_METHOD(sptr<IRemoteObject>, AsObject, (), (override));
 };
 

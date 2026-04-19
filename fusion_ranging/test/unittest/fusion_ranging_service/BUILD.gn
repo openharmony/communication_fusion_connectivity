@@ -70,6 +70,7 @@ ohos_unittest("ranging_adapter_factory_test") {
 
   deps = [
     "$FUSION_RANGING/services/ranging_adapter:fusion_ranging_adapter",
+    "$FUSION_RANGING/services/common:fusion_ranging_common",
   ]
 
   external_deps = [

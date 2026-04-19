@@ -20,6 +20,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <thread>
+
 #include "ranging_adapter_factory.h"
 #include "base_ranging_adapter.h"
 #include "fusion_ranging_types.h"
