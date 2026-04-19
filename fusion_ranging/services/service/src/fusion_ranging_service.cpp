@@ -97,7 +97,7 @@ FusionRangingService::~FusionRangingService()
 
 std::shared_ptr<FusionRangingService> FusionRangingService::GetInstance()
 {
-    static std::shared_ptr<FusionRangingService> instance(new FusionRangingService());
+    static std::shared_ptr<FusionRangingService> instance = std::make_shared<FusionRangingService>();
     return instance;
 }
 
