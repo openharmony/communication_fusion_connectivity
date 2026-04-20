@@ -42,13 +42,13 @@ void DoStartRangingFuzzTest(const uint8_t *fuzzData, size_t size)
         return;
     }
 
-    std::string deviceId(reinterpret_cast<const char*>(fuzzData), 
-                         std::min(size, static_cast<size_t>(64)));
-    
+    std::string deviceId(reinterpret_cast<const char *>(fuzzData), std::min(size, static_cast<size_t>(64)));
+
     RangingParams params(deviceId, RangingRole::ROLE_INITIATOR, RangingTypes::NEARLINK_HADM);
-    
-    auto callback = [](const RangingResult &result) {};
-    
+
+    auto callback = [](const RangingResult &result) {
+    };
+
     service->StartRanging(params, callback);
 }
 
@@ -63,9 +63,8 @@ void DoStopRangingFuzzTest(const uint8_t *fuzzData, size_t size)
         return;
     }
 
-    std::string deviceId(reinterpret_cast<const char*>(fuzzData), 
-                         std::min(size, static_cast<size_t>(64)));
-    
+    std::string deviceId(reinterpret_cast<const char *>(fuzzData), std::min(size, static_cast<size_t>(64)));
+
     service->StopRanging(deviceId);
 }
 
@@ -80,9 +79,8 @@ void DoPauseRangingFuzzTest(const uint8_t *fuzzData, size_t size)
         return;
     }
 
-    std::string deviceId(reinterpret_cast<const char*>(fuzzData), 
-                         std::min(size, static_cast<size_t>(64)));
-    
+    std::string deviceId(reinterpret_cast<const char *>(fuzzData), std::min(size, static_cast<size_t>(64)));
+
     service->PauseRanging(deviceId);
 }
 
@@ -97,9 +95,8 @@ void DoResumeRangingFuzzTest(const uint8_t *fuzzData, size_t size)
         return;
     }
 
-    std::string deviceId(reinterpret_cast<const char*>(fuzzData), 
-                         std::min(size, static_cast<size_t>(64)));
-    
+    std::string deviceId(reinterpret_cast<const char *>(fuzzData), std::min(size, static_cast<size_t>(64)));
+
     service->ResumeRanging(deviceId);
 }
 
@@ -114,9 +111,8 @@ void DoGetRangingDataFuzzTest(const uint8_t *fuzzData, size_t size)
         return;
     }
 
-    std::string deviceId(reinterpret_cast<const char*>(fuzzData), 
-                         std::min(size, static_cast<size_t>(64)));
-    
+    std::string deviceId(reinterpret_cast<const char *>(fuzzData), std::min(size, static_cast<size_t>(64)));
+
     int32_t distance = 0;
     int32_t rssi = 0;
     service->GetRangingData(deviceId, distance, rssi);
@@ -133,13 +129,12 @@ void DoOnRangingResultFuzzTest(const uint8_t *fuzzData, size_t size)
         return;
     }
 
-    std::string deviceId(reinterpret_cast<const char*>(fuzzData), 
-                         std::min(size, static_cast<size_t>(64)));
-    
+    std::string deviceId(reinterpret_cast<const char *>(fuzzData), std::min(size, static_cast<size_t>(64)));
+
     RangingResult result;
     result.SetDeviceId(deviceId);
     result.SetRssi(static_cast<int32_t>(fuzzData[0]));
-    
+
     service->OnRangingResult(result);
 }
 
@@ -150,10 +145,10 @@ void DoAdapterFactoryFuzzTest(const uint8_t *fuzzData, size_t size)
     }
 
     auto &factory = RangingAdapterFactory::Instance();
-    
+
     int typeValue = static_cast<int>(fuzzData[0]);
     RangingTypes type = static_cast<RangingTypes>(typeValue);
-    
+
     factory.IsRangingAdapterSupported(type);
     factory.CreateRangingAdapter(type);
 }
@@ -162,19 +157,19 @@ void DoAdapterFactoryFuzzTest(const uint8_t *fuzzData, size_t size)
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv)
 {
-    (void) argc;
-    (void) argv;
-    
+    (void)argc;
+    (void)argv;
+
     auto service = FusionRangingService::GetInstance();
     if (service == nullptr) {
         return 0;
     }
-    
+
     std::this_thread::sleep_for(std::chrono::milliseconds(OHOS::FUZZ_DELAY_100_MS));
     return 0;
 }
 
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     if (data == nullptr || size == 0) {
         return 0;
@@ -187,6 +182,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
     OHOS::DoGetRangingDataFuzzTest(data, size);
     OHOS::DoOnRangingResultFuzzTest(data, size);
     OHOS::DoAdapterFactoryFuzzTest(data, size);
-    
+
     return 0;
 }
