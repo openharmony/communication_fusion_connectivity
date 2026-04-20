@@ -67,8 +67,8 @@ void RangingAdapterFactoryTest::TearDown() {}
  */
 HWTEST_F(RangingAdapterFactoryTest, InstanceShouldReturnSingleton, TestSize.Level0)
 {
-    auto& instance1 = RangingAdapterFactory::Instance();
-    auto& instance2 = RangingAdapterFactory::Instance();
+    auto &instance1 = RangingAdapterFactory::Instance();
+    auto &instance2 = RangingAdapterFactory::Instance();
     EXPECT_EQ(&instance1, &instance2);
 }
 
@@ -79,7 +79,7 @@ HWTEST_F(RangingAdapterFactoryTest, InstanceShouldReturnSingleton, TestSize.Leve
  */
 HWTEST_F(RangingAdapterFactoryTest, CreateRangingAdapterForUnregisteredTypeShouldReturnNull, TestSize.Level0)
 {
-    auto& factory = RangingAdapterFactory::Instance();
+    auto &factory = RangingAdapterFactory::Instance();
     auto adapter = factory.CreateRangingAdapter(static_cast<RangingTypes>(999));
     EXPECT_EQ(adapter, nullptr);
 }
@@ -91,7 +91,7 @@ HWTEST_F(RangingAdapterFactoryTest, CreateRangingAdapterForUnregisteredTypeShoul
  */
 HWTEST_F(RangingAdapterFactoryTest, IsRangingAdapterSupportedForUnregisteredTypeShouldReturnFalse, TestSize.Level0)
 {
-    auto& factory = RangingAdapterFactory::Instance();
+    auto &factory = RangingAdapterFactory::Instance();
     bool supported = factory.IsRangingAdapterSupported(static_cast<RangingTypes>(999));
     EXPECT_FALSE(supported);
 }
@@ -103,7 +103,7 @@ HWTEST_F(RangingAdapterFactoryTest, IsRangingAdapterSupportedForUnregisteredType
  */
 HWTEST_F(RangingAdapterFactoryTest, RegisterRangingAdapterShouldWork, TestSize.Level0)
 {
-    auto& factory = RangingAdapterFactory::Instance();
+    auto &factory = RangingAdapterFactory::Instance();
 
     auto generator = []() -> std::shared_ptr<BaseRangingAdapter> {
         return std::make_shared<MockRangingAdapter>();
@@ -123,7 +123,7 @@ HWTEST_F(RangingAdapterFactoryTest, RegisterRangingAdapterShouldWork, TestSize.L
  */
 HWTEST_F(RangingAdapterFactoryTest, CreateRangingAdapterAfterRegisterShouldReturnAdapter, TestSize.Level0)
 {
-    auto& factory = RangingAdapterFactory::Instance();
+    auto &factory = RangingAdapterFactory::Instance();
 
     auto generator = []() -> std::shared_ptr<BaseRangingAdapter> {
         return std::make_shared<MockRangingAdapter>();
@@ -142,7 +142,7 @@ HWTEST_F(RangingAdapterFactoryTest, CreateRangingAdapterAfterRegisterShouldRetur
  */
 HWTEST_F(RangingAdapterFactoryTest, RegisterCheckerWithNullShouldReturnTrue, TestSize.Level0)
 {
-    auto& factory = RangingAdapterFactory::Instance();
+    auto &factory = RangingAdapterFactory::Instance();
 
     RangingTypes testType = static_cast<RangingTypes>(100);
     factory.RegisterChecker(testType, nullptr);
@@ -158,7 +158,7 @@ HWTEST_F(RangingAdapterFactoryTest, RegisterCheckerWithNullShouldReturnTrue, Tes
  */
 HWTEST_F(RangingAdapterFactoryTest, RegisterCheckerWithCustomCheckerShouldWork, TestSize.Level0)
 {
-    auto& factory = RangingAdapterFactory::Instance();
+    auto &factory = RangingAdapterFactory::Instance();
 
     RangingTypes testType = static_cast<RangingTypes>(101);
     bool customResult = false;
@@ -179,7 +179,7 @@ HWTEST_F(RangingAdapterFactoryTest, RegisterCheckerWithCustomCheckerShouldWork, 
  */
 HWTEST_F(RangingAdapterFactoryTest, AutoRegisterRangingAdapterShouldAutoRegister, TestSize.Level0)
 {
-    auto& factory = RangingAdapterFactory::Instance();
+    auto &factory = RangingAdapterFactory::Instance();
 
     RangingTypes testType = static_cast<RangingTypes>(102);
     AutoRegisterRangingAdapter<MockRangingAdapter> autoRegister(testType);
@@ -196,7 +196,7 @@ HWTEST_F(RangingAdapterFactoryTest, AutoRegisterRangingAdapterShouldAutoRegister
  */
 HWTEST_F(RangingAdapterFactoryTest, ThreadSafetyTest, TestSize.Level0)
 {
-    auto& factory = RangingAdapterFactory::Instance();
+    auto &factory = RangingAdapterFactory::Instance();
 
     auto thread1 = std::thread([&] {
         for (int i = 0; i < 100; ++i) {
