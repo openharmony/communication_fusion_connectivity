@@ -26,6 +26,7 @@
 #include "ranging_result.h"
 #include "base_ranging_adapter.h"
 #include "ranging_adapter_factory.h"
+#include "fusion_ranging_errorcode.h"
 #include "log.h"
 
 using namespace OHOS;
@@ -162,16 +163,9 @@ HWTEST_F(FusionRangingServiceTest, GetRangingDataWithInvalidDeviceIdShouldFail, 
  */
 HWTEST_F(FusionRangingServiceTest, OnRangingResultWithValidDataShouldCallCallback, TestSize.Level0)
 {
-    bool callbackCalled = false;
-    RangingParams params("00:11:22:33:44:55", RangingRole::ROLE_INITIATOR, RangingTypes::NEARLINK_HADM);
-    
-    auto callback = [&callbackCalled](const RangingResult &result) {
-        callbackCalled = true;
-    };
-    
     RangingResult result;
     result.SetDeviceId("00:11:22:33:44:55");
-    
+
     service_->OnRangingResult(result);
 }
 
