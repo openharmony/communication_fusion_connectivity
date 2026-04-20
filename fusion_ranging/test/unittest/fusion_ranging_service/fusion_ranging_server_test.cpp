@@ -63,11 +63,9 @@ public:
     sptr<MockRangingStateObserver> mockStateObserver_;
 };
 
-void FusionRangingServerTest::SetUpTestCase(void)
-{}
+void FusionRangingServerTest::SetUpTestCase(void) {}
 
-void FusionRangingServerTest::TearDownTestCase(void)
-{}
+void FusionRangingServerTest::TearDownTestCase(void) {}
 
 void FusionRangingServerTest::SetUp()
 {
@@ -148,7 +146,7 @@ HWTEST_F(FusionRangingServerTest, UnregisterStateObserverWithNullObserverShouldF
 HWTEST_F(FusionRangingServerTest, RegisterStateObserverShouldSuccess, TestSize.Level0)
 {
     EXPECT_CALL(*mockStateObserver_, AsObject()).WillRepeatedly(Return(nullptr));
-    
+
     ErrCode result = server_->RegisterStateObserver(mockStateObserver_);
     EXPECT_EQ(result, static_cast<int32_t>(RangingErrCode::RANGING_NO_ERROR));
 }
@@ -161,7 +159,7 @@ HWTEST_F(FusionRangingServerTest, RegisterStateObserverShouldSuccess, TestSize.L
 HWTEST_F(FusionRangingServerTest, UnregisterStateObserverShouldSuccess, TestSize.Level0)
 {
     EXPECT_CALL(*mockStateObserver_, AsObject()).WillRepeatedly(Return(nullptr));
-    
+
     server_->RegisterStateObserver(mockStateObserver_);
     ErrCode result = server_->UnregisterStateObserver(mockStateObserver_);
     EXPECT_EQ(result, static_cast<int32_t>(RangingErrCode::RANGING_NO_ERROR));
@@ -175,7 +173,7 @@ HWTEST_F(FusionRangingServerTest, UnregisterStateObserverShouldSuccess, TestSize
 HWTEST_F(FusionRangingServerTest, CleanupAllShouldClearResources, TestSize.Level0)
 {
     EXPECT_CALL(*mockStateObserver_, AsObject()).WillRepeatedly(Return(nullptr));
-    
+
     server_->RegisterStateObserver(mockStateObserver_);
     server_->CleanupAll();
 }
