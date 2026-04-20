@@ -22,6 +22,7 @@ config("unittest_config") {
     "${target_gen_dir}",
     "$FUSION_RANGING/services/server/include",
     "$FUSION_RANGING/services/service/include",
+    "$FUSION_RANGING/services/ranging_adapter/include",
     "$FUSION_RANGING/services/common/include",
     "$FUSION_RANGING/interfaces/inner_api",
     "$FUSION_RANGING/idl/include",
@@ -40,6 +41,12 @@ ohos_unittest("fusion_ranging_server_test") {
 
   sources = [
     "fusion_ranging_server_test.cpp",
+    "$FUSION_RANGING/services/server/src/fusion_ranging_server.cpp",
+    "$FUSION_RANGING/services/server/src/session_manager/session_manager.cpp",
+    "$FUSION_RANGING/services/server/src/state_observer_registry/state_observer_registry.cpp",
+    "$FUSION_RANGING/services/server/src/process_death_manager/process_death_manager.cpp",
+    "$FUSION_RANGING/services/server/src/app_state_observer/app_state_observer.cpp",
+    "$FUSION_RANGING/services/common/src/log_util.cpp",
   ]
 
   configs = [ ":unittest_config" ]
@@ -47,6 +54,7 @@ ohos_unittest("fusion_ranging_server_test") {
   deps = [
     "$FUSION_RANGING/services/server:fusion_ranging_server",
     "$FUSION_RANGING/services/service:fusion_ranging_service",
+    "$FUSION_RANGING/services/common:fusion_ranging_common",
     "$FUSION_RANGING/idl:libfusion_ranging_stub",
     "$FUSION_RANGING/idl:libfusion_ranging_proxy",
   ]
@@ -60,6 +68,8 @@ ohos_unittest("fusion_ranging_server_test") {
     "googletest:gtest_main",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
+    "ability_runtime:ability_manager",
+    "ability_runtime:app_manager",
   ]
 }
 
@@ -68,6 +78,7 @@ ohos_unittest("session_manager_test") {
 
   sources = [
     "session_manager_test.cpp",
+    "$FUSION_RANGING/services/server/src/session_manager/session_manager.cpp",
   ]
 
   configs = [ ":unittest_config" ]
@@ -92,12 +103,14 @@ ohos_unittest("state_observer_registry_test") {
 
   sources = [
     "state_observer_registry_test.cpp",
+    "$FUSION_RANGING/services/server/src/state_observer_registry/state_observer_registry.cpp",
   ]
 
   configs = [ ":unittest_config" ]
 
   deps = [
     "$FUSION_RANGING/services/server:fusion_ranging_server",
+    "$FUSION_RANGING/services/common:fusion_ranging_common",
     "$FUSION_RANGING/idl:libfusion_ranging_stub",
   ]
 
@@ -115,12 +128,14 @@ ohos_unittest("process_death_manager_test") {
 
   sources = [
     "process_death_manager_test.cpp",
+    "$FUSION_RANGING/services/server/src/process_death_manager/process_death_manager.cpp",
   ]
 
   configs = [ ":unittest_config" ]
 
   deps = [
     "$FUSION_RANGING/services/server:fusion_ranging_server",
+    "$FUSION_RANGING/services/common:fusion_ranging_common",
     "$FUSION_RANGING/idl:libfusion_ranging_stub",
   ]
 
