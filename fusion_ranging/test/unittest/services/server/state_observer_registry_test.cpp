@@ -33,7 +33,7 @@ using namespace testing::ext;
 
 class MockRangingStateObserver : public IRangingStateObserver {
 public:
-    MOCK_METHOD(void, OnRangingStateChanged, (const RangingStateChangeInfo &info), (override));
+    MOCK_METHOD(ErrCode, OnRangingStateChanged, (const RangingStateChangeInfo &info), (override));
     MOCK_METHOD(sptr<IRemoteObject>, AsObject, (), (override));
 };
 
