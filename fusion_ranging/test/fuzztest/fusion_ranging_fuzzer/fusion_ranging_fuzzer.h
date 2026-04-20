@@ -18,4 +18,4 @@
 
 #define FUZZ_PROJECT_NAME "fusion_ranging_fuzzer"
 
-#endif // TEST_FUZZTEST_FUSION_RANGING_FUZZER_H
+#endif  // TEST_FUZZTEST_FUSION_RANGING_FUZZER_H
