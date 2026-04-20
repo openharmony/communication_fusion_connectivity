@@ -35,7 +35,8 @@ class MockRemoteObject : public IRemoteObject {
 public:
     MockRemoteObject() : IRemoteObject(u"") {}
 
-    MOCK_METHOD(int32_t, SendRequest, (uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option), (override));
+    MOCK_METHOD(int32_t, SendRequest, (uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option),
+                (override));
     MOCK_METHOD(bool, AddDeathRecipient, (const sptr<IRemoteObject::DeathRecipient> &recipient), (override));
     MOCK_METHOD(bool, RemoveDeathRecipient, (const sptr<IRemoteObject::DeathRecipient> &recipient), (override));
     MOCK_METHOD(sptr<IRemoteBroker>, AsInterface, (), (override));
