@@ -23,6 +23,7 @@
 #include <thread>
 #include "process_death_manager.h"
 #include "iremote_object.h"
+#include "iremote_broker.h"
 #include "log.h"
 
 using namespace OHOS;
@@ -32,13 +33,15 @@ using namespace testing::ext;
 
 class MockRemoteObject : public IRemoteObject {
 public:
-    MockRemoteObject() : IRemoteObject("") {}
+    MockRemoteObject() : IRemoteObject(u"") {}
     
     MOCK_METHOD(int32_t, SendRequest, (uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option), (override));
     MOCK_METHOD(bool, AddDeathRecipient, (const sptr<IRemoteObject::DeathRecipient> &recipient), (override));
     MOCK_METHOD(bool, RemoveDeathRecipient, (const sptr<IRemoteObject::DeathRecipient> &recipient), (override));
     MOCK_METHOD(sptr<IRemoteBroker>, AsInterface, (), (override));
-    MOCK_METHOD(bool, Marshalling, (Parcel &parcel), (override));
+    MOCK_METHOD(bool, Marshalling, (Parcel &parcel), (const, override));
+    MOCK_METHOD(int32_t, GetObjectRefCount, (), (override));
+    MOCK_METHOD(int, Dump, (int fd, const std::vector<std::u16string> &args), (override));
 };
 
 class ProcessDeathManagerTest : public testing::Test {
