@@ -50,11 +50,9 @@ public:
     sptr<MockRangingResultObserver> mockObserver_;
 };
 
-void SessionManagerTest::SetUpTestCase(void)
-{}
+void SessionManagerTest::SetUpTestCase(void) {}
 
-void SessionManagerTest::TearDownTestCase(void)
-{}
+void SessionManagerTest::TearDownTestCase(void) {}
 
 void SessionManagerTest::SetUp()
 {
@@ -77,7 +75,7 @@ void SessionManagerTest::TearDown()
 HWTEST_F(SessionManagerTest, AddSessionWithValidParamsShouldSuccess, TestSize.Level0)
 {
     EXPECT_CALL(*mockObserver_, AsObject()).WillRepeatedly(Return(nullptr));
-    
+
     bool result = sessionManager_->AddSession(1000, "00:11:22:33:44:55", mockObserver_);
     EXPECT_TRUE(result);
     EXPECT_EQ(sessionManager_->GetSessionCount(), 1);
@@ -158,10 +156,10 @@ HWTEST_F(SessionManagerTest, GetSessionKeysByUidShouldReturnCorrectKeys, TestSiz
     sessionManager_->AddSession(1000, "00:11:22:33:44:55", mockObserver_);
     sessionManager_->AddSession(1000, "00:11:22:33:44:56", mockObserver_);
     sessionManager_->AddSession(2000, "00:11:22:33:44:57", mockObserver_);
-    
+
     auto keys = sessionManager_->GetSessionKeysByUid(1000);
     EXPECT_EQ(keys.size(), 2);
-    
+
     keys = sessionManager_->GetSessionKeysByUid(2000);
     EXPECT_EQ(keys.size(), 1);
 }
@@ -175,7 +173,7 @@ HWTEST_F(SessionManagerTest, GetAllSessionKeysShouldReturnAllKeys, TestSize.Leve
 {
     sessionManager_->AddSession(1000, "00:11:22:33:44:55", mockObserver_);
     sessionManager_->AddSession(2000, "00:11:22:33:44:56", mockObserver_);
-    
+
     auto keys = sessionManager_->GetAllSessionKeys();
     EXPECT_EQ(keys.size(), 2);
 }
@@ -188,7 +186,7 @@ HWTEST_F(SessionManagerTest, GetAllSessionKeysShouldReturnAllKeys, TestSize.Leve
 HWTEST_F(SessionManagerTest, HasSessionShouldReturnCorrectResult, TestSize.Level0)
 {
     EXPECT_FALSE(sessionManager_->HasSession("00:11:22:33:44:55"));
-    
+
     sessionManager_->AddSession(1000, "00:11:22:33:44:55", mockObserver_);
     EXPECT_TRUE(sessionManager_->HasSession("00:11:22:33:44:55"));
 }
@@ -201,7 +199,7 @@ HWTEST_F(SessionManagerTest, HasSessionShouldReturnCorrectResult, TestSize.Level
 HWTEST_F(SessionManagerTest, HasSessionsByUidShouldReturnCorrectResult, TestSize.Level0)
 {
     EXPECT_FALSE(sessionManager_->HasSessionsByUid(1000));
-    
+
     sessionManager_->AddSession(1000, "00:11:22:33:44:55", mockObserver_);
     EXPECT_TRUE(sessionManager_->HasSessionsByUid(1000));
     EXPECT_FALSE(sessionManager_->HasSessionsByUid(2000));
@@ -216,7 +214,7 @@ HWTEST_F(SessionManagerTest, ClearAllShouldRemoveAllSessions, TestSize.Level0)
 {
     sessionManager_->AddSession(1000, "00:11:22:33:44:55", mockObserver_);
     sessionManager_->AddSession(2000, "00:11:22:33:44:56", mockObserver_);
-    
+
     sessionManager_->ClearAll();
     EXPECT_EQ(sessionManager_->GetSessionCount(), 0);
 }
