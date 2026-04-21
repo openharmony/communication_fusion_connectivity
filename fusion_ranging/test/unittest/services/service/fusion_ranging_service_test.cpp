@@ -59,11 +59,9 @@ public:
     std::shared_ptr<MockRangingAdapter> mockAdapter_;
 };
 
-void FusionRangingServiceTest::SetUpTestCase(void)
-{}
+void FusionRangingServiceTest::SetUpTestCase(void) {}
 
-void FusionRangingServiceTest::TearDownTestCase(void)
-{}
+void FusionRangingServiceTest::TearDownTestCase(void) {}
 
 void FusionRangingServiceTest::SetUp()
 {
@@ -71,8 +69,7 @@ void FusionRangingServiceTest::SetUp()
     mockAdapter_ = std::make_shared<MockRangingAdapter>();
 }
 
-void FusionRangingServiceTest::TearDown()
-{}
+void FusionRangingServiceTest::TearDown() {}
 
 /**
  * @tc.name: GetInstanceShouldReturnNonNull
@@ -93,8 +90,9 @@ HWTEST_F(FusionRangingServiceTest, GetInstanceShouldReturnNonNull, TestSize.Leve
 HWTEST_F(FusionRangingServiceTest, StartRangingWithInvalidDeviceIdShouldFail, TestSize.Level0)
 {
     RangingParams params("", RangingRole::ROLE_INITIATOR, RangingTypes::NEARLINK_HADM);
-    auto callback = [](const RangingResult &result) {};
-    
+    auto callback = [](const RangingResult &result) {
+    };
+
     int ret = service_->StartRanging(params, callback);
     EXPECT_EQ(ret, static_cast<int>(RangingErrCode::RANGING_ERR_INVALID_PARAM));
 }
