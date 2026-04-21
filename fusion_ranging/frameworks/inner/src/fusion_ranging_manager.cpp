@@ -348,7 +348,6 @@ int FusionRangingManager::StopRanging(const std::string &deviceId)
         std::lock_guard<std::mutex> lock(pimpl->rangingMutex_);
         pimpl->rangingResultCallbacks_.erase(deviceId);
         shouldDestroyObserver = (pimpl->rangingResultCallbacks_.empty() && pimpl->rangingObserver_ != nullptr);
-
         if (shouldDestroyObserver) {
             observerToStop = pimpl->rangingObserver_;
             pimpl->rangingObserver_ = nullptr;
