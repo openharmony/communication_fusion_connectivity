@@ -34,8 +34,9 @@ using namespace testing::ext;
 class MockRemoteObject : public IRemoteObject {
 public:
     MockRemoteObject() : IRemoteObject(u"") {}
-    
-    MOCK_METHOD(int32_t, SendRequest, (uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option), (override));
+
+    MOCK_METHOD(int32_t, SendRequest, (uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option),
+                (override));
     MOCK_METHOD(bool, AddDeathRecipient, (const sptr<IRemoteObject::DeathRecipient> &recipient), (override));
     MOCK_METHOD(bool, RemoveDeathRecipient, (const sptr<IRemoteObject::DeathRecipient> &recipient), (override));
     MOCK_METHOD(sptr<IRemoteBroker>, AsInterface, (), (override));
@@ -60,11 +61,9 @@ public:
     int32_t callbackUid_;
 };
 
-void ProcessDeathManagerTest::SetUpTestCase(void)
-{}
+void ProcessDeathManagerTest::SetUpTestCase(void) {}
 
-void ProcessDeathManagerTest::TearDownTestCase(void)
-{}
+void ProcessDeathManagerTest::TearDownTestCase(void) {}
 
 void ProcessDeathManagerTest::SetUp()
 {
@@ -72,7 +71,7 @@ void ProcessDeathManagerTest::SetUp()
     mockRemoteObject_ = new MockRemoteObject();
     callbackCalled_ = false;
     callbackUid_ = 0;
-    
+
     auto callback = [this](int32_t uid) {
         callbackCalled_ = true;
         callbackUid_ = uid;
@@ -95,7 +94,7 @@ void ProcessDeathManagerTest::TearDown()
 HWTEST_F(ProcessDeathManagerTest, SetDeathCallbackShouldWork, TestSize.Level0)
 {
     EXPECT_FALSE(callbackCalled_);
-    
+
     auto newCallback = [this](int32_t uid) {
         callbackCalled_ = true;
         callbackUid_ = uid + 1000;
@@ -111,7 +110,7 @@ HWTEST_F(ProcessDeathManagerTest, SetDeathCallbackShouldWork, TestSize.Level0)
 HWTEST_F(ProcessDeathManagerTest, RegisterProcessDeathWithValidParamsShouldSuccess, TestSize.Level0)
 {
     EXPECT_CALL(*mockRemoteObject_, AddDeathRecipient(_)).WillOnce(Return(true));
-    
+
     bool result = deathManager_->RegisterProcessDeath(1000, mockRemoteObject_);
     EXPECT_TRUE(result);
     EXPECT_TRUE(deathManager_->HasProcessDeathHandler(1000));
@@ -137,7 +136,7 @@ HWTEST_F(ProcessDeathManagerTest, RegisterProcessDeathWithNullRemoteObjectShould
 HWTEST_F(ProcessDeathManagerTest, RegisterProcessDeathWhenAddDeathRecipientFailShouldFail, TestSize.Level0)
 {
     EXPECT_CALL(*mockRemoteObject_, AddDeathRecipient(_)).WillOnce(Return(false));
-    
+
     bool result = deathManager_->RegisterProcessDeath(1000, mockRemoteObject_);
     EXPECT_FALSE(result);
 }
@@ -151,7 +150,7 @@ HWTEST_F(ProcessDeathManagerTest, RegisterDuplicateUidShouldFail, TestSize.Level
 {
     EXPECT_CALL(*mockRemoteObject_, AddDeathRecipient(_)).WillOnce(Return(true));
     deathManager_->RegisterProcessDeath(1000, mockRemoteObject_);
-    
+
     bool result = deathManager_->RegisterProcessDeath(1000, mockRemoteObject_);
     EXPECT_FALSE(result);
 }
@@ -165,7 +164,7 @@ HWTEST_F(ProcessDeathManagerTest, UnregisterProcessDeathShouldSuccess, TestSize.
 {
     EXPECT_CALL(*mockRemoteObject_, AddDeathRecipient(_)).WillOnce(Return(true));
     EXPECT_CALL(*mockRemoteObject_, RemoveDeathRecipient(_)).WillOnce(Return(true));
-    
+
     deathManager_->RegisterProcessDeath(1000, mockRemoteObject_);
     bool result = deathManager_->UnregisterProcessDeath(1000);
     EXPECT_TRUE(result);
@@ -191,7 +190,7 @@ HWTEST_F(ProcessDeathManagerTest, UnregisterNonExistingUidShouldFail, TestSize.L
 HWTEST_F(ProcessDeathManagerTest, HasProcessDeathHandlerShouldReturnCorrectResult, TestSize.Level0)
 {
     EXPECT_FALSE(deathManager_->HasProcessDeathHandler(1000));
-    
+
     EXPECT_CALL(*mockRemoteObject_, AddDeathRecipient(_)).WillOnce(Return(true));
     deathManager_->RegisterProcessDeath(1000, mockRemoteObject_);
     EXPECT_TRUE(deathManager_->HasProcessDeathHandler(1000));
@@ -206,10 +205,10 @@ HWTEST_F(ProcessDeathManagerTest, ClearAllShouldRemoveAllHandlers, TestSize.Leve
 {
     EXPECT_CALL(*mockRemoteObject_, AddDeathRecipient(_)).WillRepeatedly(Return(true));
     EXPECT_CALL(*mockRemoteObject_, RemoveDeathRecipient(_)).WillRepeatedly(Return(true));
-    
+
     deathManager_->RegisterProcessDeath(1000, mockRemoteObject_);
     deathManager_->RegisterProcessDeath(2000, mockRemoteObject_);
-    
+
     deathManager_->ClearAll();
     EXPECT_FALSE(deathManager_->HasProcessDeathHandler(1000));
     EXPECT_FALSE(deathManager_->HasProcessDeathHandler(2000));
@@ -224,7 +223,7 @@ HWTEST_F(ProcessDeathManagerTest, ThreadSafetyTest, TestSize.Level0)
 {
     EXPECT_CALL(*mockRemoteObject_, AddDeathRecipient(_)).WillRepeatedly(Return(true));
     EXPECT_CALL(*mockRemoteObject_, RemoveDeathRecipient(_)).WillRepeatedly(Return(true));
-    
+
     auto thread1 = std::thread([&] {
         for (int i = 0; i < 50; ++i) {
             deathManager_->RegisterProcessDeath(i, mockRemoteObject_);
