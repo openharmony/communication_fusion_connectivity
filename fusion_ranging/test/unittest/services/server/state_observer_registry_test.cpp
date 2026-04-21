@@ -51,11 +51,9 @@ public:
     sptr<MockRangingStateObserver> mockObserver_;
 };
 
-void StateObserverRegistryTest::SetUpTestCase(void)
-{}
+void StateObserverRegistryTest::SetUpTestCase(void) {}
 
-void StateObserverRegistryTest::TearDownTestCase(void)
-{}
+void StateObserverRegistryTest::TearDownTestCase(void) {}
 
 void StateObserverRegistryTest::SetUp()
 {
@@ -139,10 +137,10 @@ HWTEST_F(StateObserverRegistryTest, UnregisterNonExistingUidShouldFail, TestSize
 HWTEST_F(StateObserverRegistryTest, FindShouldReturnCorrectObserver, TestSize.Level0)
 {
     registry_->Register(1000, mockObserver_);
-    
+
     auto observer = registry_->Find(1000);
     EXPECT_NE(observer, nullptr);
-    
+
     observer = registry_->Find(2000);
     EXPECT_EQ(observer, nullptr);
 }
@@ -156,7 +154,7 @@ HWTEST_F(StateObserverRegistryTest, GetAllUidsShouldReturnCorrectUids, TestSize.
 {
     registry_->Register(1000, mockObserver_);
     registry_->Register(2000, mockObserver_);
-    
+
     auto uids = registry_->GetAllUids();
     EXPECT_EQ(uids.size(), 2);
 }
@@ -169,7 +167,7 @@ HWTEST_F(StateObserverRegistryTest, GetAllUidsShouldReturnCorrectUids, TestSize.
 HWTEST_F(StateObserverRegistryTest, HasObserverShouldReturnCorrectResult, TestSize.Level0)
 {
     EXPECT_FALSE(registry_->HasObserver(1000));
-    
+
     registry_->Register(1000, mockObserver_);
     EXPECT_TRUE(registry_->HasObserver(1000));
 }
@@ -182,10 +180,10 @@ HWTEST_F(StateObserverRegistryTest, HasObserverShouldReturnCorrectResult, TestSi
 HWTEST_F(StateObserverRegistryTest, GetObserverCountShouldReturnCorrectCount, TestSize.Level0)
 {
     EXPECT_EQ(registry_->GetObserverCount(), 0);
-    
+
     registry_->Register(1000, mockObserver_);
     EXPECT_EQ(registry_->GetObserverCount(), 1);
-    
+
     registry_->Register(2000, mockObserver_);
     EXPECT_EQ(registry_->GetObserverCount(), 2);
 }
@@ -199,7 +197,7 @@ HWTEST_F(StateObserverRegistryTest, ClearAllShouldRemoveAllObservers, TestSize.L
 {
     registry_->Register(1000, mockObserver_);
     registry_->Register(2000, mockObserver_);
-    
+
     registry_->ClearAll();
     EXPECT_EQ(registry_->GetObserverCount(), 0);
 }
