@@ -224,25 +224,6 @@ int FusionRangingService::ResumeRanging(const std::string &deviceId)
     return 0;
 }
 
-int FusionRangingService::GetRangingData(const std::string &deviceId, int32_t &distance, int32_t &rssi)
-{
-    if (deviceId.empty()) {
-        HILOGE("Invalid device id");
-        return static_cast<int>(RangingErrCode::RANGING_ERR_INVALID_PARAM);
-    }
-
-    std::lock_guard<std::mutex> lock(rangingMutex_);
-    auto it = rangingData_.find(deviceId);
-    if (it == rangingData_.end()) {
-        HILOGE("Device %{public}s not found in ranging data", GET_ENCRYPT_ADDR(deviceId));
-        return static_cast<int>(RangingErrCode::RANGING_ERR_DEVICE_NOT_FOUND);
-    }
-
-    distance = 0;
-    rssi = -50;
-    return 0;
-}
-
 int FusionRangingService::CreateRangingAdapter(const RangingParams &params)
 {
     RangingTypes capabilityType = params.GetCapabilityType();

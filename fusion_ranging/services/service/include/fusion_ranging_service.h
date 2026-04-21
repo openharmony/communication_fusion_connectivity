@@ -45,7 +45,6 @@ public:
     int StopRanging(const std::string &deviceId);
     int PauseRanging(const std::string &deviceId);
     int ResumeRanging(const std::string &deviceId);
-    int GetRangingData(const std::string &deviceId, int32_t &distance, int32_t &rssi);
     void OnAdapterRangingStateChanged(int32_t state);
     void OnRangingResult(const RangingResult &result);
 

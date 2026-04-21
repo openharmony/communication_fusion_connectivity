@@ -135,7 +135,6 @@ ErrCode FusionRangingServer::StartRanging(const RangingParams &params, const spt
 
     int32_t callerUid = IPCSkeleton::GetCallingUid();
     std::string deviceId = params.GetDeviceId();
-
     if (callerUid != 0 && !deviceId.empty()) {
         if (!sessionManager_->AddSession(callerUid, deviceId, observer)) {
             HILOGW("StartRanging: failed to add session");
@@ -148,7 +147,6 @@ ErrCode FusionRangingServer::StartRanging(const RangingParams &params, const spt
             processDeathManager_->RegisterProcessDeath(callerUid, remoteObj);
             HILOGI("StartRanging: registered process death handler for uid=%{public}d", callerUid);
         }
-
         HILOGI("StartRanging: success, uid=%{public}d, deviceId=%{public}s", callerUid, GET_ENCRYPT_ADDR(deviceId));
     }
 
@@ -332,14 +330,11 @@ void FusionRangingServer::CheckAndUnloadIfIdle()
 
     bool hasActiveSessions = sessionManager_->GetSessionCount() > 0;
     bool hasStateObserver = stateObserverRegistry_->GetObserverCount() > 0;
-
     if (!hasActiveSessions && !hasStateObserver) {
         HILOGI("CheckAndUnloadIfIdle: no active sessions or state observers, stopping SA");
-
         if (appStateObserver_) {
             appStateObserver_->UnSubscribeAppState();
         }
-
         sessionManager_->ClearAll();
         stateObserverRegistry_->ClearAll();
         processDeathManager_->ClearAll();

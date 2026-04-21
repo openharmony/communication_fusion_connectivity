@@ -23,6 +23,6 @@ namespace OHOS {
 namespace FusionRanging {
 std::string GetEncryptAddr(const std::string &addr);
 #define GET_ENCRYPT_ADDR(addr) (GetEncryptAddr(addr).c_str())
-}  // namespace FusionRanging
-}  // namespace OHOS
-#endif  // FUSION_RANGING_LOG_UTIL_H
+} // namespace FusionRanging
+} // namespace OHOS
+#endif // FUSION_RANGING_LOG_UTIL_H

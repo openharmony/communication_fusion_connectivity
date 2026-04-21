@@ -315,8 +315,7 @@ int FusionRangingManager::StartRanging(const RangingParams &params,
     }
 
     int ret = proxy->StartRanging(params, pimpl->rangingObserver_);
-    HILOGE("StartRanging ret:%{public}d", ret);
-
+    HILOGI("StartRanging ret:%{public}d", ret);
     if (ret == 0) {
         return 0;
     }
@@ -345,7 +344,6 @@ int FusionRangingManager::StopRanging(const std::string &deviceId)
 
     bool shouldDestroyObserver = false;
     sptr<RangingResultObserverImpl> observerToStop = nullptr;
-
     {
         std::lock_guard<std::mutex> lock(pimpl->rangingMutex_);
         pimpl->rangingResultCallbacks_.erase(deviceId);
