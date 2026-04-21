@@ -37,8 +37,7 @@ class StateObserverRegistry;
 class ProcessDeathManager;
 
 class FusionRangingServer
-    : public SystemAbility
-    , public FusionRangingStub {
+    : public SystemAbility, public FusionRangingStub {
     DECLARE_SYSTEM_ABILITY(FusionRangingServer);
 
 public:

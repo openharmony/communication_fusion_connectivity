@@ -209,13 +209,13 @@ HWTEST_F(StateObserverRegistryTest, ClearAllShouldRemoveAllObservers, TestSize.L
  */
 HWTEST_F(StateObserverRegistryTest, ThreadSafetyTest, TestSize.Level0)
 {
-    auto thread1 = std::thread([&] {
+    auto thread1 = std::thread([this] {
         for (int i = 0; i < 100; ++i) {
             registry_->Register(i, mockObserver_);
         }
     });
 
-    auto thread2 = std::thread([&] {
+    auto thread2 = std::thread([this] {
         for (int i = 0; i < 100; ++i) {
             registry_->Unregister(i);
         }

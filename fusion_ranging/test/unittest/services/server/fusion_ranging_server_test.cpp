@@ -225,14 +225,14 @@ HWTEST_F(FusionRangingServerTest, StopRangingByUidShouldWork, TestSize.Level0)
  */
 HWTEST_F(FusionRangingServerTest, ThreadSafetyTest, TestSize.Level0)
 {
-    auto thread1 = std::thread([&] {
+    auto thread1 = std::thread([this] {
         for (int i = 0; i < 50; ++i) {
             server_->PauseRangingByUid(i);
             server_->ResumeRangingByUid(i);
         }
     });
 
-    auto thread2 = std::thread([&] {
+    auto thread2 = std::thread([this] {
         for (int i = 0; i < 50; ++i) {
             server_->StopRangingByUid(i);
         }

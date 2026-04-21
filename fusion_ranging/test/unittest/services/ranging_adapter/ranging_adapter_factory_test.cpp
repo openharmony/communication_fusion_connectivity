@@ -200,13 +200,13 @@ HWTEST_F(RangingAdapterFactoryTest, ThreadSafetyTest, TestSize.Level0)
 {
     auto &factory = RangingAdapterFactory::Instance();
 
-    auto thread1 = std::thread([&] {
+    auto thread1 = std::thread([&factory] {
         for (int i = 0; i < 100; ++i) {
             factory.IsRangingAdapterSupported(RangingTypes::NEARLINK_HADM);
         }
     });
 
-    auto thread2 = std::thread([&] {
+    auto thread2 = std::thread([&factory] {
         for (int i = 0; i < 100; ++i) {
             factory.CreateRangingAdapter(RangingTypes::NEARLINK_HADM);
         }

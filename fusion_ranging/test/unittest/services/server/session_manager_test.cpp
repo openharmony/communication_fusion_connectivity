@@ -226,13 +226,13 @@ HWTEST_F(SessionManagerTest, ClearAllShouldRemoveAllSessions, TestSize.Level0)
  */
 HWTEST_F(SessionManagerTest, ThreadSafetyTest, TestSize.Level0)
 {
-    auto thread1 = std::thread([&] {
+    auto thread1 = std::thread([this] {
         for (int i = 0; i < 100; ++i) {
             sessionManager_->AddSession(i, "device_" + std::to_string(i), mockObserver_);
         }
     });
 
-    auto thread2 = std::thread([&] {
+    auto thread2 = std::thread([this] {
         for (int i = 0; i < 100; ++i) {
             sessionManager_->RemoveSession("device_" + std::to_string(i));
         }

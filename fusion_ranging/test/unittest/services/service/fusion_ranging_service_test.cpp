@@ -142,19 +142,6 @@ HWTEST_F(FusionRangingServiceTest, ResumeRangingWithInvalidDeviceIdShouldFail, T
 }
 
 /**
- * @tc.name: GetRangingDataWithInvalidDeviceIdShouldFail
- * @tc.desc: 测试用例7：验证空设备ID时GetRangingData失败
- * @tc.type: FUNC
- */
-HWTEST_F(FusionRangingServiceTest, GetRangingDataWithInvalidDeviceIdShouldFail, TestSize.Level0)
-{
-    int32_t distance = 0;
-    int32_t rssi = 0;
-    int ret = service_->GetRangingData("", distance, rssi);
-    EXPECT_EQ(ret, static_cast<int>(RangingErrCode::RANGING_ERR_INVALID_PARAM));
-}
-
-/**
  * @tc.name: OnRangingResultWithValidDataShouldCallCallback
  * @tc.desc: 测试用例8：验证OnRangingResult能正确调用回调
  * @tc.type: FUNC
@@ -187,13 +174,13 @@ HWTEST_F(FusionRangingServiceTest, OnAdapterRangingStateChangedShouldLogState, T
  */
 HWTEST_F(FusionRangingServiceTest, ThreadSafetyTest, TestSize.Level0)
 {
-    auto thread1 = std::thread([&] {
+    auto thread1 = std::thread([this] {
         for (int i = 0; i < 100; ++i) {
             service_->OnAdapterRangingStateChanged(i % 3);
         }
     });
 
-    auto thread2 = std::thread([&] {
+    auto thread2 = std::thread([this] {
         for (int i = 0; i < 100; ++i) {
             RangingResult result;
             result.SetDeviceId("test_device_" + std::to_string(i));

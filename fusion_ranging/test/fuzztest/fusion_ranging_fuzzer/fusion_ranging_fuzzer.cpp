@@ -100,24 +100,6 @@ void DoResumeRangingFuzzTest(const uint8_t *fuzzData, size_t size)
     service->ResumeRanging(deviceId);
 }
 
-void DoGetRangingDataFuzzTest(const uint8_t *fuzzData, size_t size)
-{
-    if (fuzzData == nullptr || size == 0 || size > MAX_DATA_LEN) {
-        return;
-    }
-
-    auto service = FusionRangingService::GetInstance();
-    if (service == nullptr) {
-        return;
-    }
-
-    std::string deviceId(reinterpret_cast<const char *>(fuzzData), std::min(size, static_cast<size_t>(64)));
-
-    int32_t distance = 0;
-    int32_t rssi = 0;
-    service->GetRangingData(deviceId, distance, rssi);
-}
-
 void DoOnRangingResultFuzzTest(const uint8_t *fuzzData, size_t size)
 {
     if (fuzzData == nullptr || size == 0 || size > MAX_DATA_LEN) {
@@ -179,7 +161,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::DoStopRangingFuzzTest(data, size);
     OHOS::DoPauseRangingFuzzTest(data, size);
     OHOS::DoResumeRangingFuzzTest(data, size);
-    OHOS::DoGetRangingDataFuzzTest(data, size);
     OHOS::DoOnRangingResultFuzzTest(data, size);
     OHOS::DoAdapterFactoryFuzzTest(data, size);
 

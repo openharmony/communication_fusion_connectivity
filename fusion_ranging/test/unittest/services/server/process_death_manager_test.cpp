@@ -224,13 +224,13 @@ HWTEST_F(ProcessDeathManagerTest, ThreadSafetyTest, TestSize.Level0)
     EXPECT_CALL(*mockRemoteObject_, AddDeathRecipient(_)).WillRepeatedly(Return(true));
     EXPECT_CALL(*mockRemoteObject_, RemoveDeathRecipient(_)).WillRepeatedly(Return(true));
 
-    auto thread1 = std::thread([&] {
+    auto thread1 = std::thread([this] {
         for (int i = 0; i < 50; ++i) {
             deathManager_->RegisterProcessDeath(i, mockRemoteObject_);
         }
     });
 
-    auto thread2 = std::thread([&] {
+    auto thread2 = std::thread([this] {
         for (int i = 0; i < 50; ++i) {
             deathManager_->UnregisterProcessDeath(i);
         }

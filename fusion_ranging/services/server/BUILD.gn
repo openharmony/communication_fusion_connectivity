@@ -78,6 +78,7 @@ ohos_shared_library("fusion_ranging_server") {
   deps = [
     "$FUSION_RANGING/idl:libfusion_ranging_proxy",
     "$FUSION_RANGING/idl:libfusion_ranging_stub",
+    "$FUSION_RANGING/services/etc/init:etc",
     "$FUSION_RANGING/services/service:fusion_ranging_service",
     "$FUSION_RANGING/services/ranging_adapter:fusion_ranging_adapter",
   ]
