@@ -29,7 +29,7 @@
 #include "fusion_ranging_errorcode.h"
 #include "fusion_ranging_service.h"
 #include "ipc_skeleton.h"
-#include "log_util.h"
+#include "log_utils.h"
 #include "process_death_manager.h"
 #include "session_manager.h"
 #include "state_observer_registry.h"
@@ -45,27 +45,66 @@ sptr<FusionRangingServer> FusionRangingServer::GetInstance()
 {
     static std::mutex instanceMutex;
     std::lock_guard<std::mutex> lock(instanceMutex);
-    static FusionRangingServer *instance = nullptr;
+    static sptr<FusionRangingServer> instance = nullptr;
     if (instance == nullptr) {
         instance = new (std::nothrow) FusionRangingServer();
+        if (instance == nullptr) {
+            HILOGI("FusionRangingServer instance create fail.");
+        }
     }
     return instance;
 }
 
 FusionRangingServer::FusionRangingServer() : SystemAbility(FUSION_RANGING_SYS_ABILITY_ID, true), isStopping_(false)
 {
-    sessionManager_ = std::make_unique<SessionManager>();
-    stateObserverRegistry_ = std::make_unique<StateObserverRegistry>();
-    processDeathManager_ = std::make_unique<ProcessDeathManager>();
-    appStateObserver_ = std::make_unique<RangingAppStateObserver>();
-
-    processDeathManager_->SetDeathCallback([this](int32_t uid) { HandleProcessDeath(uid); });
-    appStateObserver_->SetServer(this);
+    sessionManager_ = std::make_shared<SessionManager>();
+    stateObserverRegistry_ = std::make_shared<StateObserverRegistry>();
+    processDeathManager_ = std::make_shared<ProcessDeathManager>();
+    appStateObserver_ = std::make_shared<RangingAppStateObserver>();
+    if (processDeathManager_) {
+        processDeathManager_->SetDeathCallback([this](int32_t uid) { HandleProcessDeath(uid); });
+    }
+    InitializePermissionsMap();
 }
 
 FusionRangingServer::~FusionRangingServer()
 {
     HILOGI("FusionRangingServer destroyed.");
+}
+
+void FusionRangingServer::InitializePermissionsMap()
+{
+    constexpr const char *PERMISSION_ACCESS_NEARLINK = "ohos.permission.ACCESS_NEARLINK";
+    permissionsMap_ = {
+        {static_cast<int>(IFusionRangingIpcCode::COMMAND_GET_RANGING_CAPABILITY),
+         FusionConnectivity::PermissionItem(FusionConnectivity::PUBLIC_API, std::set<std::string>{})},
+        {static_cast<int>(IFusionRangingIpcCode::COMMAND_START_RANGING),
+         FusionConnectivity::PermissionItem(FusionConnectivity::PUBLIC_API, PERMISSION_ACCESS_NEARLINK)},
+        {static_cast<int>(IFusionRangingIpcCode::COMMAND_STOP_RANGING),
+         FusionConnectivity::PermissionItem(FusionConnectivity::PUBLIC_API, PERMISSION_ACCESS_NEARLINK)},
+        {static_cast<int>(IFusionRangingIpcCode::COMMAND_REGISTER_STATE_OBSERVER),
+         FusionConnectivity::PermissionItem(FusionConnectivity::PUBLIC_API, PERMISSION_ACCESS_NEARLINK)},
+        {static_cast<int>(IFusionRangingIpcCode::COMMAND_UNREGISTER_STATE_OBSERVER),
+         FusionConnectivity::PermissionItem(FusionConnectivity::PUBLIC_API, PERMISSION_ACCESS_NEARLINK)},
+    };
+}
+
+int32_t FusionRangingServer::CallbackEnter(uint32_t code)
+{
+    HILOGD("FusionRangingServer CallbackEnter ipc code: %{public}u", code);
+    auto it = permissionsMap_.find(static_cast<int>(code));
+    if (it == permissionsMap_.end()) {
+        HILOGE("Unknown ipc code: %{public}u", code);
+        return static_cast<int32_t>(RangingErrCode::RANGING_ERR_API_NOT_SUPPORT);
+    }
+
+    auto &item = it->second;
+    FusionConnectivity::FcmErrCode result = FusionConnectivity::PermissionManager::VerifyPermissions(item);
+    if (result != FusionConnectivity::FcmErrCode::FCM_NO_ERROR) {
+        HILOGE("Permission check failed for code: %{public}u, result: %{public}d", code, result);
+        return static_cast<int32_t>(RangingErrCode::RANGING_ERR_PERMISSION_FAILED);
+    }
+    return 0;
 }
 
 void FusionRangingServer::OnStart()
@@ -76,6 +115,7 @@ void FusionRangingServer::OnStart()
     HILOGI("Publish result is %{public}d.", res);
 
     if (appStateObserver_) {
+        appStateObserver_->SetServer(this);
         appStateObserver_->SubscribeAppState();
     }
 }
@@ -92,53 +132,53 @@ void FusionRangingServer::OnStop()
 
     if (appStateObserver_) {
         appStateObserver_->UnSubscribeAppState();
+        appStateObserver_.reset();
     }
 
-    sessionManager_->ClearAll();
-    stateObserverRegistry_->ClearAll();
-    processDeathManager_->ClearAll();
+    if (sessionManager_) {
+        sessionManager_->ClearAll();
+    }
+    if (stateObserverRegistry_) {
+        stateObserverRegistry_->ClearAll();
+    }
+    if (processDeathManager_) {
+        processDeathManager_->ClearAll();
+    }
 }
 
 ErrCode FusionRangingServer::GetRangingCapability(RangingCapabilitySupported &capability)
 {
-    HILOGI("GetRangingCapability server.");
-    capability.SetNearlinkHadm(true);
+    auto isSupport = FusionRangingService::GetInstance()->IsRangingSupported(RangingTypes::NEARLINK_HADM);
+    HILOGI("GetRangingCapability isSupport:%{public}d", isSupport);
+    capability.SetNearlinkHadm(isSupport);
     return static_cast<int32_t>(RangingErrCode::RANGING_NO_ERROR);
 }
 
 ErrCode FusionRangingServer::StartRanging(const RangingParams &params, const sptr<IRangingResultObserver> &observer)
 {
     HILOGI("StartRanging server.");
-
-    auto ranging = FusionRangingService::GetInstance();
-    if (!ranging) {
-        HILOGE("StartRanging: ranging service is null");
-        return static_cast<int32_t>(RangingErrCode::RANGING_ERR_INTERNAL_ERROR);
-    }
-
     if (!observer) {
         HILOGE("StartRanging: observer is null");
         return static_cast<int32_t>(RangingErrCode::RANGING_ERR_INVALID_PARAM);
     }
-
+    std::string deviceId = params.GetDeviceId();
     auto callback = [observer](const RangingResult &result) {
         if (observer != nullptr) {
             observer->OnRangingResult(result);
         }
     };
-
-    int32_t ret = ranging->StartRanging(params, callback);
+    int32_t ret = FusionRangingService::GetInstance()->StartRanging(params, callback);
     HILOGI("StartRanging: ret=%{public}d", ret);
     if (ret != 0) {
         return ret;
     }
 
     int32_t callerUid = IPCSkeleton::GetCallingUid();
-    std::string deviceId = params.GetDeviceId();
     if (callerUid != 0 && !deviceId.empty()) {
+        FCM_CHECK_RETURN_RET(sessionManager_, RANGING_ERR_INTERNAL_ERROR, "sessionManager_ nullptr");
         if (!sessionManager_->AddSession(callerUid, deviceId, observer)) {
             HILOGW("StartRanging: failed to add session");
-            ranging->StopRanging(deviceId);
+            FusionRangingService::GetInstance()->StopRanging(deviceId);
             return static_cast<int32_t>(RangingErrCode::RANGING_ERR_INTERNAL_ERROR);
         }
 
@@ -149,25 +189,22 @@ ErrCode FusionRangingServer::StartRanging(const RangingParams &params, const spt
         }
         HILOGI("StartRanging: success, uid=%{public}d, deviceId=%{public}s", callerUid, GET_ENCRYPT_ADDR(deviceId));
     }
-
+    RangingStateChangeInfo info;
+    info.SetState(RangingState::STATE_STARTED);
+    info.SetCause(RangingStoppedCause::NO_ERROR);
+    NotifyStateObservers(callerUid, info);
     return static_cast<int32_t>(RangingErrCode::RANGING_NO_ERROR);
 }
 
 ErrCode FusionRangingServer::StopRanging(const std::string &deviceId, const sptr<IRangingResultObserver> &observer)
 {
     HILOGI("StopRanging server, deviceId=%{public}s", GET_ENCRYPT_ADDR(deviceId));
-
-    auto ranging = FusionRangingService::GetInstance();
-    if (!ranging) {
-        HILOGE("StopRanging: ranging service is null");
-        return static_cast<int32_t>(RangingErrCode::RANGING_ERR_INTERNAL_ERROR);
+    int32_t ret = FusionRangingService::GetInstance()->StopRanging(deviceId);
+    if (ret != RANGING_NO_ERROR) {
+        HILOGE("StopRanging: ret=%{public}d", ret);
     }
-
-    int32_t ret = ranging->StopRanging(deviceId);
-    HILOGI("StopRanging: ret=%{public}d", ret);
-
+    FCM_CHECK_RETURN_RET(sessionManager_, RANGING_ERR_INTERNAL_ERROR, "sessionManager_ nullptr");
     sessionManager_->RemoveSession(deviceId);
-
     CheckAndUnloadIfIdle();
     return ret;
 }
@@ -223,112 +260,75 @@ void FusionRangingServer::NotifyStateObservers(int32_t uid, const RangingStateCh
 
 void FusionRangingServer::StopAllDeviceIdsByUid(int32_t uid)
 {
-    auto ranging = FusionRangingService::GetInstance();
-    if (!ranging) {
-        HILOGE("StopAllDeviceIdsByUid: ranging service is null");
-        return;
-    }
-
-    auto sessionKeys = sessionManager_->GetSessionKeysByUid(uid);
-    for (const auto &key : sessionKeys) {
-        ranging->StopRanging(key);
-        HILOGI("StopAllDeviceIdsByUid: stop deviceId=%{public}s for uid=%{public}d", GET_ENCRYPT_ADDR(key), uid);
+    FCM_CHECK_RETURN(sessionManager_, "sessionManager_ nullptr");
+    auto sessions = sessionManager_->GetSessionKeysByUid(uid);
+    for (const auto &session : sessions) {
+        FusionRangingService::GetInstance()->StopRanging(session);
     }
 }
 
 void FusionRangingServer::HandleProcessDeath(int32_t uid)
 {
     HILOGI("HandleProcessDeath: uid=%{public}d, cleaning resources", uid);
-
     StopAllDeviceIdsByUid(uid);
-    sessionManager_->RemoveSessionByUid(uid);
-    stateObserverRegistry_->Unregister(uid);
-    processDeathManager_->UnregisterProcessDeath(uid);
-
+    if (sessionManager_) {
+        sessionManager_->RemoveSessionByUid(uid);
+    }
+    if (stateObserverRegistry_) {
+        stateObserverRegistry_->Unregister(uid);
+    }
+    if (processDeathManager_) {
+        processDeathManager_->UnregisterProcessDeath(uid);
+    }
     CheckAndUnloadIfIdle();
 }
 
 void FusionRangingServer::PauseRangingByUid(int32_t uid)
 {
-    HILOGI("PauseRangingByUid: pause for uid=%{public}d", uid);
-    auto ranging = FusionRangingService::GetInstance();
-    if (!ranging) {
-        HILOGE("PauseRangingByUid: ranging service is null");
-        return;
+    FCM_CHECK_RETURN(sessionManager_, "sessionManager_ nullptr");
+    auto sessions = sessionManager_->GetSessionKeysByUid(uid);
+    HILOGI("PauseRangingByUid: keys size=%{public}zu", sessions.size());
+    for (const auto &key : sessions) {
+        FusionRangingService::GetInstance()->PauseRanging(key);
     }
-
-    auto sessionKeys = sessionManager_->GetSessionKeysByUid(uid);
-    HILOGI("PauseRangingByUid: keys size=%{public}zu", sessionKeys.size());
-    for (const auto &key : sessionKeys) {
-        ranging->PauseRanging(key);
-
-        RangingStateChangeInfo info;
-        info.SetState(RangingState::STATE_STOPPED);
-        info.SetCause(RangingStoppedCause::NO_ERROR);
-        NotifyStateObservers(uid, info);
-        HILOGI("PauseRangingByUid: paused deviceId=%{public}s for uid=%{public}d", GET_ENCRYPT_ADDR(key), uid);
-    }
+    RangingStateChangeInfo info;
+    info.SetState(RangingState::STATE_STOPPED);
+    info.SetCause(RangingStoppedCause::BACKGROUND_NOT_ALLOWED);
+    NotifyStateObservers(uid, info);
 }
 
 void FusionRangingServer::ResumeRangingByUid(int32_t uid)
 {
-    auto ranging = FusionRangingService::GetInstance();
-    if (!ranging) {
-        HILOGE("ResumeRangingByUid: ranging service is null");
-        return;
+    FCM_CHECK_RETURN(sessionManager_, "sessionManager_ nullptr");
+    auto sessions = sessionManager_->GetSessionKeysByUid(uid);
+    for (const auto &key : sessions) {
+        FusionRangingService::GetInstance()->ResumeRanging(key);
     }
-
-    auto sessionKeys = sessionManager_->GetSessionKeysByUid(uid);
-    for (const auto &key : sessionKeys) {
-        ranging->ResumeRanging(key);
-
-        RangingStateChangeInfo info;
-        info.SetState(RangingState::STATE_STARTED);
-        info.SetCause(RangingStoppedCause::NO_ERROR);
-        NotifyStateObservers(uid, info);
-        HILOGI("ResumeRangingByUid: resume deviceId=%{public}s for uid=%{public}d", GET_ENCRYPT_ADDR(key), uid);
-    }
+    RangingStateChangeInfo info;
+    info.SetState(RangingState::STATE_STARTED);
+    info.SetCause(RangingStoppedCause::NO_ERROR);
+    NotifyStateObservers(uid, info);
 }
 
-void FusionRangingServer::StopRangingByUid(int32_t uid)
+void FusionRangingServer::StopRangingByAppTerminate(int32_t uid)
 {
     StopAllDeviceIdsByUid(uid);
-    sessionManager_->RemoveSessionByUid(uid);
-
-    CheckAndUnloadIfIdle();
-
-    HILOGI("StopRangingByUid: completed for uid=%{public}d", uid);
-}
-
-void FusionRangingServer::CleanupAll()
-{
-    HILOGI("CleanupAll: start cleanup");
-
-    auto sessionKeys = sessionManager_->GetAllSessionKeys();
-    for (const auto &key : sessionKeys) {
-        auto ranging = FusionRangingService::GetInstance();
-        if (ranging) {
-            ranging->StopRanging(key);
-            HILOGI("CleanupAll: stop deviceId=%{public}s", GET_ENCRYPT_ADDR(key));
-        }
+    if (sessionManager_) {
+        sessionManager_->RemoveSessionByUid(uid);
     }
-
-    sessionManager_->ClearAll();
-    stateObserverRegistry_->ClearAll();
-    processDeathManager_->ClearAll();
-
-    HILOGI("CleanupAll: cleanup completed");
+    CheckAndUnloadIfIdle();
+    HILOGI("StopRangingByAppTerminate: completed for uid=%{public}d", uid);
 }
 
 void FusionRangingServer::CheckAndUnloadIfIdle()
 {
-    bool expected = false;
-    if (!isStopping_.compare_exchange_strong(expected, true)) {
+    if (isStopping_.load()) {
         HILOGW("CheckAndUnloadIfIdle: already stopping, skip");
         return;
     }
-
+    FCM_CHECK_RETURN(sessionManager_, "sessionManager_ nullptr");
     bool hasActiveSessions = sessionManager_->GetSessionCount() > 0;
+    FCM_CHECK_RETURN(stateObserverRegistry_, "sessionManager_ nullptr");
     bool hasStateObserver = stateObserverRegistry_->GetObserverCount() > 0;
     if (!hasActiveSessions && !hasStateObserver) {
         HILOGI("CheckAndUnloadIfIdle: no active sessions or state observers, stopping SA");
@@ -337,7 +337,10 @@ void FusionRangingServer::CheckAndUnloadIfIdle()
         }
         sessionManager_->ClearAll();
         stateObserverRegistry_->ClearAll();
-        processDeathManager_->ClearAll();
+        if (processDeathManager_) {
+            processDeathManager_->ClearAll();
+        }
+        CheckAndUnloadSA();
     } else {
         bool current = true;
         isStopping_.compare_exchange_strong(current, false);
@@ -346,8 +349,19 @@ void FusionRangingServer::CheckAndUnloadIfIdle()
 
 void FusionRangingServer::CheckAndUnloadSA()
 {
-    CheckAndUnloadIfIdle();
+    HILOGI("CheckAndUnloadSA: start");
+    sptr<ISystemAbilityManager> samgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (samgr == nullptr) {
+        HILOGE("CheckAndUnloadSA: get system ability manager failed!");
+        return;
+    }
+    int32_t ret = samgr->UnloadSystemAbility(FUSION_RANGING_SYS_ABILITY_ID);
+    if (ret != ERR_NONE) {
+        HILOGE("CheckAndUnloadSA: Failed to unload system ability, SA Id=%{public}d, ret=%{public}d",
+               FUSION_RANGING_SYS_ABILITY_ID, ret);
+    } else {
+        HILOGI("CheckAndUnloadSA: successfully unloaded SA Id=%{public}d", FUSION_RANGING_SYS_ABILITY_ID);
+    }
 }
-
 }  // namespace FusionRanging
 }  // namespace OHOS
