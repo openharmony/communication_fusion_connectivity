@@ -19,7 +19,7 @@
 namespace OHOS {
 namespace FusionRanging {
 
-enum class RangingErrCode {
+enum RangingErrCode {
     RANGING_NO_ERROR = 0,
     RANGING_ERR_PERMISSION_FAILED = 201,
     RANGING_ERR_INVALID_PARAM = 401,
@@ -27,9 +27,10 @@ enum class RangingErrCode {
     RANGING_ERR_DEVICE_NOT_FOUND = 34900001,
     RANGING_ERR_ALREADY_RANGING = 34900003,
     RANGING_ERR_ADAPTER_NOT_FOUND = 34900004,
+    RANGING_ERR_SERVICE_NOT_PROVIDED = 34900005,
+    RANGING_ERR_PARAM_IS_OCCUPIED = 34900006,
     RANGING_ERR_INTERNAL_ERROR = 34900099,
 };
-
 }  // namespace FusionRanging
 }  // namespace OHOS
 #endif  // FUSION_RANGING_ERRORCODE_H
