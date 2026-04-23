@@ -21,6 +21,7 @@
 #include <gtest/gtest.h>
 
 #include <thread>
+#include "fusion_connectivity_errorcode.h"
 #include "fusion_ranging_server.h"
 #include "ranging_params.h"
 #include "ranging_result.h"
@@ -76,7 +77,6 @@ void FusionRangingServerTest::SetUp()
 
 void FusionRangingServerTest::TearDown()
 {
-    server_->CleanupAll();
     mockResultObserver_ = nullptr;
     mockStateObserver_ = nullptr;
 }
@@ -166,19 +166,6 @@ HWTEST_F(FusionRangingServerTest, UnregisterStateObserverShouldSuccess, TestSize
 }
 
 /**
- * @tc.name: CleanupAllShouldClearResources
- * @tc.desc: 测试用例8：验证清理所有资源
- * @tc.type: FUNC
- */
-HWTEST_F(FusionRangingServerTest, CleanupAllShouldClearResources, TestSize.Level0)
-{
-    EXPECT_CALL(*mockStateObserver_, AsObject()).WillRepeatedly(Return(nullptr));
-
-    server_->RegisterStateObserver(mockStateObserver_);
-    server_->CleanupAll();
-}
-
-/**
  * @tc.name: CheckAndUnloadSAShouldWork
  * @tc.desc: 测试用例9：验证检查卸载SA
  * @tc.type: FUNC
@@ -215,7 +202,7 @@ HWTEST_F(FusionRangingServerTest, ResumeRangingByUidShouldWork, TestSize.Level0)
  */
 HWTEST_F(FusionRangingServerTest, StopRangingByUidShouldWork, TestSize.Level0)
 {
-    server_->StopRangingByUid(1000);
+    server_->StopRangingByAppTerminate(1000);
 }
 
 /**
@@ -234,7 +221,7 @@ HWTEST_F(FusionRangingServerTest, ThreadSafetyTest, TestSize.Level0)
 
     auto thread2 = std::thread([this] {
         for (int i = 0; i < 50; ++i) {
-            server_->StopRangingByUid(i);
+            server_->StopRangingByAppTerminate(i);
         }
     });
 
