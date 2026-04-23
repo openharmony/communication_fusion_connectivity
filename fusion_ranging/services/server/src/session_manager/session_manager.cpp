@@ -19,12 +19,12 @@
 
 #include "session_manager.h"
 #include <algorithm>
-#include "log_util.h"
+#include "log_utils.h"
 
 namespace OHOS {
 namespace FusionRanging {
 
-SessionManager::SessionKey SessionManager::MakeKey(const std::string &deviceId)
+SessionKey SessionManager::MakeKey(const std::string &deviceId)
 {
     return deviceId;
 }
@@ -49,7 +49,6 @@ bool SessionManager::AddSession(int32_t uid, const std::string &deviceId, const 
     session.uid = uid;
     session.deviceId = deviceId;
     session.resultObserver = observer;
-
     sessions_[key] = session;
     HILOGI("AddSession: success, key=%{public}s, uid=%{public}d", key.c_str(), uid);
     return true;
@@ -80,20 +79,7 @@ void SessionManager::RemoveSessionByUid(int32_t uid)
     }
 }
 
-std::vector<SessionManager::SessionKey> SessionManager::GetSessionKeysByDeviceId(const std::string &deviceId)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    std::vector<SessionKey> keys;
-    for (const auto &pair : sessions_) {
-        if (pair.second.deviceId == deviceId) {
-            keys.push_back(pair.first);
-        }
-    }
-    HILOGI("GetSessionKeysByDeviceId: keysSize=%{public}zu", keys.size());
-    return keys;
-}
-
-std::vector<SessionManager::SessionKey> SessionManager::GetSessionKeysByUid(int32_t uid)
+std::vector<SessionKey> SessionManager::GetSessionKeysByUid(int32_t uid)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     std::vector<SessionKey> keys;
@@ -107,7 +93,7 @@ std::vector<SessionManager::SessionKey> SessionManager::GetSessionKeysByUid(int3
     return keys;
 }
 
-std::vector<SessionManager::SessionKey> SessionManager::GetAllSessionKeys() const
+std::vector<SessionKey> SessionManager::GetAllSessionKeys() const
 {
     std::lock_guard<std::mutex> lock(mutex_);
     std::vector<SessionKey> keys;
@@ -147,6 +133,5 @@ void SessionManager::ClearAll()
     HILOGI("ClearAll: clear all sessions, count=%{public}zu", sessions_.size());
     sessions_.clear();
 }
-
 }  // namespace FusionRanging
 }  // namespace OHOS
