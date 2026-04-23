@@ -14,7 +14,7 @@
  */
 
 #include "fusion_ranging_observer.h"
-#include "log_util.h"
+#include "log_utils.h"
 
 #ifndef LOG_TAG
 #define LOG_TAG "FusionRangingObserver"
@@ -27,6 +27,7 @@ RangingStateObserverImpl::RangingStateObserverImpl() {}
 
 void RangingStateObserverImpl::SetStateCallback(std::function<void(const RangingStateChangeInfo &)> callback)
 {
+    std::lock_guard<std::mutex> lock(stateMutex_);
     stateCallback_ = callback;
 }
 
@@ -34,6 +35,7 @@ int32_t RangingStateObserverImpl::OnRangingStateChanged(const RangingStateChange
 {
     HILOGI("OnRangingStateChanged state: %{public}d, cause: %{public}d", static_cast<int32_t>(info.GetState()),
            static_cast<int32_t>(info.GetCause()));
+    std::lock_guard<std::mutex> lock(stateMutex_);
     if (stateCallback_) {
         stateCallback_(info);
     }
@@ -44,36 +46,17 @@ RangingResultObserverImpl::RangingResultObserverImpl() {}
 
 void RangingResultObserverImpl::SetResultCallback(std::function<void(const RangingResult &)> callback)
 {
+    std::lock_guard<std::mutex> lock(resultMutex_);
     resultCallback_ = callback;
 }
 
 int32_t RangingResultObserverImpl::OnRangingResult(const RangingResult &result)
 {
-    HILOGI("OnRangingResult deviceId: %{public}s", GET_ENCRYPT_ADDR(result.GetDeviceId()));
+    std::lock_guard<std::mutex> lock(resultMutex_);
     if (resultCallback_) {
         resultCallback_(result);
     }
     return 0;
-}
-
-FusionRangingSaStatusChange::FusionRangingSaStatusChange() {}
-
-void FusionRangingSaStatusChange::SetRemoveCallback(std::function<void()> callback)
-{
-    removeCallback_ = callback;
-}
-
-void FusionRangingSaStatusChange::OnAddSystemAbility(int32_t systemAbilityId, const std::string &deviceId)
-{
-    HILOGI("SA added, systemAbilityId:%{public}d", systemAbilityId);
-}
-
-void FusionRangingSaStatusChange::OnRemoveSystemAbility(int32_t systemAbilityId, const std::string &deviceId)
-{
-    HILOGI("SA removed, systemAbilityId:%{public}d", systemAbilityId);
-    if (removeCallback_) {
-        removeCallback_();
-    }
 }
 
 int32_t RangingStateObserverStub::OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply,
@@ -129,6 +112,5 @@ int32_t RangingResultObserverStub::OnRemoteRequest(uint32_t code, MessageParcel 
             return IRemoteStub::OnRemoteRequest(code, data, reply, option);
     }
 }
-
 }  // namespace FusionRanging
 }  // namespace OHOS
