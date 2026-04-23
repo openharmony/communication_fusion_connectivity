@@ -66,7 +66,7 @@ bool RangingAppStateObserver::SubscribeAppState()
         return false;
     }
 
-    appStateAwareObserver_ = new (std::nothrow) AppStateAwareObserver(this);
+    appStateAwareObserver_ = sptr<AppStateAwareObserver>::MakeSptr(shared_from_this());
     if (appStateAwareObserver_ == nullptr) {
         HILOGE("SubscribeAppState: appStateAwareObserver_ is nullptr");
         return false;
@@ -104,7 +104,7 @@ void RangingAppStateObserver::HandleAppForeground(int32_t uid, const std::string
 {
     HILOGI("HandleAppForeground: uid=%{public}d, bundleName=%{public}s", uid, bundleName.c_str());
     auto server = GetServer();
-    if (server) {
+    if (server != nullptr) {
         server->ResumeRangingByUid(uid);
     }
 }
@@ -113,7 +113,7 @@ void RangingAppStateObserver::HandleAppBackground(int32_t uid, const std::string
 {
     HILOGI("HandleAppBackground: uid=%{public}d, bundleName=%{public}s", uid, bundleName.c_str());
     auto server = GetServer();
-    if (server) {
+    if (server != nullptr) {
         server->PauseRangingByUid(uid);
     }
 }
@@ -122,9 +122,8 @@ void RangingAppStateObserver::HandleAppTerminate(int32_t uid, const std::string 
 {
     HILOGI("HandleAppTerminate: uid=%{public}d, bundleName=%{public}s", uid, bundleName.c_str());
     auto server = GetServer();
-    if (server) {
-        server->StopRangingByUid(uid);
-        server->CheckAndUnloadSA();
+    if (server != nullptr) {
+        server->StopRangingByAppTerminate(uid);
     }
 }
 
@@ -145,20 +144,17 @@ void RangingAppStateObserver::AppStateAwareObserver::OnForegroundApplicationChan
 
     int32_t uid = appStateData.uid;
     std::string bundleName = appStateData.bundleName;
-
-    {
-        std::lock_guard<std::mutex> lock(observer_->mutex_);
-        observer_->uidToBundleName_[uid] = bundleName;
-    }
-
-    if (appStateData.state == static_cast<int32_t>(AppExecFwk::ApplicationState::APP_STATE_FOREGROUND)) {
-        observer_->HandleAppForeground(uid, bundleName);
-    } else if (appStateData.state == static_cast<int32_t>(AppExecFwk::ApplicationState::APP_STATE_BACKGROUND)) {
-        observer_->HandleAppBackground(uid, bundleName);
-    } else if (appStateData.state == static_cast<int32_t>(AppExecFwk::ApplicationState::APP_STATE_TERMINATED)) {
-        observer_->HandleAppTerminate(uid, bundleName);
+    auto observer = observer_.lock();
+    if (observer != nullptr) {
+        observer->uidToBundleName_[uid] = bundleName;
+        if (appStateData.state == static_cast<int32_t>(AppExecFwk::ApplicationState::APP_STATE_FOREGROUND)) {
+            observer->HandleAppForeground(uid, bundleName);
+        } else if (appStateData.state == static_cast<int32_t>(AppExecFwk::ApplicationState::APP_STATE_BACKGROUND)) {
+            observer->HandleAppBackground(uid, bundleName);
+        } else if (appStateData.state == static_cast<int32_t>(AppExecFwk::ApplicationState::APP_STATE_TERMINATED)) {
+            observer->HandleAppTerminate(uid, bundleName);
+        }
     }
 }
-
 }  // namespace FusionRanging
 }  // namespace OHOS
