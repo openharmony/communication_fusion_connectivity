@@ -14,8 +14,7 @@
  */
 
 #include "state_observer_registry.h"
-
-#include "log_util.h"
+#include "log_utils.h"
 
 namespace OHOS {
 namespace FusionRanging {
@@ -90,6 +89,5 @@ void StateObserverRegistry::ClearAll()
     HILOGI("ClearAll: clear all state observers, count=%{public}zu", observers_.size());
     observers_.clear();
 }
-
 }  // namespace FusionRanging
 }  // namespace OHOS
