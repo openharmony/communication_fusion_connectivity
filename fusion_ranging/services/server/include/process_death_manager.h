@@ -44,6 +44,7 @@ private:
     class ProcessDeathRecipient : public IRemoteObject::DeathRecipient {
     public:
         explicit ProcessDeathRecipient(int32_t uid, DeathCallback callback) : uid_(uid), callback_(callback) {}
+        ~ProcessDeathRecipient() override = default;
 
         void OnRemoteDied(const wptr<IRemoteObject> &) override
         {
@@ -51,8 +52,6 @@ private:
                 callback_(uid_);
             }
         }
-
-        ~ProcessDeathRecipient() override = default;
 
     private:
         int32_t uid_;
@@ -75,8 +74,6 @@ private:
     std::map<int32_t, ProcessDeathHandler> deathHandlers_;
     DeathCallback deathCallback_;
 };
-
 }  // namespace FusionRanging
 }  // namespace OHOS
-
 #endif  // FUSION_RANGING_PROCESS_DEATH_MANAGER_H
