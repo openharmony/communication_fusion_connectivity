@@ -28,35 +28,33 @@
 namespace OHOS {
 namespace FusionRanging {
 
+using SessionKey = std::string;
+struct RangingSession {
+public:
+    SessionKey key;
+    int32_t uid;
+    std::string deviceId;
+    sptr<IRangingResultObserver> resultObserver;
+
+    RangingSession() = default;
+    RangingSession(SessionKey k, int32_t u, const std::string &d, const sptr<IRangingResultObserver> &o)
+        : key(k),
+          uid(u),
+          deviceId(d),
+          resultObserver(o)
+    {
+    }
+    ~RangingSession() = default;
+};
+
 class SessionManager {
 public:
-    using SessionKey = std::string;
-
-    struct RangingSession {
-    public:
-        SessionKey key;
-        int32_t uid;
-        std::string deviceId;
-        sptr<IRangingResultObserver> resultObserver;
-
-        RangingSession() = default;
-        RangingSession(SessionKey k, int32_t u, const std::string &d, const sptr<IRangingResultObserver> &o)
-            : key(k),
-              uid(u),
-              deviceId(d),
-              resultObserver(o)
-        {
-        }
-        ~RangingSession() = default;
-    };
-
     SessionManager() = default;
     ~SessionManager() = default;
 
     bool AddSession(int32_t uid, const std::string &deviceId, const sptr<IRangingResultObserver> &observer);
     void RemoveSession(const SessionKey &key);
     void RemoveSessionByUid(int32_t uid);
-    std::vector<SessionKey> GetSessionKeysByDeviceId(const std::string &deviceId);
     std::vector<SessionKey> GetSessionKeysByUid(int32_t uid);
     std::vector<SessionKey> GetAllSessionKeys() const;
     bool HasSession(const SessionKey &key) const;
@@ -66,12 +64,9 @@ public:
 
 private:
     SessionKey MakeKey(const std::string &deviceId);
-
     mutable std::mutex mutex_;
     std::map<SessionKey, RangingSession> sessions_;
 };
-
 }  // namespace FusionRanging
 }  // namespace OHOS
-
 #endif  // FUSION_RANGING_SESSION_MANAGER_H
