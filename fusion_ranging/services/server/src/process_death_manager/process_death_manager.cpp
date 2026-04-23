@@ -15,7 +15,7 @@
 
 #include "process_death_manager.h"
 
-#include "log_util.h"
+#include "log_utils.h"
 
 namespace OHOS {
 namespace FusionRanging {
@@ -31,14 +31,13 @@ bool ProcessDeathManager::RegisterProcessDeath(int32_t uid, const sptr<IRemoteOb
         HILOGE("RegisterProcessDeath: remoteObject is nullptr");
         return false;
     }
-
-    std::lock_guard<std::mutex> lock(mutex_);
-
-    if (deathHandlers_.find(uid) != deathHandlers_.end()) {
-        HILOGW("RegisterProcessDeath: handler already exists for uid=%{public}d", uid);
-        return false;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (deathHandlers_.find(uid) != deathHandlers_.end()) {
+            HILOGW("RegisterProcessDeath: handler already exists for uid=%{public}d", uid);
+            return false;
+        }
     }
-
     auto recipient = sptr<ProcessDeathRecipient>::MakeSptr(uid, deathCallback_);
     if (recipient == nullptr) {
         HILOGE("RegisterProcessDeath: failed to create death recipient");
@@ -50,8 +49,10 @@ bool ProcessDeathManager::RegisterProcessDeath(int32_t uid, const sptr<IRemoteOb
         HILOGE("RegisterProcessDeath: failed to add death recipient to remoteObject");
         return false;
     }
-
-    deathHandlers_[uid] = ProcessDeathHandler(recipient, remoteObject);
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        deathHandlers_[uid] = ProcessDeathHandler(recipient, remoteObject);
+    }
     HILOGI("RegisterProcessDeath: success, uid=%{public}d", uid);
     return true;
 }
@@ -85,16 +86,13 @@ void ProcessDeathManager::ClearAll()
 {
     std::lock_guard<std::mutex> lock(mutex_);
     HILOGI("ClearAll: clear all process death handlers, count=%{public}zu", deathHandlers_.size());
-
     for (const auto &pair : deathHandlers_) {
         sptr<IRemoteObject> remoteObj = pair.second.remoteObject.promote();
         if (remoteObj != nullptr) {
             remoteObj->RemoveDeathRecipient(pair.second.recipient);
         }
     }
-
     deathHandlers_.clear();
 }
-
 }  // namespace FusionRanging
 }  // namespace OHOS
