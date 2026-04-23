@@ -41,6 +41,7 @@ public:
     FusionRangingService();
     virtual ~FusionRangingService();
 
+    bool IsRangingSupported(RangingTypes capabilityType);
     int StartRanging(const RangingParams &params, const std::function<void(const RangingResult &)> &callback);
     int StopRanging(const std::string &deviceId);
     int PauseRanging(const std::string &deviceId);
