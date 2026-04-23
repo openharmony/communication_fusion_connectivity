@@ -37,36 +37,36 @@ bool RangingResult::Marshalling(Parcel &parcel) const
 
 RangingResult *RangingResult::Unmarshalling(Parcel &parcel)
 {
-    auto *result = new (std::nothrow) RangingResult();
-    if (result == nullptr) {
-        return nullptr;
-    }
     std::string deviceId = "";
     if (!parcel.ReadString(deviceId)) {
-        delete result;
         return nullptr;
     }
-    result->SetDeviceId(deviceId);
-    auto *distance = RangingMeasurement::Unmarshalling(parcel);
+    RangingMeasurement *distance = RangingMeasurement::Unmarshalling(parcel);
     if (distance == nullptr) {
-        delete result;
         return nullptr;
     }
-    result->SetDistance(*distance);
-    delete distance;
-    auto *angle = RangingMeasurement::Unmarshalling(parcel);
+
+    RangingMeasurement *angle = RangingMeasurement::Unmarshalling(parcel);
     if (angle == nullptr) {
-        delete result;
+        delete distance;
         return nullptr;
     }
-    result->SetAngle(*angle);
+    RangingResult *result = nullptr;
+    do {
+        int32_t rssi = 0;
+        if (!parcel.ReadInt32(rssi)) {
+            break;
+        }
+        result = new (std::nothrow) RangingResult();
+        if (result != nullptr) {
+            result->SetDeviceId(deviceId);
+            result->SetDistance(*distance);
+            result->SetAngle(*angle);
+            result->SetRssi(rssi);
+        }
+    } while (0);
+    delete distance;
     delete angle;
-    int32_t rssi = 0;
-    if (!parcel.ReadInt32(rssi)) {
-        delete result;
-        return nullptr;
-    }
-    result->SetRssi(rssi);
     return result;
 }
 }  // namespace FusionRanging
