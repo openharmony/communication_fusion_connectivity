@@ -40,11 +40,7 @@ constexpr int32_t RANGING_CONFIDENCE_LOW = 2;
 
 napi_value NapiFusionRangingConstant::DefineJSConstant(napi_env env, napi_value exports)
 {
-    HILOGD("enter");
     ConstantPropertyValueInit(env, exports);
-    napi_property_descriptor desc[] = {};
-    napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc);
-    HILOGI("end");
     return exports;
 }
 
@@ -64,24 +60,29 @@ napi_value NapiFusionRangingConstant::ConstantPropertyValueInit(napi_env env, na
         DECLARE_NAPI_PROPERTY("RangingConfidence", rangingConfidenceObj),
     };
     napi_define_properties(env, exports, sizeof(exportFuncs) / sizeof(*exportFuncs), exportFuncs);
-    HILOGI("end");
     return exports;
 }
 
 napi_value NapiFusionRangingConstant::RangingTypesInit(napi_env env)
 {
-    HILOGD("enter");
     napi_value rangingTypes = nullptr;
-    napi_create_object(env, &rangingTypes);
+    napi_status status = napi_create_object(env, &rangingTypes);
+    if (status != napi_ok) {
+        HILOGE("RangingTypesInit create object failed");
+        return nullptr;
+    }
     FusionConnectivity::SetNamedPropertyByInteger(env, rangingTypes, RANGING_TYPES_NEARLINK_HADM, "NEARLINK_HADM");
     return rangingTypes;
 }
 
 napi_value NapiFusionRangingConstant::RangingStateInit(napi_env env)
 {
-    HILOGD("enter");
     napi_value rangingState = nullptr;
-    napi_create_object(env, &rangingState);
+    napi_status status = napi_create_object(env, &rangingState);
+    if (status != napi_ok) {
+        HILOGE("RangingStateInit: create object failed");
+        return nullptr;
+    }
     FusionConnectivity::SetNamedPropertyByInteger(env, rangingState, RANGING_STATE_STOPPED, "STATE_STOPPED");
     FusionConnectivity::SetNamedPropertyByInteger(env, rangingState, RANGING_STATE_STARTING, "STATE_STARTING");
     FusionConnectivity::SetNamedPropertyByInteger(env, rangingState, RANGING_STATE_STARTED, "STATE_STARTED");
@@ -90,9 +91,12 @@ napi_value NapiFusionRangingConstant::RangingStateInit(napi_env env)
 
 napi_value NapiFusionRangingConstant::RangingRoleInit(napi_env env)
 {
-    HILOGD("enter");
     napi_value rangingRole = nullptr;
-    napi_create_object(env, &rangingRole);
+    napi_status status = napi_create_object(env, &rangingRole);
+    if (status != napi_ok) {
+        HILOGE("RangingRoleInit: create object failed");
+        return nullptr;
+    }
     FusionConnectivity::SetNamedPropertyByInteger(env, rangingRole, RANGING_ROLE_INITIATOR, "ROLE_INITIATOR");
     FusionConnectivity::SetNamedPropertyByInteger(env, rangingRole, RANGING_ROLE_RESPONDER, "ROLE_RESPONDER");
     return rangingRole;
@@ -100,9 +104,12 @@ napi_value NapiFusionRangingConstant::RangingRoleInit(napi_env env)
 
 napi_value NapiFusionRangingConstant::RangingStoppedCauseInit(napi_env env)
 {
-    HILOGD("enter");
     napi_value rangingStoppedCause = nullptr;
-    napi_create_object(env, &rangingStoppedCause);
+    napi_status status = napi_create_object(env, &rangingStoppedCause);
+    if (status != napi_ok) {
+        HILOGE("RangingStoppedCauseInit: create object failed");
+        return nullptr;
+    }
     FusionConnectivity::SetNamedPropertyByInteger(env, rangingStoppedCause, RANGING_STOPPED_CAUSE_NO_ERROR, "NO_ERROR");
     FusionConnectivity::SetNamedPropertyByInteger(env, rangingStoppedCause, RANGING_STOPPED_CAUSE_INTERNAL_ERROR,
                                                   "INTERNAL_ERROR");
@@ -115,14 +122,16 @@ napi_value NapiFusionRangingConstant::RangingStoppedCauseInit(napi_env env)
 
 napi_value NapiFusionRangingConstant::RangingConfidenceInit(napi_env env)
 {
-    HILOGD("enter");
     napi_value rangingConfidence = nullptr;
-    napi_create_object(env, &rangingConfidence);
+    napi_status status = napi_create_object(env, &rangingConfidence);
+    if (status != napi_ok) {
+        HILOGE("RangingConfidenceInit: create object failed");
+        return nullptr;
+    }
     FusionConnectivity::SetNamedPropertyByInteger(env, rangingConfidence, RANGING_CONFIDENCE_HIGH, "HIGH");
     FusionConnectivity::SetNamedPropertyByInteger(env, rangingConfidence, RANGING_CONFIDENCE_MEDIUM, "MEDIUM");
     FusionConnectivity::SetNamedPropertyByInteger(env, rangingConfidence, RANGING_CONFIDENCE_LOW, "LOW");
     return rangingConfidence;
 }
-
 }  // namespace FusionRanging
 }  // namespace OHOS
