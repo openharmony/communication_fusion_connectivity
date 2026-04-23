@@ -42,6 +42,7 @@ enum class RangingStoppedCause {
     INTERNAL_ERROR = 1,
     BUSINESS_CONFLICT = 2,
     LIMITED_RESOURCE = 3,
+    BACKGROUND_NOT_ALLOWED = 4,
 };
 
 enum class RangingConfidence {
