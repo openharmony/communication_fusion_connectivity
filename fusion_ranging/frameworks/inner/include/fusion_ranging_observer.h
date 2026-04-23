@@ -30,10 +30,10 @@ public:
     ~RangingStateObserverImpl() = default;
 
     void SetStateCallback(std::function<void(const RangingStateChangeInfo &)> callback);
-
     int32_t OnRangingStateChanged(const RangingStateChangeInfo &info) override;
 
 private:
+    std::mutex stateMutex_{};
     std::function<void(const RangingStateChangeInfo &)> stateCallback_;
 };
 
@@ -43,27 +43,12 @@ public:
     ~RangingResultObserverImpl() = default;
 
     void SetResultCallback(std::function<void(const RangingResult &)> callback);
-
     int32_t OnRangingResult(const RangingResult &result) override;
 
 private:
+    std::mutex resultMutex_{};
     std::function<void(const RangingResult &)> resultCallback_;
 };
-
-class FusionRangingSaStatusChange : public SystemAbilityStatusChangeStub {
-public:
-    FusionRangingSaStatusChange();
-    ~FusionRangingSaStatusChange() = default;
-
-    void SetRemoveCallback(std::function<void()> callback);
-
-    void OnAddSystemAbility(int32_t systemAbilityId, const std::string &deviceId) override;
-    void OnRemoveSystemAbility(int32_t systemAbilityId, const std::string &deviceId) override;
-
-private:
-    std::function<void()> removeCallback_;
-};
-
 }  // namespace FusionRanging
 }  // namespace OHOS
 #endif  // FUSION_RANGING_OBSERVER_H
