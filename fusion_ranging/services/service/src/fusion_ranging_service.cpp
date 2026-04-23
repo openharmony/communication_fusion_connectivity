@@ -22,7 +22,7 @@
 #include <dlfcn.h>
 #include <mutex>
 #include "ranging_adapter_factory.h"
-#include "log_util.h"
+#include "log_utils.h"
 #include "fusion_ranging_errorcode.h"
 
 namespace {
@@ -58,7 +58,6 @@ public:
     void OnRangingResult(const AdapterRangingData &data) override
     {
         auto adapter = interRangingAdapter_.lock();
-        HILOGI("FusionRangingService OnRangingResult deviceId:%{public}s", GET_ENCRYPT_ADDR(data.GetDeviceId()));
         if (adapter) {
             RangingResult result;
             result.SetDeviceId(data.GetDeviceId());
@@ -101,6 +100,11 @@ std::shared_ptr<FusionRangingService> FusionRangingService::GetInstance()
     return instance;
 }
 
+bool FusionRangingService::IsRangingSupported(RangingTypes capabilityType)
+{
+    return RangingAdapterFactory::Instance().IsRangingAdapterSupported(capabilityType);
+}
+
 int FusionRangingService::StartRanging(const RangingParams &params,
                                        const std::function<void(const RangingResult &)> &callback)
 {
@@ -109,14 +113,14 @@ int FusionRangingService::StartRanging(const RangingParams &params,
         HILOGE("Invalid device id");
         return static_cast<int>(RangingErrCode::RANGING_ERR_INVALID_PARAM);
     }
-
-    std::lock_guard<std::mutex> lock(rangingMutex_);
-    auto it = rangingData_.find(params.GetDeviceId());
-    if (it != rangingData_.end()) {
-        HILOGW("Device %{public}s already in ranging state", GET_ENCRYPT_ADDR(params.GetDeviceId()));
-        return static_cast<int>(RangingErrCode::RANGING_ERR_ALREADY_RANGING);
+    {
+        std::lock_guard<std::mutex> lock(rangingMutex_);
+        auto it = rangingData_.find(params.GetDeviceId());
+        if (it != rangingData_.end()) {
+            HILOGW("Device %{public}s already in ranging state", GET_ENCRYPT_ADDR(params.GetDeviceId()));
+            return static_cast<int>(RangingErrCode::RANGING_ERR_ALREADY_RANGING);
+        }
     }
-
     const bool isSupport = RangingAdapterFactory::Instance().IsRangingAdapterSupported(params.GetCapabilityType());
     HILOGI("StartRanging type:%{public}d, isSupport:%{public}d", params.GetCapabilityType(), isSupport);
     if (!isSupport) {
@@ -131,12 +135,12 @@ int FusionRangingService::StartRanging(const RangingParams &params,
     auto rangingCallback = std::make_shared<FusionRangingAdapterCallback>(shared_from_this());
     auto adapter = GetAdapter(params.GetCapabilityType());
     adapter->SetCallback(rangingCallback);
-
     ret = adapter->StartRanging(params.GetDeviceId(), params.GetRole());
     HILOGI("StartRanging service StartRanging ret:%{public}d", ret);
     if (ret != 0) {
         HILOGE("Adapter start ranging failed for device: %{public}s, ret: %{public}d",
                GET_ENCRYPT_ADDR(params.GetDeviceId()), ret);
+        adapter->StopRanging(params.GetDeviceId());
         return ret;
     }
 
@@ -145,10 +149,10 @@ int FusionRangingService::StartRanging(const RangingParams &params,
     deviceInfo.callback = callback;
     deviceInfo.state = RangingState::STATE_STARTED;
     rangingData_[params.GetDeviceId()] = deviceInfo;
-    HILOGI("Start ranging for device: %{public}s, role: %{public}d, capabilityType: %{public}d",
+    HILOGI("StartRanging for device: %{public}s, role: %{public}d, capabilityType: %{public}d",
            GET_ENCRYPT_ADDR(params.GetDeviceId()), static_cast<int>(params.GetRole()),
            static_cast<int>(params.GetCapabilityType()));
-    return 0;
+    return RANGING_NO_ERROR;
 }
 
 int FusionRangingService::StopRanging(const std::string &deviceId)
@@ -197,7 +201,7 @@ int FusionRangingService::PauseRanging(const std::string &deviceId)
     }
 
     HILOGI("Pause ranging for device: %{public}s", GET_ENCRYPT_ADDR(deviceId));
-    return 0;
+    return RANGING_NO_ERROR;
 }
 
 int FusionRangingService::ResumeRanging(const std::string &deviceId)
@@ -221,15 +225,18 @@ int FusionRangingService::ResumeRanging(const std::string &deviceId)
     }
 
     HILOGI("Resume ranging for device: %{public}s", GET_ENCRYPT_ADDR(deviceId));
-    return 0;
+    return RANGING_NO_ERROR;
 }
 
 int FusionRangingService::CreateRangingAdapter(const RangingParams &params)
 {
     RangingTypes capabilityType = params.GetCapabilityType();
-    auto it = rangingAdapters_.find(capabilityType);
-    if (it != rangingAdapters_.end()) {
-        return 0;
+    {
+        std::lock_guard<std::mutex> lock(rangingMutex_);
+        auto it = rangingAdapters_.find(capabilityType);
+        if (it != rangingAdapters_.end()) {
+            return RANGING_NO_ERROR;
+        }
     }
 
     auto adapter = RangingAdapterFactory::Instance().CreateRangingAdapter(capabilityType);
@@ -239,15 +246,18 @@ int FusionRangingService::CreateRangingAdapter(const RangingParams &params)
     }
 
     int ret = adapter->Init();
-    if (ret != 0) {
+    if (ret != RANGING_NO_ERROR) {
         HILOGE("Adapter init failed, releasing adapter");
         adapter->DeInit();
         return ret;
     }
 
-    rangingAdapters_[capabilityType] = adapter;
+    {
+        std::lock_guard<std::mutex> lock(rangingMutex_);
+        rangingAdapters_[capabilityType] = adapter;
+    }
     HILOGI("Create adapter for capability type: %{public}d", static_cast<int>(capabilityType));
-    return 0;
+    return RANGING_NO_ERROR;
 }
 
 void FusionRangingService::InitConfiguration()
@@ -281,6 +291,7 @@ void FusionRangingService::DeInitConfiguration()
 
 std::shared_ptr<BaseRangingAdapter> FusionRangingService::GetAdapter(RangingTypes capabilityType)
 {
+    std::lock_guard<std::mutex> lock(rangingMutex_);
     auto it = rangingAdapters_.find(capabilityType);
     if (it != rangingAdapters_.end()) {
         return it->second;
@@ -295,11 +306,9 @@ void FusionRangingService::OnAdapterRangingStateChanged(int32_t state)
 
 void FusionRangingService::OnRangingResult(const RangingResult &result)
 {
-    HILOGI("OnRangingResult deviceId: %{public}s", GET_ENCRYPT_ADDR(result.GetDeviceId()));
     std::lock_guard<std::mutex> lock(rangingMutex_);
     auto it = rangingData_.find(result.GetDeviceId());
     if (it != rangingData_.end() && it->second.callback) {
-        HILOGI("OnRangingResult callback deviceId: %{public}s", GET_ENCRYPT_ADDR(result.GetDeviceId()));
         it->second.callback(result);
     }
 }
