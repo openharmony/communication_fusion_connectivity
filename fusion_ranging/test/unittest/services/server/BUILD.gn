@@ -27,6 +27,7 @@ config("unittest_config") {
     "$FUSION_RANGING/interfaces/inner_api",
     "$FUSION_RANGING/idl/include",
     "$FUSION_RANGING/../partner_agent/services/common/include",
+    "$FUSION_RANGING/../partner_agent/interfaces/inner_api",
   ]
 
   defines = [
@@ -46,7 +47,8 @@ ohos_unittest("fusion_ranging_server_test") {
     "$FUSION_RANGING/services/server/src/state_observer_registry/state_observer_registry.cpp",
     "$FUSION_RANGING/services/server/src/process_death_manager/process_death_manager.cpp",
     "$FUSION_RANGING/services/server/src/app_state_observer/app_state_observer.cpp",
-    "$FUSION_RANGING/services/common/src/log_util.cpp",
+    "$FUSION_RANGING/services/common/src/log_utils.cpp",
+    "$FUSION_RANGING/../partner_agent/services/common/src/permission_manager.cpp",
   ]
 
   configs = [ ":unittest_config" ]
@@ -70,6 +72,9 @@ ohos_unittest("fusion_ranging_server_test") {
     "samgr:samgr_proxy",
     "ability_runtime:ability_manager",
     "ability_runtime:app_manager",
+    "access_token:libprivacy_sdk",
+    "access_token:libaccesstoken_sdk",
+    "access_token:libtokenid_sdk",
   ]
 }
 
