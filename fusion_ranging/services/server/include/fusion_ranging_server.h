@@ -19,9 +19,14 @@
 #include <atomic>
 #include <memory>
 #include <string>
+#include <map>
 
 #include "fusion_ranging_stub.h"
+#include "permission_manager.h"
+#include "fusion_connectivity_errorcode.h"
+#include "if_system_ability_manager.h"
 #include "iremote_object.h"
+#include "iservice_registry.h"
 #include "ranging_capability_supported.h"
 #include "ranging_params.h"
 #include "ranging_result_observer_stub.h"
@@ -37,7 +42,8 @@ class StateObserverRegistry;
 class ProcessDeathManager;
 
 class FusionRangingServer
-    : public SystemAbility, public FusionRangingStub {
+    : public SystemAbility
+    , public FusionRangingStub {
     DECLARE_SYSTEM_ABILITY(FusionRangingServer);
 
 public:
@@ -48,11 +54,7 @@ public:
     FusionRangingServer();
     ~FusionRangingServer();
 
-    int32_t CallbackEnter([[maybe_unused]] uint32_t code) override
-    {
-        return 0;
-    }
-
+    int32_t CallbackEnter(uint32_t code) override;
     int32_t CallbackExit([[maybe_unused]] uint32_t code, [[maybe_unused]] int32_t result) override
     {
         return 0;
@@ -66,8 +68,7 @@ public:
 
     void PauseRangingByUid(int32_t uid);
     void ResumeRangingByUid(int32_t uid);
-    void StopRangingByUid(int32_t uid);
-    void CleanupAll();
+    void StopRangingByAppTerminate(int32_t uid);
     void CheckAndUnloadSA();
 
 private:
@@ -75,15 +76,15 @@ private:
     void HandleProcessDeath(int32_t uid);
     void CheckAndUnloadIfIdle();
     void StopAllDeviceIdsByUid(int32_t uid);
+    void InitializePermissionsMap();
 
-    std::unique_ptr<SessionManager> sessionManager_;
-    std::unique_ptr<StateObserverRegistry> stateObserverRegistry_;
-    std::unique_ptr<ProcessDeathManager> processDeathManager_;
-    std::unique_ptr<RangingAppStateObserver> appStateObserver_;
+    std::shared_ptr<SessionManager> sessionManager_;
+    std::shared_ptr<StateObserverRegistry> stateObserverRegistry_;
+    std::shared_ptr<ProcessDeathManager> processDeathManager_;
+    std::shared_ptr<RangingAppStateObserver> appStateObserver_;
     std::atomic<bool> isStopping_ = false;
+    std::map<int, FusionConnectivity::PermissionItem> permissionsMap_{};
 };
-
 }  // namespace FusionRanging
 }  // namespace OHOS
-
 #endif  // FUSION_RANGING_SERVER_H
