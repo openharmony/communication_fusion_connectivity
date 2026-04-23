@@ -44,8 +44,6 @@ private:
     mutable std::mutex mutex_;
     std::map<int32_t, sptr<IRangingStateObserver>> observers_;
 };
-
 }  // namespace FusionRanging
 }  // namespace OHOS
-
 #endif  // FUSION_RANGING_STATE_OBSERVER_REGISTRY_H
