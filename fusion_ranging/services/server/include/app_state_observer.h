@@ -31,9 +31,9 @@ namespace FusionRanging {
 
 class FusionRangingServer;
 
-class RangingAppStateObserver {
+class RangingAppStateObserver : public std::enable_shared_from_this<RangingAppStateObserver> {
 public:
-    RangingAppStateObserver() = default;
+    explicit RangingAppStateObserver() = default;
     ~RangingAppStateObserver() = default;
 
     bool SubscribeAppState();
@@ -43,12 +43,12 @@ public:
 private:
     class AppStateAwareObserver : public AppExecFwk::ApplicationStateObserverStub {
     public:
-        explicit AppStateAwareObserver(RangingAppStateObserver *observer) : observer_(observer) {}
+        explicit AppStateAwareObserver(const std::weak_ptr<RangingAppStateObserver> &observer) : observer_(observer) {}
 
         void OnForegroundApplicationChanged(const AppExecFwk::AppStateData &appStateData) override;
 
     private:
-        RangingAppStateObserver *observer_;
+        std::weak_ptr<RangingAppStateObserver> observer_;
     };
 
     sptr<AppExecFwk::IAppMgr> GetAppMgrProxy();
