@@ -42,8 +42,15 @@ RangingParams *RangingParams::Unmarshalling(Parcel &parcel)
     if (!parcel.ReadInt32(role)) {
         return nullptr;
     }
+    if (role < static_cast<int32_t>(RangingRole::ROLE_INITIATOR) ||
+        role > static_cast<int32_t>(RangingRole::ROLE_RESPONDER)) {
+        return nullptr;
+    }
     int32_t capabilityType = 0;
     if (!parcel.ReadInt32(capabilityType)) {
+        return nullptr;
+    }
+    if (capabilityType < static_cast<int32_t>(RangingTypes::NEARLINK_HADM)) {
         return nullptr;
     }
     auto *params = new (std::nothrow)
