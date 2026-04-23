@@ -40,7 +40,7 @@ public:
         deviceId_ = deviceId;
     }
 
-    RangingMeasurement GetDistance() const
+    const RangingMeasurement &GetDistance() const
     {
         return distance_;
     }
@@ -50,7 +50,7 @@ public:
         distance_ = distance;
     }
 
-    RangingMeasurement GetAngle() const
+    const RangingMeasurement &GetAngle() const
     {
         return angle_;
     }
