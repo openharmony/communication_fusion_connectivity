@@ -104,7 +104,7 @@ int32_t FusionRangingServer::CallbackEnter(uint32_t code)
         HILOGE("Permission check failed for code: %{public}u, result: %{public}d", code, result);
         return static_cast<int32_t>(RangingErrCode::RANGING_ERR_PERMISSION_FAILED);
     }
-    return 0;
+    return RANGING_NO_ERROR;
 }
 
 void FusionRangingServer::OnStart()
@@ -269,7 +269,11 @@ void FusionRangingServer::StopAllDeviceIdsByUid(int32_t uid)
 
 void FusionRangingServer::HandleProcessDeath(int32_t uid)
 {
-    HILOGI("HandleProcessDeath: uid=%{public}d, cleaning resources", uid);
+    HILOGI("HandleProcessDeath: uid=%{public}d", uid);
+    if (!sessionManager_->HasSessionsByUid(uid)) {
+        HILOGI("HandleProcessDeath not target uid");
+        return;
+    }
     StopAllDeviceIdsByUid(uid);
     if (sessionManager_) {
         sessionManager_->RemoveSessionByUid(uid);
