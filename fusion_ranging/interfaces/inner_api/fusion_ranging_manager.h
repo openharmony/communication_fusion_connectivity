@@ -27,6 +27,12 @@
 namespace OHOS {
 namespace FusionRanging {
 
+class FusionRaningCallback {
+public:
+    virtual void OnRangingStateChanged(const RangingStateChangeInfo &info) {};
+    virtual void OnRangingResult(const RangingResult &result) {};
+};
+
 class FusionRangingManager {
 public:
     static FusionRangingManager *GetInstance();
@@ -37,6 +43,8 @@ public:
     int StopRanging(const std::string &deviceId);
     int OnRangingStateChange(const std::function<void(const RangingStateChangeInfo &)> &callback);
     int OffRangingStateChange();
+    int RegisterFusionRangingObserver(const FusionRangingObserver &observer);
+    int UnRegisterFusionRangingObserver(const FusionRangingObserver &observer);
 
     struct impl;
 

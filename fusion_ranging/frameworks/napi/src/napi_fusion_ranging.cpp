@@ -38,6 +38,7 @@ std::map<std::string, std::shared_ptr<FusionConnectivity::NapiCallback>> g_rangi
 std::map<napi_env, std::shared_ptr<FusionConnectivity::NapiCallback>> g_stateChangeCallbacks;
 std::mutex g_rangingCallbacksMutex;
 std::mutex g_stateChangeCallbacksMutex;
+std::shard_ptr<NapiFusionRangingCallback> napiCallback_ = std::make_shared_ptr<NapiFusionRangingCallback>();
 
 static napi_status NapiParseRangingParams(napi_env env, napi_value object, RangingParams &outParams)
 {
@@ -503,6 +504,12 @@ napi_value OnRangingStateChange(napi_env env, napi_callback_info info)
     }
     HILOGI("OnRangingStateChange success");
     return asyncWork->GetRet();
+    if (napiCallback_ != nullptr) {
+        auto status = napiCallback_->eventSubscribe_.RegisterWithName(env, info,
+            STR_FUSION_RANGING_CALLBACK_STATE_CHANGE);
+        NAPI_FCM_ASSERT_RETURN_UNDEF(env, status == napi_ok, FusionConnectivity::FCM_ERR_INTERNAL_ERROR);
+    }
+    return NapiGetUndefinedRet(env);
 }
 
 napi_value OffRangingStateChange(napi_env env, napi_callback_info info)
@@ -525,6 +532,12 @@ napi_value OffRangingStateChange(napi_env env, napi_callback_info info)
         }
     }
     return asyncWork->GetRet();
+    if (napiCallback_) {
+        auto status = napiCallback_->eventSubscribe_.DeregisterWithName(env, info,
+            STR_FUSION_RANGING_CALLBACK_STATE_CHANGE);
+        NAPI_FCM_ASSERT_RETURN_UNDEF(env, status == napi_ok, FusionConnectivity::FCM_ERR_INTERNAL_ERROR);
+    }
+    return NapiGetUndefinedRet(env);
 }
 
 EXTERN_C_START
