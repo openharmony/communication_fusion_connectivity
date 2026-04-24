@@ -33,14 +33,14 @@ bool SessionManager::AddSession(int32_t uid, const std::string &deviceId, const 
 {
     HILOGI("AddSession: uid:%{public}d, deviceId=%{public}s", uid, GET_ENCRYPT_ADDR(deviceId));
     if (deviceId.empty() || observer == nullptr) {
-        HILOGE("AddSession: invalid parameter, deviceId=%{public}s", GET_ENCRYPT_ADDR(deviceId));
+        HILOGE("AddSession: invalid parameter");
         return false;
     }
 
     std::lock_guard<std::mutex> lock(mutex_);
     SessionKey key = MakeKey(deviceId);
     if (sessions_.find(key) != sessions_.end()) {
-        HILOGW("AddSession: session already exists, key=%{public}s", key.c_str());
+        HILOGW("AddSession: session already exists, key=%{public}s", GET_ENCRYPT_ADDR(key));
         return false;
     }
 
@@ -50,7 +50,7 @@ bool SessionManager::AddSession(int32_t uid, const std::string &deviceId, const 
     session.deviceId = deviceId;
     session.resultObserver = observer;
     sessions_[key] = session;
-    HILOGI("AddSession: success, key=%{public}s, uid=%{public}d", key.c_str(), uid);
+    HILOGI("AddSession: success, key=%{public}s, uid=%{public}d", GET_ENCRYPT_ADDR(key), uid);
     return true;
 }
 
@@ -59,7 +59,7 @@ void SessionManager::RemoveSession(const SessionKey &key)
     std::lock_guard<std::mutex> lock(mutex_);
     auto it = sessions_.find(key);
     if (it != sessions_.end()) {
-        HILOGI("RemoveSession: remove session, key=%{public}s", key.c_str());
+        HILOGI("RemoveSession: remove session, key=%{public}s", GET_ENCRYPT_ADDR(key));
         sessions_.erase(it);
     }
 }
@@ -74,7 +74,7 @@ void SessionManager::RemoveSessionByUid(int32_t uid)
         }
     }
     for (const auto &key : keysToRemove) {
-        HILOGI("RemoveSessionByUid: remove session, key=%{public}s", key.c_str());
+        HILOGI("RemoveSessionByUid: remove session, key=%{public}s", GET_ENCRYPT_ADDR(key));
         sessions_.erase(key);
     }
 }
@@ -84,7 +84,6 @@ std::vector<SessionKey> SessionManager::GetSessionKeysByUid(int32_t uid)
     std::lock_guard<std::mutex> lock(mutex_);
     std::vector<SessionKey> keys;
     for (const auto &pair : sessions_) {
-        HILOGD("GetSessionKeysByUid: uid:%{public}d, key=%{public}s", uid, pair.second.key.c_str());
         if (pair.second.uid == uid) {
             keys.push_back(pair.first);
         }
