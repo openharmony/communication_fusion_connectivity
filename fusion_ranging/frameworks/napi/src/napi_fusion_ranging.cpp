@@ -360,9 +360,9 @@ napi_value StartRanging(napi_env env, napi_callback_info info)
     auto napiCallback = std::make_shared<FusionConnectivity::NapiCallback>(env, argv[FusionConnectivity::PARAM1]);
     auto resultCallback = [env, napiCallback](const RangingResult &result) {
         HILOGI("Napi ResultCallback");
-        FusionConnectivity::NapiHandleScope scope(env);
         auto ret = std::make_shared<NapiNativeRangingResultData>(result);
-        auto callback = [ret, napiCallback]() {
+        auto callback = [env, napiCallback, ret]() {
+            FusionConnectivity::NapiHandleScope scope(env);
             napiCallback->CallFunction(ret);
         };
         FusionConnectivity::DoInJsMainThread(env, callback);
@@ -483,9 +483,9 @@ napi_value OnRangingStateChange(napi_env env, napi_callback_info info)
     }
     auto napiStateCb = std::make_shared<FusionConnectivity::NapiCallback>(env, argv[FusionConnectivity::PARAM0]);
     auto stateCallback = [env, napiStateCb](const RangingStateChangeInfo &state) {
-        FusionConnectivity::NapiHandleScope scope(env);
         auto ret = std::make_shared<NapiNativeStateChnageData>(state);
-        auto callback = [ret, napiStateCb]() {
+        auto callback = [env, napiStateCb, ret]() {
+            FusionConnectivity::NapiHandleScope scope(env);
             napiStateCb->CallFunction(ret);
         };
         FusionConnectivity::DoInJsMainThread(env, callback);
