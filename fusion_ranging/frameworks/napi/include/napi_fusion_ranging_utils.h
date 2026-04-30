@@ -13,8 +13,12 @@
  * limitations under the License.
  */
 
-#ifndef NAPI_FUSION_RANGING_CALLBACK_H
-#define NAPI_FUSION_RANGING_CALLBACK_H
+#ifndef NAPI_FUSION_RANGING_UTILS_H
+#define NAPI_FUSION_RANGING_UTILS_H
+
+#include "ranging_result.h"
+#include "napi_native_object.h"
+#include "ranging_state_change_info.h"
 
 namespace OHOS {
 namespace FusionRanging {
@@ -36,10 +40,10 @@ public:
     ~NapiNativeRangingResult() override = default;
 
     napi_value ToNapiValue(napi_env env) const override;
+
 private:
     RangingResult resultData_;
 };
-
 }
 }
-#endif // NAPI_FUSION_RANGING_CALLBACK_H
+#endif  // NAPI_FUSION_RANGING_UTILS_H
