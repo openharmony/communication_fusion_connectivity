@@ -29,7 +29,6 @@ private:
     static napi_value ConstantPropertyValueInit(napi_env env, napi_value exports);
     static napi_value RangingTypesInit(napi_env env);
     static napi_value RangingStateInit(napi_env env);
-    static napi_value RangingRoleInit(napi_env env);
     static napi_value RangingStoppedCauseInit(napi_env env);
     static napi_value RangingConfidenceInit(napi_env env);
 };
