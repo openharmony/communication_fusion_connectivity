@@ -27,6 +27,8 @@ napi_value IsRangingSupported(napi_env env, napi_callback_info info);
 napi_value GetRangingCapability(napi_env env, napi_callback_info info);
 napi_value StartRanging(napi_env env, napi_callback_info info);
 napi_value StopRanging(napi_env env, napi_callback_info info);
+napi_value StartPassiveRanging(napi_env env, napi_callback_info info);
+napi_value StopPassiveRanging(napi_env env, napi_callback_info info);
 napi_value OnRangingStateChange(napi_env env, napi_callback_info info);
 napi_value OffRangingStateChange(napi_env env, napi_callback_info info);
 
