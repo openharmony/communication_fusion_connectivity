@@ -23,44 +23,8 @@
 namespace OHOS {
 namespace FusionRanging {
 
-RangingStateObserverImpl::RangingStateObserverImpl() {}
-
-void RangingStateObserverImpl::SetStateCallback(std::function<void(const RangingStateChangeInfo &)> callback)
-{
-    std::lock_guard<std::mutex> lock(stateMutex_);
-    stateCallback_ = callback;
-}
-
-int32_t RangingStateObserverImpl::OnRangingStateChanged(const RangingStateChangeInfo &info)
-{
-    HILOGI("OnRangingStateChanged state: %{public}d, cause: %{public}d", static_cast<int32_t>(info.GetState()),
-           static_cast<int32_t>(info.GetCause()));
-    std::lock_guard<std::mutex> lock(stateMutex_);
-    if (stateCallback_) {
-        stateCallback_(info);
-    }
-    return 0;
-}
-
-RangingResultObserverImpl::RangingResultObserverImpl() {}
-
-void RangingResultObserverImpl::SetResultCallback(std::function<void(const RangingResult &)> callback)
-{
-    std::lock_guard<std::mutex> lock(resultMutex_);
-    resultCallback_ = callback;
-}
-
-int32_t RangingResultObserverImpl::OnRangingResult(const RangingResult &result)
-{
-    std::lock_guard<std::mutex> lock(resultMutex_);
-    if (resultCallback_) {
-        resultCallback_(result);
-    }
-    return 0;
-}
-
-int32_t RangingStateObserverStub::OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply,
-                                                  MessageOption &option)
+int32_t RangingObserverStub::OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply,
+                                             MessageOption &option)
 {
     std::u16string localDescriptor = GetDescriptor();
     std::u16string remoteDescriptor = data.ReadInterfaceToken();
@@ -68,34 +32,20 @@ int32_t RangingStateObserverStub::OnRemoteRequest(uint32_t code, MessageParcel &
         return ERR_TRANSACTION_FAILED;
     }
     switch (code) {
-        case static_cast<uint32_t>(IRangingStateObserverIpcCode::COMMAND_ON_RANGING_STATE_CHANGED): {
-            std::unique_ptr<RangingStateChangeInfo> info(data.ReadParcelable<RangingStateChangeInfo>());
-            if (!info) {
+        case static_cast<uint32_t>(IRangingObserverIpcCode::COMMAND_ON_RANGING_STATE_CHANGED): {
+            std::unique_ptr<RangingStateChangeInfo> stateInfo(data.ReadParcelable<RangingStateChangeInfo>());
+            if (!stateInfo) {
                 HILOGE("Read [RangingStateChangeInfo] failed!");
                 return ERR_INVALID_DATA;
             }
-            ErrCode errCode = OnRangingStateChanged(*info);
+            ErrCode errCode = OnRangingStateChanged(*stateInfo);
             if (!reply.WriteInt32(errCode)) {
                 HILOGE("Write Int32 failed!");
                 return ERR_INVALID_VALUE;
             }
             return ERR_NONE;
         }
-        default:
-            return IRemoteStub::OnRemoteRequest(code, data, reply, option);
-    }
-}
-
-int32_t RangingResultObserverStub::OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply,
-                                                   MessageOption &option)
-{
-    std::u16string localDescriptor = GetDescriptor();
-    std::u16string remoteDescriptor = data.ReadInterfaceToken();
-    if (localDescriptor != remoteDescriptor) {
-        return ERR_TRANSACTION_FAILED;
-    }
-    switch (code) {
-        case static_cast<uint32_t>(IRangingResultObserverIpcCode::COMMAND_ON_RANGING_RESULT): {
+        case static_cast<uint32_t>(IRangingObserverIpcCode::COMMAND_ON_RANGING_RESULT): {
             std::unique_ptr<RangingResult> rangingResult(data.ReadParcelable<RangingResult>());
             if (!rangingResult) {
                 HILOGE("Read [RangingResult] failed!");
@@ -111,6 +61,26 @@ int32_t RangingResultObserverStub::OnRemoteRequest(uint32_t code, MessageParcel 
         default:
             return IRemoteStub::OnRemoteRequest(code, data, reply, option);
     }
+}
+
+int32_t RangingObserverImpl::OnRangingStateChanged(const RangingStateChangeInfo &info)
+{
+    HILOGI("RangingObserverImpl::OnRangingStateChanged state: %{public}d, cause: %{public}d",
+           static_cast<int32_t>(info.GetState()), static_cast<int32_t>(info.GetCause()));
+    auto handlerLocal = handler_.promote();
+    if (handlerLocal != nullptr) {
+        handlerLocal->OnRangingStateChanged(info);
+    }
+    return ERR_NONE;
+}
+
+int32_t RangingObserverImpl::OnRangingResult(const RangingResult &result)
+{
+    auto handlerLocal = handler_.promote();
+    if (handlerLocal != nullptr) {
+        handlerLocal->OnRangingResult(result);
+    }
+    return ERR_NONE;
 }
 }  // namespace FusionRanging
 }  // namespace OHOS
