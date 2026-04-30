@@ -17,37 +17,28 @@
 #define FUSION_RANGING_OBSERVER_H
 
 #include <functional>
-#include "ranging_state_observer_stub.h"
-#include "ranging_result_observer_stub.h"
+#include "ranging_observer_stub.h"
 #include "system_ability_status_change_stub.h"
 
 namespace OHOS {
 namespace FusionRanging {
 
-class RangingStateObserverImpl : public RangingStateObserverStub {
+class RangingObserverHandler : public RefBase {
 public:
-    explicit RangingStateObserverImpl();
-    ~RangingStateObserverImpl() = default;
-
-    void SetStateCallback(std::function<void(const RangingStateChangeInfo &)> callback);
-    int32_t OnRangingStateChanged(const RangingStateChangeInfo &info) override;
-
-private:
-    std::mutex stateMutex_{};
-    std::function<void(const RangingStateChangeInfo &)> stateCallback_;
+    virtual void OnRangingStateChanged(const RangingStateChangeInfo &info) = 0;
+    virtual void OnRangingResult(const RangingResult &result) = 0;
 };
 
-class RangingResultObserverImpl : public RangingResultObserverStub {
+class RangingObserverImpl : public RangingObserverStub {
 public:
-    explicit RangingResultObserverImpl();
-    ~RangingResultObserverImpl() = default;
+    explicit RangingObserverImpl(const wptr<RangingObserverHandler> &handler) : handler_(handler) {}
+    ~RangingObserverImpl() = default;
 
-    void SetResultCallback(std::function<void(const RangingResult &)> callback);
+    int32_t OnRangingStateChanged(const RangingStateChangeInfo &info) override;
     int32_t OnRangingResult(const RangingResult &result) override;
 
 private:
-    std::mutex resultMutex_{};
-    std::function<void(const RangingResult &)> resultCallback_;
+    wptr<RangingObserverHandler> handler_;
 };
 }  // namespace FusionRanging
 }  // namespace OHOS
