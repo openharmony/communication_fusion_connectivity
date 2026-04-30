@@ -27,14 +27,7 @@ enum class RangingTypes {
 
 enum class RangingState {
     STATE_STOPPED = 0,
-    STATE_STARTING = 1,
-    STATE_STARTED = 2,
-};
-
-enum class RangingRole {
-    ROLE_INVALID = -1,
-    ROLE_INITIATOR = 0,
-    ROLE_RESPONDER = 1,
+    STATE_STARTED = 1,
 };
 
 enum class RangingStoppedCause {
@@ -42,7 +35,7 @@ enum class RangingStoppedCause {
     INTERNAL_ERROR = 1,
     BUSINESS_CONFLICT = 2,
     LIMITED_RESOURCE = 3,
-    BACKGROUND_NOT_ALLOWED = 4,
+    BACKGROUND_PAUSED = 4,
 };
 
 enum class RangingConfidence {
@@ -50,8 +43,6 @@ enum class RangingConfidence {
     MEDIUM = 1,
     LOW = 2,
 };
-
 }  // namespace FusionRanging
 }  // namespace OHOS
-
 #endif  // FUSION_RANGING_TYPES_H
