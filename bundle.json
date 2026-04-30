@@ -75,20 +75,13 @@
                     "//foundation/communication/fusion_connectivity/partner_agent/frameworks/inner:partner_device_agent_framework",
                     "//foundation/communication/fusion_connectivity/partner_agent/frameworks/napi:napi_partner_agent_extension",
                     "//foundation/communication/fusion_connectivity/partner_agent/frameworks/napi:partneragent",
-                    "//foundation/communication/fusion_connectivity/partner_agent/frameworks/napi/src/extension:napi_packages",
-                    "//foundation/communication/fusion_connectivity/fusion_ranging/frameworks/napi:ranging",
-                    "//foundation/communication/fusion_connectivity/fusion_ranging/frameworks/inner:fusion_ranging_manager_framework"
+                    "//foundation/communication/fusion_connectivity/partner_agent/frameworks/napi/src/extension:napi_packages"
                 ],
                 "service_group": [
                     "//foundation/communication/fusion_connectivity/partner_agent/sa_profile:partner_device_agent_sa_profile",
                     "//foundation/communication/fusion_connectivity/partner_agent/services/server:partner_device_agent_server",
                     "//foundation/communication/fusion_connectivity/partner_agent/services/server:libpartner_agent_extension_service",
-                    "//foundation/communication/fusion_connectivity/partner_agent/idl:partner_device_agent",
-                    "//foundation/communication/fusion_connectivity/fusion_ranging/sa_profile:fusion_ranging_sa_profile",
-                    "//foundation/communication/fusion_connectivity/fusion_ranging/services/ranging_adapter:fusion_ranging_adapter",
-                    "//foundation/communication/fusion_connectivity/fusion_ranging/services/server:fusion_ranging_server",
-                    "//foundation/communication/fusion_connectivity/fusion_ranging/services/service:fusion_ranging_service",
-                    "//foundation/communication/fusion_connectivity/fusion_ranging/idl:fusion_ranging"
+                    "//foundation/communication/fusion_connectivity/partner_agent/idl:partner_device_agent"
                 ]
             },
             "inner_api": [
@@ -102,29 +95,8 @@
                     "name": "//foundation/communication/fusion_connectivity/partner_agent/frameworks/inner:partner_device_agent_framework"
                 }
             ],
-            "inner_kits": [
-                {
-                    "header": {
-                        "header_base": "//foundation/communication/fusion_connectivity/fusion_ranging/services/ranging_adapter/include",
-                        "header_files": [
-                            "base_ranging_adapter.h"
-                         ]
-                    },
-                    "name": "//foundation/communication/fusion_connectivity/fusion_ranging/services/ranging_adapter:fusion_ranging_adapter"
-                },
-                {
-                    "header": {
-                        "header_base": "//foundation/communication/fusion_connectivity/fusion_ranging/services/service/include",
-                        "header_files": [
-                            "fusion_ranging_service.h"
-                         ]
-                    },
-                    "name": "//foundation/communication/fusion_connectivity/fusion_ranging/services/service:fusion_ranging_service"
-                }
-            ],
             "test": [
-                "//foundation/communication/fusion_connectivity/partner_agent/test:fusion_connectivity_test",
-                "//foundation/communication/fusion_connectivity/fusion_ranging/test:fusion_ranging_test"
+                "//foundation/communication/fusion_connectivity/partner_agent/test:fusion_connectivity_test"
             ]
         }
     }
