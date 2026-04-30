@@ -30,7 +30,6 @@ namespace OHOS {
 namespace FusionRanging {
 namespace {
 constexpr int32_t LOADSA_TIMEOUT_4S = 4;
-constexpr size_t MAX_OBSERVERS_SIZE = 100;
 constexpr int32_t FUSION_RANGING_SYS_ABILITY_ID = 8631;
 }
 
@@ -58,68 +57,115 @@ static sptr<IFusionRanging> GetRemoteProxy()
 struct FusionRangingManager::impl {
     impl();
     ~impl();
+    class FusionRangingSystemAbility : public SystemAbilityStatusChangeStub {
+    public:
+        explicit FusionRangingSystemAbility(){};
+        void OnAddSystemAbility(int32_t systemAbilityId, const std::string &deviceId) override;
+        void OnRemoveSystemAbility(int32_t systemAbilityId, const std::string &deviceId) override;
 
-    bool CreateRangingObserverIfNeeded();
-    void DestroyRangingObserver();
+    private:
+        std::atomic<bool> isSaRemoved_ = false;
+    };
 
-    std::mutex observerMutex_;
-    sptr<RangingResultObserverImpl> rangingObserver_;
-    sptr<RangingStateObserverImpl> stateObserver_;
+    class RangingObserverHandlerImpl : public RangingObserverHandler {
+    public:
+        explicit RangingObserverHandlerImpl(FusionRangingManager::impl *outer) : outer_(outer) {}
 
-    std::mutex rangingMutex_;
-    std::map<std::string, std::function<void(const RangingResult &)>> rangingResultCallbacks_;
-    std::mutex stateMutex_;
-    std::function<void(const RangingStateChangeInfo &)> stateChangeCallback_;
+        void OnRangingStateChanged(const RangingStateChangeInfo &info) override
+        {
+            if (!outer_) {
+                return;
+            }
+            std::lock_guard<std::mutex> lock(outer_->mutex_);
+            for (auto it = outer_->observers_.begin(); it != outer_->observers_.end(); ++it) {
+                (*it)->OnRangingStateChanged(info);
+            }
+        }
+
+        void OnRangingResult(const RangingResult &result) override
+        {
+            if (!outer_) {
+                return;
+            }
+            std::lock_guard<std::mutex> lock(outer_->mutex_);
+            for (auto it = outer_->observers_.begin(); it != outer_->observers_.end(); ++it) {
+                (*it)->OnRangingResult(result);
+            }
+        }
+
+    private:
+        FusionRangingManager::impl *outer_;
+    };
+
+    void InitObserverHandler();
+
+    sptr<RangingObserverHandlerImpl> observerHandler_;
+    sptr<RangingObserverImpl> rangObserver_;
+    sptr<FusionRangingSystemAbility> systemAbility_;
+
+    std::mutex mutex_;
+    std::list<std::shared_ptr<FusionRangingObserver>> observers_;
 };
 
 FusionRangingManager::impl::impl()
 {
     HILOGI("FusionRangingManager impl()");
+    systemAbility_ = sptr<FusionRangingSystemAbility>::MakeSptr();
+    sptr<ISystemAbilityManager> samgrProxy = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    int ret = samgrProxy->SubscribeSystemAbility(FUSION_RANGING_SYS_ABILITY_ID, systemAbility_);
+    if (ret != RANGING_NO_ERROR) {
+        HILOGE("SubscribeSystemAbility failed");
+    }
 }
 
 FusionRangingManager::impl::~impl()
 {
     HILOGI("FusionRangingManager ~impl()");
+    auto proxy = GetRemoteProxy();
+    if (proxy && rangObserver_) {
+        proxy->DeregisterObserver(rangObserver_);
+    }
 }
 
-bool FusionRangingManager::impl::CreateRangingObserverIfNeeded()
+void FusionRangingManager::impl::InitObserverHandler()
 {
-    if (!rangingResultCallbacks_.empty()) {
-        return true;
+    observerHandler_ = sptr<RangingObserverHandlerImpl>::MakeSptr(this);
+    rangObserver_ = sptr<RangingObserverImpl>::MakeSptr(observerHandler_);
+    HILOGI("InitObserverHandler: observerHandler_ and rangObserver_ created");
+    auto proxy = GetRemoteProxy();
+    if (proxy && rangObserver_) {
+        proxy->RegisterObserver(rangObserver_);
     }
+}
 
-    auto observer = sptr<RangingResultObserverImpl>::MakeSptr();
-    if (observer == nullptr) {
-        HILOGE("CreateRangingObserverIfNeeded: failed to create rangingObserver_");
-        return false;
-    }
-    std::lock_guard<std::mutex> lock(observerMutex_);
-    rangingObserver_ = observer;
-    impl *self = this;
-    rangingObserver_->SetResultCallback([self](const RangingResult &result) {
-        std::lock_guard<std::mutex> lock(self->rangingMutex_);
-        auto it = self->rangingResultCallbacks_.find(result.GetDeviceId());
-        if (it != self->rangingResultCallbacks_.end() && it->second) {
-            HILOGI("OnRangingResult callback deviceId: %{public}s", GET_ENCRYPT_ADDR(result.GetDeviceId()));
-            it->second(result);
+void FusionRangingManager::impl::FusionRangingSystemAbility::OnAddSystemAbility(int32_t systemAbilityId,
+                                                                                const std::string &deviceId)
+{
+    HILOGI("systemAbilityId:%{public}d", systemAbilityId);
+    if (systemAbilityId == FUSION_RANGING_SYS_ABILITY_ID) {
+        auto proxy = GetRemoteProxy();
+        if (!proxy) {
+            HILOGE("Get proxy failed");
+            return;
         }
-    });
-
-    HILOGI("CreateRangingObserverIfNeeded: created rangingObserver_ for first device");
-    return true;
+        if (isSaRemoved_.load()) {
+            isSaRemoved_ = false;
+        }
+    }
 }
 
-void FusionRangingManager::impl::DestroyRangingObserver()
+void FusionRangingManager::impl::FusionRangingSystemAbility::OnRemoveSystemAbility(int32_t systemAbilityId,
+                                                                                   const std::string &deviceId)
 {
-    std::lock_guard<std::mutex> lock(observerMutex_);
-    rangingObserver_ = nullptr;
-    HILOGI("DestroyRangingObserver: destroyed rangingObserver_ for last device");
+    HILOGI("systemAbilityId:%{public}d", systemAbilityId);
+    isSaRemoved_ = true;
 }
 
 FusionRangingManager::FusionRangingManager()
 {
     HILOGI("FusionRangingManager constructed.");
     pimpl = std::make_unique<impl>();
+    pimpl->InitObserverHandler();
 }
 
 FusionRangingManager::~FusionRangingManager()
@@ -151,120 +197,92 @@ int32_t FusionRangingManager::GetRangingCapability(RangingCapabilitySupported &c
     }
     auto proxy = GetRemoteProxy();
     FCM_CHECK_RETURN_RET(proxy != nullptr, RANGING_ERR_SERVICE_NOT_PROVIDED, "proxy null");
-    HILOGE("GetRangingCapability proxy call");
     return proxy->GetRangingCapability(capability);
 }
 
-int FusionRangingManager::StartRanging(const RangingParams &params,
-                                       const std::function<void(const RangingResult &)> &callback)
+int FusionRangingManager::StartRanging(const RangingParams &params)
 {
     if (!IsRangingSupported()) {
         return static_cast<int32_t>(RangingErrCode::RANGING_ERR_API_NOT_SUPPORT);
     }
     auto proxy = GetRemoteProxy();
     FCM_CHECK_RETURN_RET(proxy != nullptr, RANGING_ERR_SERVICE_NOT_PROVIDED, "proxy null");
-    std::string deviceId = params.GetDeviceId();
-    {
-        std::lock_guard<std::mutex> lock(pimpl->rangingMutex_);
-        if (pimpl->rangingResultCallbacks_.size() >= MAX_OBSERVERS_SIZE) {
-            HILOGE("Too many observers registered");
-            return static_cast<int32_t>(RangingErrCode::RANGING_ERR_INTERNAL_ERROR);
-        }
-        FCM_CHECK_RETURN_RET(pimpl->rangingResultCallbacks_.size() < MAX_OBSERVERS_SIZE, RANGING_ERR_INTERNAL_ERROR,
-                             "proxy null");
-        if (!pimpl->CreateRangingObserverIfNeeded()) {
-            return static_cast<int32_t>(RangingErrCode::RANGING_ERR_INTERNAL_ERROR);
-        }
-        pimpl->rangingResultCallbacks_[deviceId] = callback;
-    }
-
-    std::lock_guard<std::mutex> lock(pimpl->observerMutex_);
-    int ret = proxy->StartRanging(params, pimpl->rangingObserver_);
+    int ret = proxy->StartRanging(params);
     HILOGI("StartRanging ret:%{public}d", ret);
-    if (ret != 0) {
-        std::lock_guard<std::mutex> lock(pimpl->rangingMutex_);
-        pimpl->rangingResultCallbacks_.erase(deviceId);
-        if (pimpl->rangingResultCallbacks_.empty()) {
-            pimpl->DestroyRangingObserver();
-            HILOGI("StartRanging: rollback rangingObserver_ due to failure");
-        }
-    }
     return ret;
 }
 
-int FusionRangingManager::StopRanging(const std::string &deviceId)
+int FusionRangingManager::StopRanging(const RangingParams &params)
 {
     if (!IsRangingSupported()) {
         return static_cast<int32_t>(RangingErrCode::RANGING_ERR_API_NOT_SUPPORT);
     }
 
+    if (params.GetDeviceId().empty()) {
+        HILOGE("StopRanging not found device");
+        return RANGING_ERR_DEVICE_NOT_FOUND;
+    }
     auto proxy = GetRemoteProxy();
     FCM_CHECK_RETURN_RET(proxy != nullptr, RANGING_ERR_SERVICE_NOT_PROVIDED, "proxy null");
-    bool shouldDestroyObserver = false;
-    sptr<RangingResultObserverImpl> observerToStop = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(pimpl->rangingMutex_);
-        pimpl->rangingResultCallbacks_.erase(deviceId);
-        observerToStop = pimpl->rangingObserver_;
-        shouldDestroyObserver = (pimpl->rangingResultCallbacks_.empty() && pimpl->rangingObserver_ != nullptr);
-        if (shouldDestroyObserver) {
-            pimpl->rangingObserver_ = nullptr;
-        }
-    }
-
-    int ret = proxy->StopRanging(deviceId, observerToStop);
-    if (shouldDestroyObserver) {
-        pimpl->DestroyRangingObserver();
-    }
+    int ret = proxy->StopRanging(params);
+    HILOGI("StopRanging ret:%{public}d", ret);
     return ret;
 }
 
-int FusionRangingManager::OnRangingStateChange(const std::function<void(const RangingStateChangeInfo &)> &callback)
+int FusionRangingManager::StartPassiveRanging(RangingTypes capabilityType, int32_t &handle)
 {
     if (!IsRangingSupported()) {
         return static_cast<int32_t>(RangingErrCode::RANGING_ERR_API_NOT_SUPPORT);
     }
-    {
-        std::lock_guard<std::mutex> lock(pimpl->stateMutex_);
-        FCM_CHECK_RETURN_RET(pimpl->stateChangeCallback_ == nullptr, RANGING_ERR_PARAM_IS_OCCUPIED, "proxy null");
-        pimpl->stateChangeCallback_ = callback;
-    }
-    auto observer = sptr<RangingStateObserverImpl>::MakeSptr();
-    FCM_CHECK_RETURN_RET(observer != nullptr, RANGING_ERR_INTERNAL_ERROR, "proxy null");
     auto proxy = GetRemoteProxy();
     FCM_CHECK_RETURN_RET(proxy != nullptr, RANGING_ERR_SERVICE_NOT_PROVIDED, "proxy null");
-    std::lock_guard<std::mutex> lock(pimpl->observerMutex_);
-    pimpl->stateObserver_ = observer;
-    auto self = this;
-    pimpl->stateObserver_->SetStateCallback([self](const RangingStateChangeInfo &info) {
-        std::lock_guard<std::mutex> lock(self->pimpl->stateMutex_);
-        if (self->pimpl->stateChangeCallback_) {
-            self->pimpl->stateChangeCallback_(info);
-        }
-    });
-    auto ret = proxy->RegisterStateObserver(pimpl->stateObserver_);
-    HILOGI("OnRangingStateChange ret:%{public}d", ret);
+    int ret = proxy->StartPassiveRanging(static_cast<int>(capabilityType), handle);
+    HILOGI("StartPassiveRanging ret:%{public}d", ret);
     return ret;
 }
 
-int FusionRangingManager::OffRangingStateChange()
+int FusionRangingManager::StopPassiveRanging(RangingTypes capabilityType, int32_t handle)
+{
+    if (!IsRangingSupported() || handle < 0) {
+        return static_cast<int32_t>(RangingErrCode::RANGING_ERR_API_NOT_SUPPORT);
+    }
+    auto proxy = GetRemoteProxy();
+    FCM_CHECK_RETURN_RET(proxy != nullptr, RANGING_ERR_SERVICE_NOT_PROVIDED, "proxy null");
+    int ret = proxy->StopPassiveRanging(static_cast<int>(capabilityType), handle);
+    HILOGI("StartPassiveRanging ret:%{public}d", ret);
+    return ret;
+}
+
+int FusionRangingManager::RegisterFusionRangingObserver(const std::shared_ptr<FusionRangingObserver> &observer)
 {
     if (!IsRangingSupported()) {
         return static_cast<int32_t>(RangingErrCode::RANGING_ERR_API_NOT_SUPPORT);
     }
-
-    auto proxy = GetRemoteProxy();
-    FCM_CHECK_RETURN_RET(proxy != nullptr, RANGING_ERR_SERVICE_NOT_PROVIDED, "proxy null");
-    std::lock_guard<std::mutex> lock(pimpl->observerMutex_);
-    FCM_CHECK_RETURN_RET(pimpl->stateObserver_ != nullptr, RANGING_ERR_INTERNAL_ERROR, "observer null");
-    auto ret = proxy->UnregisterStateObserver(pimpl->stateObserver_);
-    if (ret == 0) {
-        pimpl->stateObserver_ = nullptr;
-        std::lock_guard<std::mutex> lock(pimpl->stateMutex_);
-        pimpl->stateChangeCallback_ = nullptr;
+    std::lock_guard<std::mutex> lock(pimpl->mutex_);
+    for (auto it = pimpl->observers_.begin(); it != pimpl->observers_.end(); ++it) {
+        if (*it == observer) {
+            return RANGING_NO_ERROR;
+        }
     }
-    HILOGI("OffRangingStateChange ret:%{public}d", ret);
-    return ret;
+    pimpl->observers_.push_back(observer);
+    return RANGING_NO_ERROR;
+}
+
+int FusionRangingManager::DeregisterFusionRangingObserver(const std::shared_ptr<FusionRangingObserver> &observer)
+{
+    if (!IsRangingSupported()) {
+        return static_cast<int32_t>(RangingErrCode::RANGING_ERR_API_NOT_SUPPORT);
+    }
+    std::lock_guard<std::mutex> lock(pimpl->mutex_);
+    for (auto it = pimpl->observers_.begin(); it != pimpl->observers_.end();) {
+        if (*it == observer) {
+            it = pimpl->observers_.erase(it);
+            return RANGING_NO_ERROR;
+        } else {
+            ++it;
+        }
+    }
+    return RANGING_ERR_INTERNAL_ERROR;
 }
 }  // namespace FusionRanging
 }  // namespace OHOS
