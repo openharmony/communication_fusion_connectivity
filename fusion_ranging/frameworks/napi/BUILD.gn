@@ -30,6 +30,8 @@ ohos_shared_library("ranging") {
   sources = [
     "src/napi_fusion_ranging.cpp",
     "src/napi_fusion_ranging_constant.cpp",
+    "src/napi_fusion_ranging_callback.cpp",
+    "src/napi_fusion_ranging_utils.cpp",
     "$FUSION_RANGING/../partner_agent/frameworks/napi/src/napi_fusion_connectivity_error.cpp",
     "$FUSION_RANGING/../partner_agent/frameworks/napi/src/napi_ha_event_utils.cpp",
     "$FUSION_RANGING/../partner_agent/frameworks/napi/src/napi_parser_utils.cpp",
@@ -37,6 +39,7 @@ ohos_shared_library("ranging") {
     "$FUSION_RANGING/../partner_agent/frameworks/napi/src/napi_async_work.cpp",
     "$FUSION_RANGING/../partner_agent/frameworks/napi/src/napi_native_object.cpp",
     "$FUSION_RANGING/../partner_agent/frameworks/napi/src/napi_timer.cpp",
+    "$FUSION_RANGING/../partner_agent/frameworks/napi/src/napi_event_subscribe_module.cpp",
   ]
 
   include_dirs = [
