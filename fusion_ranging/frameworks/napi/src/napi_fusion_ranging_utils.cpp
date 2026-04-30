@@ -14,56 +14,49 @@
  */
 
 #include "napi_fusion_ranging_utils.h"
+#include "napi_parser_utils.h"
 
 namespace OHOS {
 namespace FusionRanging {
+using namespace FusionConnectivity;
+
+static napi_value CreateNapiRangingMeasureMentValue(napi_env env, const RangingMeasurement &measurement)
+{
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+    NAPI_FCM_RETURN_IF(result == nullptr, "Create Napi Measurement err", result);
+    SetNamedPropertyByInteger(env, result, measurement.GetValue(), "value");
+    SetNamedPropertyByInteger(env, result, static_cast<int32_t>(measurement.GetConfidence()), "confidence");
+    return result;
+}
 
 static napi_value GenerateRangingStateChangeInfo(napi_env env, const RangingStateChangeInfo &info)
 {
-    napi_value obj = nullptr;
-    napi_status status = napi_create_object(env, &obj);
-    NAPI_FCM_RETURN_IF((status != napi_ok || obj == nullptr), "Generate statechange Invalid status or obj", obj);
-    napi_value state = nullptr;
-    status = napi_create_int32(env, static_cast<int32_t>(info.GetState()), &state);
-    if (status == napi_ok && state != nullptr) {
-        napi_set_named_property(env, obj, "state", state);
-    }
-
-    napi_value cause = nullptr;
-    status = napi_create_int32(env, static_cast<int32_t>(info.GetCause()), &cause);
-    if (status == napi_ok && cause != nullptr) {
-        napi_set_named_property(env, obj, "cause", cause);
-    }
-    return obj;
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+    NAPI_FCM_RETURN_IF(result == nullptr, "Generate statechange Err", result);
+    FusionConnectivity::SetNamedPropertyByInteger(env, result, static_cast<int32_t>(info.GetState()), "state");
+    FusionConnectivity::SetNamedPropertyByInteger(env, result, static_cast<int32_t>(info.GetCause()), "cause");
+    return result;
 }
 
 static napi_value GenerateRangingResult(napi_env env, const RangingResult &result)
 {
-    napi_value obj = nullptr;
-    napi_status status = napi_create_object(env, &obj);
-    NAPI_FCM_RETURN_IF((status != napi_ok || obj == nullptr), "Generate result Invalid status or obj", obj);
-    napi_value deviceId = nullptr;
-    status = napi_create_string_utf8(env, result.GetDeviceId().c_str(), NAPI_AUTO_LENGTH, &deviceId);
-    if (status == napi_ok && deviceId != nullptr) {
-        napi_set_named_property(env, obj, "deviceId", deviceId);
-    }
+    napi_value retObj = nullptr;
+    napi_create_object(env, &retObj);
+    NAPI_FCM_RETURN_IF(retObj == nullptr, "Generate result err", retObj);
+    FusionConnectivity::SetNamedPropertyByString(env, retObj, result.GetDeviceId(), "deviceId");
 
-    napi_value distance = GenerateRangingMeasurement(env, result.GetDistance());
-    if (distance != nullptr) {
-        napi_set_named_property(env, obj, "distance", distance);
-    }
+    napi_value distance = CreateNapiRangingMeasureMentValue(env, result.GetDistance());
+    NAPI_FCM_RETURN_IF(distance == nullptr, "Create Napi distance err", retObj);
+    napi_set_named_property(env, retObj, "distance", distance);
 
-    napi_value angle = GenerateRangingMeasurement(env, result.GetAngle());
-    if (angle != nullptr) {
-        napi_set_named_property(env, obj, "angle", angle);
-    }
+    napi_value angle = CreateNapiRangingMeasureMentValue(env, result.GetAngle());
+    NAPI_FCM_RETURN_IF(angle == nullptr, "Create Napi angle err", retObj);
+    napi_set_named_property(env, retObj, "angle", angle);
 
-    napi_value rssi = nullptr;
-    status = napi_create_int32(env, result.GetRssi(), &rssi);
-    if (status == napi_ok && rssi != nullptr) {
-        napi_set_named_property(env, obj, "rssi", rssi);
-    }
-    return obj;
+    FusionConnectivity::SetNamedPropertyByInteger(env, retObj, result.GetRssi(), "rssi");
+    return retObj;
 }
 
 napi_value NapiNativeRangingStateChange::ToNapiValue(napi_env env) const
