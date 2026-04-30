@@ -26,159 +26,32 @@
 #include "napi_native_object.h"
 #include "napi_fusion_connectivity_error.h"
 #include "napi_async_callback.h"
+#include "napi_fusion_ranging_callback.h"
+#include "napi_fusion_ranging_utils.h"
 #include "log_utils.h"
 #include <memory>
+#include <atomic>
 #include <map>
 
 namespace OHOS {
 namespace FusionRanging {
-
+using namespace FusionConnectivity;
 namespace {
-std::map<std::string, std::shared_ptr<FusionConnectivity::NapiCallback>> g_rangingCallbacks;
-std::map<napi_env, std::shared_ptr<FusionConnectivity::NapiCallback>> g_stateChangeCallbacks;
-std::mutex g_rangingCallbacksMutex;
-std::mutex g_stateChangeCallbacksMutex;
-std::shard_ptr<NapiFusionRangingCallback> napiCallback_ = std::make_shared_ptr<NapiFusionRangingCallback>();
-
-static napi_status NapiParseRangingParams(napi_env env, napi_value object, RangingParams &outParams)
-{
-    bool hasProperty = false;
-    NAPI_FCM_CALL_RETURN(napi_has_named_property(env, object, "deviceId", &hasProperty));
-    if (!hasProperty) {
-        HILOGE("deviceId property is needed");
-        return napi_invalid_arg;
-    }
-
-    napi_value deviceIdValue;
-    NAPI_FCM_CALL_RETURN(napi_get_named_property(env, object, "deviceId", &deviceIdValue));
-    std::string deviceId = "";
-    NAPI_FCM_RETURN_IF(!FusionConnectivity::ParseString(env, deviceId, deviceIdValue), "Invalid deviceId",
-                       napi_invalid_arg);
-    NAPI_FCM_RETURN_IF(!FusionConnectivity::IsValidAddress(deviceId), "Invalid deviceId", napi_invalid_arg);
-    outParams.SetDeviceId(deviceId);
-    NAPI_FCM_CALL_RETURN(napi_has_named_property(env, object, "role", &hasProperty));
-    if (hasProperty) {
-        napi_value roleValue;
-        NAPI_FCM_CALL_RETURN(napi_get_named_property(env, object, "role", &roleValue));
-        int32_t role;
-        NAPI_FCM_RETURN_IF(!FusionConnectivity::ParseInt32(env, role, roleValue), "Invalid role", napi_invalid_arg);
-        outParams.SetRole(static_cast<RangingRole>(role));
-    }
-
-    NAPI_FCM_CALL_RETURN(napi_has_named_property(env, object, "capabilityType", &hasProperty));
-    if (hasProperty) {
-        napi_value capabilityTypeValue;
-        NAPI_FCM_CALL_RETURN(napi_get_named_property(env, object, "capabilityType", &capabilityTypeValue));
-        int32_t capabilityType;
-        NAPI_FCM_RETURN_IF(!FusionConnectivity::ParseInt32(env, capabilityType, capabilityTypeValue),
-                           "Invalid capabilityType", napi_invalid_arg);
-        outParams.SetCapabilityType(static_cast<RangingTypes>(capabilityType));
-    }
-    return napi_ok;
-}
-
-static std::string FindDeviceIdByEnvCallback(const napi_env env, napi_value callback)
-{
-    std::string deviceId = "";
-    std::lock_guard<std::mutex> lock(g_rangingCallbacksMutex);
-    for (auto it = g_rangingCallbacks.begin(); it != g_rangingCallbacks.end(); ++it) {
-        if (it->second != nullptr && it->second->Equal(env, callback)) {
-            deviceId = it->first;
-            break;
-        }
-    }
-    HILOGI("FindDeviceIdByEnvCallback: found deviceId=%{public}s for env", GET_ENCRYPT_ADDR(deviceId));
-    return deviceId;
-}
-
-static napi_value GenerateRangingMeasurement(napi_env env, const RangingMeasurement &measurement)
-{
-    napi_value obj = nullptr;
-    napi_status status = napi_create_object(env, &obj);
-    NAPI_FCM_RETURN_IF((status != napi_ok || obj == nullptr), "Generate Measurement Invalid status or obj", obj);
-    napi_value isValid = nullptr;
-    status = napi_get_boolean(env, measurement.GetIsValid(), &isValid);
-    if (status == napi_ok && isValid != nullptr) {
-        napi_set_named_property(env, obj, "isValid", isValid);
-    }
-
-    napi_value value = nullptr;
-    status = napi_create_int32(env, measurement.GetValue(), &value);
-    if (status == napi_ok && value != nullptr) {
-        napi_set_named_property(env, obj, "value", value);
-    }
-
-    napi_value confidence = nullptr;
-    status = napi_create_int32(env, static_cast<int32_t>(measurement.GetConfidence()), &confidence);
-    if (status == napi_ok && confidence != nullptr) {
-        napi_set_named_property(env, obj, "confidence", confidence);
-    }
-    return obj;
-}
-
-static napi_value GenerateRangingResult(napi_env env, const RangingResult &result)
-{
-    napi_value obj = nullptr;
-    napi_status status = napi_create_object(env, &obj);
-    NAPI_FCM_RETURN_IF((status != napi_ok || obj == nullptr), "Generate result Invalid status or obj", obj);
-    napi_value deviceId = nullptr;
-    status = napi_create_string_utf8(env, result.GetDeviceId().c_str(), NAPI_AUTO_LENGTH, &deviceId);
-    if (status == napi_ok && deviceId != nullptr) {
-        napi_set_named_property(env, obj, "deviceId", deviceId);
-    }
-
-    napi_value distance = GenerateRangingMeasurement(env, result.GetDistance());
-    if (distance != nullptr) {
-        napi_set_named_property(env, obj, "distance", distance);
-    }
-
-    napi_value angle = GenerateRangingMeasurement(env, result.GetAngle());
-    if (angle != nullptr) {
-        napi_set_named_property(env, obj, "angle", angle);
-    }
-
-    napi_value rssi = nullptr;
-    status = napi_create_int32(env, result.GetRssi(), &rssi);
-    if (status == napi_ok && rssi != nullptr) {
-        napi_set_named_property(env, obj, "rssi", rssi);
-    }
-    return obj;
-}
-
-static napi_value GenerateRangingStateChangeInfo(napi_env env, const RangingStateChangeInfo &info)
-{
-    napi_value obj = nullptr;
-    napi_status status = napi_create_object(env, &obj);
-    NAPI_FCM_RETURN_IF((status != napi_ok || obj == nullptr), "Generate statechange Invalid status or obj", obj);
-    napi_value state = nullptr;
-    status = napi_create_int32(env, static_cast<int32_t>(info.GetState()), &state);
-    if (status == napi_ok && state != nullptr) {
-        napi_set_named_property(env, obj, "state", state);
-    }
-
-    napi_value cause = nullptr;
-    status = napi_create_int32(env, static_cast<int32_t>(info.GetCause()), &cause);
-    if (status == napi_ok && cause != nullptr) {
-        napi_set_named_property(env, obj, "cause", cause);
-    }
-    return obj;
-}
+std::shared_ptr<NapiFusionRangingObserver> napiCallback_ = std::make_shared<NapiFusionRangingObserver>();
 
 static napi_value GenerateRangingCapabilitySupported(napi_env env, const RangingCapabilitySupported &cap)
 {
-    napi_value obj = nullptr;
-    napi_status status = napi_create_object(env, &obj);
-    NAPI_FCM_RETURN_IF(((status != napi_ok) || (obj == nullptr)), "Generate Capability Invalid status or obj", obj);
-    napi_value nearlinkHadm = nullptr;
-    status = napi_get_boolean(env, cap.GetNearlinkHadm(), &nearlinkHadm);
-    if (status == napi_ok && nearlinkHadm != nullptr) {
-        napi_set_named_property(env, obj, "nearlinkHadm", nearlinkHadm);
-    }
-    return obj;
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+    NAPI_FCM_RETURN_IF(result == nullptr, "Generate Capability err", result);
+    napi_value nearlinkHadm = NapiGetBooleanRet(env, cap.GetNearlinkHadm());
+    NAPI_FCM_RETURN_IF(nearlinkHadm == nullptr, "Create Napi nearlinkHadm err", result);
+    napi_set_named_property(env, result, "nearlinkHadm", nearlinkHadm);
+    return result;
 }
 }  // anonymous namespace
 
-class NapiNativeRangingCapabilityData : public FusionConnectivity::NapiNativeObject {
+class NapiNativeRangingCapabilityData : public NapiNativeObject {
 public:
     explicit NapiNativeRangingCapabilityData(RangingCapabilitySupported capData) : capData_(capData) {}
     ~NapiNativeRangingCapabilityData() override = default;
@@ -192,34 +65,6 @@ private:
     RangingCapabilitySupported capData_;
 };
 
-class NapiNativeRangingResultData : public FusionConnectivity::NapiNativeObject {
-public:
-    explicit NapiNativeRangingResultData(const RangingResult &resultData) : resultData_(resultData) {}
-    ~NapiNativeRangingResultData() override = default;
-
-    napi_value ToNapiValue(napi_env env) const override
-    {
-        return GenerateRangingResult(env, resultData_);
-    }
-
-private:
-    RangingResult resultData_;
-};
-
-class NapiNativeStateChnageData : public FusionConnectivity::NapiNativeObject {
-public:
-    explicit NapiNativeStateChnageData(const RangingStateChangeInfo &state) : stateInfo_(state) {}
-    ~NapiNativeStateChnageData() override = default;
-
-    napi_value ToNapiValue(napi_env env) const override
-    {
-        return GenerateRangingStateChangeInfo(env, stateInfo_);
-    }
-
-private:
-    RangingStateChangeInfo stateInfo_;
-};
-
 void DefineRangingInterface(napi_env env, napi_value exports)
 {
     napi_property_descriptor desc[] = {
@@ -227,6 +72,8 @@ void DefineRangingInterface(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("getRangingCapability", GetRangingCapability),
         DECLARE_NAPI_FUNCTION("startRanging", StartRanging),
         DECLARE_NAPI_FUNCTION("stopRanging", StopRanging),
+        DECLARE_NAPI_FUNCTION("startPassiveRanging", StartPassiveRanging),
+        DECLARE_NAPI_FUNCTION("stopPassiveRanging", StopPassiveRanging),
         DECLARE_NAPI_FUNCTION("onRangingStateChange", OnRangingStateChange),
         DECLARE_NAPI_FUNCTION("offRangingStateChange", OffRangingStateChange),
     };
@@ -235,309 +82,186 @@ void DefineRangingInterface(napi_env env, napi_value exports)
 
 napi_value IsRangingSupported(napi_env env, napi_callback_info info)
 {
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, FusionConnectivity::CheckEmptyParams(env, info) == napi_ok,
-                                 FusionConnectivity::FCM_ERR_INVALID_PARAM);
-    auto manager = FusionRangingManager::GetInstance();
-    bool isSupported = (manager != nullptr) ? manager->IsRangingSupported() : false;
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, CheckEmptyParams(env, info) == napi_ok, FCM_ERR_INVALID_PARAM);
+    bool isSupported = FusionRangingManager::GetInstance()->IsRangingSupported();
     HILOGI("IsRangingSupported result is %{public}d", isSupported);
-    return FusionConnectivity::NapiGetBooleanRet(env, isSupported);
+    return NapiGetBooleanRet(env, isSupported);
 }
 
 napi_value GetRangingCapability(napi_env env, napi_callback_info info)
 {
     HILOGI("enter");
-    auto asyncCallback = FusionConnectivity::NapiParseAsyncCallback(env, info);
-    if (!asyncCallback) {
-        HILOGE("asyncCallback is nullptr!");
-        return FusionConnectivity::NapiGetUndefined(env);
-    }
-    auto asyncWorkFunc = []() -> FusionConnectivity::NapiAsyncWorkRet {
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, CheckEmptyParams(env, info) == napi_ok, FCM_ERR_INVALID_PARAM);
+    auto asyncWorkFunc = [env]() -> NapiAsyncWorkRet {
         RangingCapabilitySupported cap;
         int ret = FusionRangingManager::GetInstance()->GetRangingCapability(cap);
-        if (ret != FusionConnectivity::FCM_NO_ERROR) {
-            HILOGE("GetRangingCapability failed, ret: %{public}d", ret);
-            auto emptyObj = std::make_shared<FusionConnectivity::NapiNativeEmpty>();
-            return {ret, emptyObj};
-        }
         auto nativeObj = std::make_shared<NapiNativeRangingCapabilityData>(cap);
-        return {FusionConnectivity::FCM_NO_ERROR, nativeObj};
+        return NapiAsyncWorkRet{ret, nativeObj};
     };
 
-    auto asyncWork = FusionConnectivity::NapiAsyncWorkFactory::CreateAsyncWork(
-        env, info, asyncWorkFunc, FusionConnectivity::ASYNC_WORK_NO_NEED_CALLBACK);
-    if (!asyncWork) {
-        HILOGE("asyncWork is nullptr!");
-        return FusionConnectivity::NapiGetUndefined(env);
-    }
-
+    auto asyncWork = NapiAsyncWorkFactory::CreateAsyncWork(env, info, asyncWorkFunc, ASYNC_WORK_NO_NEED_CALLBACK);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, asyncWork, FCM_ERR_INTERNAL_ERROR);
     asyncWork->Run();
     return asyncWork->GetRet();
 }
 
-static napi_status ParseStartRangingParams(napi_env env, napi_value *argv, RangingParams &params)
+static napi_status ParseStartRangingParams(napi_env env, napi_value object, RangingParams &params)
 {
-    napi_valuetype valuetype;
-    napi_typeof(env, argv[FusionConnectivity::PARAM0], &valuetype);
-    NAPI_FCM_RETURN_IF((valuetype != napi_object), "params not object", napi_invalid_arg);
-    napi_status status = NapiParseRangingParams(env, argv[FusionConnectivity::PARAM0], params);
-    NAPI_FCM_RETURN_IF((status != napi_ok), "parse params not ok", status);
-    napi_typeof(env, argv[FusionConnectivity::PARAM1], &valuetype);
-    NAPI_FCM_RETURN_IF((valuetype != napi_function), "callback not function", napi_invalid_arg);
+    NAPI_FCM_RETURN_IF(NapiCheckObjectPropertiesName(env, object, {"deviceId", "capabilityType"}) != napi_ok,
+                       "params not equal", napi_invalid_arg);
+    std::string deviceId = "";
+    int32_t capabilityType;
+    NAPI_FCM_RETURN_IF(NapiParseStringObject(env, object, "deviceId", deviceId) != napi_ok, "parse device id err",
+                       napi_invalid_arg);
+    NAPI_FCM_RETURN_IF(!IsValidAddress(deviceId), "Invalid deviceId", napi_invalid_arg);
+    NAPI_FCM_RETURN_IF(NapiParseInt32Object(env, object, "capabilityType", capabilityType) != napi_ok, "parse cap err",
+                       napi_invalid_arg);
+    HILOGI("ParseStartRangingParams deviceId:%{public}s, cap:%{public}d", GET_ENCRYPT_ADDR(deviceId), capabilityType);
+    params.SetDeviceId(deviceId);
+    params.SetCapabilityType(static_cast<RangingTypes>(capabilityType));
     return napi_ok;
-}
-
-static napi_status ValidateStartRangingParams(napi_env env, size_t argc, napi_value *argv)
-{
-    NAPI_FCM_RETURN_IF((argc < FusionConnectivity::ARGS_SIZE_TWO), "wrong argument count", napi_invalid_arg);
-    if (argv[FusionConnectivity::PARAM0] == nullptr || argv[FusionConnectivity::PARAM1] == nullptr) {
-        HILOGE("argv is nullptr");
-        return napi_invalid_arg;
-    }
-
-    napi_valuetype valuetype;
-    napi_typeof(env, argv[FusionConnectivity::PARAM0], &valuetype);
-    NAPI_FCM_RETURN_IF((valuetype != napi_object), "param not object", napi_invalid_arg);
-    napi_typeof(env, argv[FusionConnectivity::PARAM1], &valuetype);
-    NAPI_FCM_RETURN_IF((valuetype != napi_function), "callback not function", napi_invalid_arg);
-    return napi_ok;
-}
-
-static FusionConnectivity::NapiAsyncWorkRet ExecuteStartRangingWork(
-    const RangingParams &params, const std::function<void(const RangingResult &)> &rangingCallback)
-{
-    int ret = FusionRangingManager::GetInstance()->StartRanging(params, rangingCallback);
-    if (ret != 0) {
-        HILOGE("manager StartRanging failed, ret:%{public}d", ret);
-        return {ret, nullptr};
-    }
-    HILOGI("StartRanging: manager StartRanging success");
-    return {FusionConnectivity::FCM_NO_ERROR, nullptr};
-}
-
-static FusionConnectivity::NapiAsyncWorkRet ExecuteRegisterStateChangeWork(
-    const std::function<void(const RangingStateChangeInfo &)> &rangingCallback)
-{
-    int ret = FusionRangingManager::GetInstance()->OnRangingStateChange(rangingCallback);
-    if (ret != 0) {
-        HILOGE("manager StartRanging failed, ret:%{public}d", ret);
-        return {ret, nullptr};
-    }
-    HILOGI("StartRanging: manager StartRanging success");
-    return {FusionConnectivity::FCM_NO_ERROR, nullptr};
-}
-
-bool IsNapiCallbackExist(napi_env env, napi_value object)
-{
-    std::lock_guard<std::mutex> lock(g_rangingCallbacksMutex);
-    for (auto it = g_rangingCallbacks.begin(); it != g_rangingCallbacks.end(); ++it) {
-        if (it->second != nullptr && it->second->Equal(env, object)) {
-            return true;
-        }
-    }
-    return false;
 }
 
 napi_value StartRanging(napi_env env, napi_callback_info info)
 {
     HILOGI("StartRanging napi enter.");
-    size_t argc = FusionConnectivity::ARGS_SIZE_TWO;
-    napi_value argv[FusionConnectivity::ARGS_SIZE_TWO] = {nullptr};
+    size_t argc = ARGS_SIZE_TWO;
+    napi_value argv[ARGS_SIZE_TWO] = {nullptr};
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, (napiCallback_ != nullptr), FCM_ERR_INVALID_PARAM);
     napi_status cbInfoStatus = napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
-    napi_status cbStatus = ValidateStartRangingParams(env, argc, argv);
-    if (cbStatus != napi_ok) {
-        HILOGE("StartRanging: cbInfoStatus=%{public}d argc=%{public}zu", cbInfoStatus, argc);
-        return FusionConnectivity::NapiGetUndefined(env);
-    }
-
+    HILOGI("StartRanging: cbInfoStatus=%{public}d argc=%{public}zu", cbInfoStatus, argc);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, argc == ARGS_SIZE_TWO, FCM_ERR_INVALID_PARAM);
     RangingParams params;
-    napi_status parseStatus = ParseStartRangingParams(env, argv, params);
-    if (parseStatus != napi_ok) {
-        return FusionConnectivity::NapiGetUndefined(env);
-    }
+    napi_status parseStatus = ParseStartRangingParams(env, argv[PARAM0], params);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, (parseStatus == napi_ok), FCM_ERR_INVALID_PARAM);
+    auto status = NapiIsFunction(env, argv[PARAM1]);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, (status == napi_ok), FCM_ERR_INVALID_PARAM);
 
-    if (IsNapiCallbackExist(env, argv[FusionConnectivity::PARAM1])) {
-        return FusionConnectivity::NapiGetInt32(env, FusionConnectivity::FCM_ERR_DEVICE_ALREADY_BOUNDED);
-    }
-    auto napiCallback = std::make_shared<FusionConnectivity::NapiCallback>(env, argv[FusionConnectivity::PARAM1]);
+    auto napiCallback = std::make_shared<NapiCallback>(env, argv[PARAM1]);
     auto resultCallback = [env, napiCallback](const RangingResult &result) {
-        HILOGI("Napi ResultCallback");
-        auto ret = std::make_shared<NapiNativeRangingResultData>(result);
+        auto ret = std::make_shared<NapiNativeRangingResult>(result);
         auto callback = [env, napiCallback, ret]() {
-            FusionConnectivity::NapiHandleScope scope(env);
+            NapiHandleScope scope(env);
             napiCallback->CallFunction(ret);
         };
-        FusionConnectivity::DoInJsMainThread(env, callback);
+        DoInJsMainThread(env, callback);
     };
-    auto asynWorkFunc = [&params, resultCallback]() {
-        return ExecuteStartRangingWork(params, resultCallback);
-    };
-    auto asyncWork = FusionConnectivity::NapiAsyncWorkFactory::CreateAsyncWork(
-        env, info, asynWorkFunc, FusionConnectivity::ASYNC_WORK_NO_NEED_CALLBACK);
-    asyncWork->Run();
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, asyncWork, FusionConnectivity::FCM_ERR_INTERNAL_ERROR);
-    {
-        std::lock_guard<std::mutex> lock(g_rangingCallbacksMutex);
-        g_rangingCallbacks[params.GetDeviceId()] = napiCallback;
+    FusionRangingManager::GetInstance()->RegisterFusionRangingObserver(napiCallback_);
+    napiCallback_->RegisterRangingResultCallback(params, napiCallback, resultCallback);
+    auto ret = FusionRangingManager::GetInstance()->StartRanging(params);
+    if (ret != FCM_NO_ERROR) {
+        napiCallback_->DeregisterRangingResultCallbackWithDeviceId(env, argv[PARAM1], params.GetDeviceId());
+        FusionRangingManager::GetInstance()->DeregisterFusionRangingObserver(napiCallback_);
+        NAPI_FCM_ASSERT_RETURN_UNDEF(env, false, FCM_ERR_DEVICE_ALREADY_BOUNDED);
     }
-    return asyncWork->GetRet();
+    return NapiGetUndefined(env);
 }
 
-static napi_status CheckStopRangingParams(napi_env env, size_t argc, napi_value *argv)
+static napi_value StopRangingWithParams(napi_env env, napi_value napiCallback, napi_value object)
 {
-    NAPI_FCM_RETURN_IF((argc < FusionConnectivity::ARGS_SIZE_ONE), "wrong argument count", napi_invalid_arg);
-    NAPI_FCM_RETURN_IF((argv[FusionConnectivity::PARAM0] == nullptr), "argv nullptr", napi_invalid_arg);
-    napi_valuetype valuetype;
-    napi_typeof(env, argv[FusionConnectivity::PARAM0], &valuetype);
-    NAPI_FCM_RETURN_IF((valuetype != napi_function), "callback not function", napi_invalid_arg);
-    return napi_ok;
-}
-
-static auto ExecuteStopRangingWork(const std::string &deviceId)
-{
-    return [deviceId]() -> FusionConnectivity::NapiAsyncWorkRet {
-        auto manager = FusionRangingManager::GetInstance();
-        if (!manager) {
-            return {static_cast<int32_t>(RangingErrCode::RANGING_ERR_INTERNAL_ERROR), nullptr};
-        }
-
-        int ret = manager->StopRanging(deviceId);
-        HILOGI("StopRanging: manager StopRanging ret=%{public}d", ret);
-        return {ret, nullptr};
-    };
-}
-
-static void CleanupRangingCallback(const std::string &deviceId)
-{
-    std::lock_guard<std::mutex> lock(g_rangingCallbacksMutex);
-    auto it = g_rangingCallbacks.find(deviceId);
-    if (it != g_rangingCallbacks.end()) {
-        HILOGI("CleanupRangingCallback: cleanup callback ref for device:%{public}s", GET_ENCRYPT_ADDR(deviceId));
-        g_rangingCallbacks.erase(it);
+    RangingParams userParams;
+    auto ret = ParseStartRangingParams(env, object, userParams);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, (ret == napi_ok), FCM_ERR_INVALID_PARAM);
+    int stopRet = FusionRangingManager::GetInstance()->StopRanging(userParams);
+    napiCallback_->DeregisterRangingResultCallbackWithDeviceId(env, napiCallback, userParams.GetDeviceId());
+    if (napiCallback_->IsRangingResultCallbackEmpty()) {
+        FusionRangingManager::GetInstance()->DeregisterFusionRangingObserver(napiCallback_);
     }
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, stopRet == FCM_NO_ERROR, FCM_ERR_DEVICE_ALREADY_BOUNDED);
+    return NapiGetUndefined(env);
 }
 
 napi_value StopRanging(napi_env env, napi_callback_info info)
 {
-    size_t argc = FusionConnectivity::ARGS_SIZE_ONE;
-    napi_value argv[FusionConnectivity::ARGS_SIZE_ONE] = {nullptr};
+    size_t argc = ARGS_SIZE_TWO;
+    napi_value argv[ARGS_SIZE_TWO] = {nullptr};
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, (napiCallback_ != nullptr), FCM_ERR_DEVICE_NOT_FOUND);
+
     napi_status cbInfoStatus = napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
     HILOGI("StopRanging: cbInfoStatus=%{public}d argc=%{public}zu", cbInfoStatus, argc);
-    if (cbInfoStatus != napi_ok) {
-        HILOGE("StopRanging: napi_get_cb_info failed status=%{public}d", cbInfoStatus);
-        return FusionConnectivity::NapiGetUndefined(env);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, cbInfoStatus == napi_ok, FCM_ERR_INVALID_PARAM);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, argc >= ARGS_SIZE_ONE && argc <= ARGS_SIZE_TWO, FCM_ERR_INVALID_PARAM);
+    napi_status ret = NapiIsFunction(env, argv[PARAM0]);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, (ret == napi_ok), FCM_ERR_INVALID_PARAM);
+    if (argc == ARGS_SIZE_TWO) {
+        return StopRangingWithParams(env, argv[PARAM0], argv[PARAM1]);
     }
 
-    HILOGE("StopRanging: callback=%{public}p", argv[FusionConnectivity::PARAM0]);
-    napi_status ret = CheckStopRangingParams(env, argc, argv);
-    if (ret != napi_ok) {
-        return FusionConnectivity::NapiGetUndefined(env);
+    auto rangParams = napiCallback_->GetRangParamsByNapiCallback(env, argv[PARAM0]);
+    int stopRet = FCM_NO_ERROR;
+    for (auto it = rangParams.begin(); it != rangParams.end();) {
+        stopRet = FusionRangingManager::GetInstance()->StopRanging(*it);
+        napiCallback_->DeregisterRangingResultCallbackWithDeviceId(env, argv[PARAM0], it->GetDeviceId());
     }
-    HILOGE("StopRanging: callback=%{public}p", argv[FusionConnectivity::PARAM0]);
-    std::string deviceId = FindDeviceIdByEnvCallback(env, argv[FusionConnectivity::PARAM0]);
-    if (deviceId.empty()) {
-        return FusionConnectivity::NapiGetUndefined(env);
+    if (napiCallback_->IsRangingResultCallbackEmpty()) {
+        FusionRangingManager::GetInstance()->DeregisterFusionRangingObserver(napiCallback_);
     }
-    auto asyncWorkFunc = ExecuteStopRangingWork(deviceId);
-    auto completeFunc = [deviceId]() {
-        CleanupRangingCallback(deviceId);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, stopRet == FCM_NO_ERROR, FCM_ERR_DEVICE_ALREADY_BOUNDED);
+    return NapiGetUndefined(env);
+}
+
+napi_value StartPassiveRanging(napi_env env, napi_callback_info info)
+{
+    HILOGI("enter");
+    size_t argc = ARGS_SIZE_ONE;
+    napi_value argv[ARGS_SIZE_ONE] = {nullptr};
+    napi_status cbInfoStatus = napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
+    HILOGI("StartPassiveRanging: cbInfoStatus=%{public}d argc=%{public}zu", cbInfoStatus, argc);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, argc == ARGS_SIZE_ONE, FCM_ERR_INVALID_PARAM);
+    int32_t capabilityType = 0;
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, ParseInt32(env, capabilityType, argv[PARAM0]), FCM_ERR_INVALID_PARAM);
+
+    auto asyncWorkFunc = [env, capabilityType]() -> NapiAsyncWorkRet {
+        int handle = -1; /* -1 default as invaild handle */
+        auto ret =
+            FusionRangingManager::GetInstance()->StartPassiveRanging(static_cast<RangingTypes>(capabilityType), handle);
+        auto nativeObj = std::make_shared<NapiNativeInt>(handle);
+        return NapiAsyncWorkRet{ret, nativeObj};
     };
-    FusionConnectivity::DoInJsMainThread(env, completeFunc);
-    auto asyncWork = FusionConnectivity::NapiAsyncWorkFactory::CreateAsyncWork(
-        env, info, asyncWorkFunc, FusionConnectivity::ASYNC_WORK_NO_NEED_CALLBACK);
+
+    auto asyncWork = NapiAsyncWorkFactory::CreateAsyncWork(env, info, asyncWorkFunc, ASYNC_WORK_NO_NEED_CALLBACK);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, asyncWork, FCM_ERR_INTERNAL_ERROR);
     asyncWork->Run();
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, asyncWork, FusionConnectivity::FCM_ERR_INTERNAL_ERROR);
+    FusionRangingManager::GetInstance()->RegisterFusionRangingObserver(napiCallback_);
     return asyncWork->GetRet();
 }
 
-static napi_status ValidateOnRangingStateChangeParams(napi_env env, size_t argc, napi_value *argv)
+napi_value StopPassiveRanging(napi_env env, napi_callback_info info)
 {
-    NAPI_FCM_RETURN_IF((argc < FusionConnectivity::ARGS_SIZE_ONE), "wrong argument count", napi_invalid_arg);
-    napi_valuetype valuetype;
-    napi_typeof(env, argv[FusionConnectivity::PARAM0], &valuetype);
-    NAPI_FCM_RETURN_IF((valuetype != napi_function), "callback not function", napi_invalid_arg);
-    return napi_ok;
-}
-
-bool IsStateChangeNapiCallbackExist(napi_env env)
-{
-    std::lock_guard<std::mutex> lock(g_stateChangeCallbacksMutex);
-    for (auto it = g_stateChangeCallbacks.begin(); it != g_stateChangeCallbacks.end(); ++it) {
-        if (it->first == env && it->second != nullptr) {
-            return true;
-        }
-    }
-    return false;
+    size_t argc = ARGS_SIZE_TWO;
+    napi_value argv[ARGS_SIZE_TWO] = {nullptr};
+    napi_status cbInfoStatus = napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
+    HILOGI("StopPassiveRanging: cbInfoStatus=%{public}d argc=%{public}zu", cbInfoStatus, argc);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, cbInfoStatus == napi_ok && argc == ARGS_SIZE_TWO, FCM_ERR_INVALID_PARAM);
+    int handle;
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, ParseInt32(env, handle, argv[PARAM0]), FCM_ERR_INVALID_PARAM);
+    int capabilityType;
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, ParseInt32(env, capabilityType, argv[PARAM1]), FCM_ERR_INVALID_PARAM);
+    HILOGI("StopPassiveRanging: capabilityType=%{public}d handle=%{public}d", capabilityType, handle);
+    int stopRet =
+        FusionRangingManager::GetInstance()->StopPassiveRanging(static_cast<RangingTypes>(capabilityType), handle);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, stopRet == FCM_NO_ERROR, stopRet);
+    return NapiGetUndefined(env);
 }
 
 napi_value OnRangingStateChange(napi_env env, napi_callback_info info)
 {
-    size_t argc = 0;
-    napi_value argv[1] = {nullptr};
-    napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
-    napi_status cbStatus = ValidateOnRangingStateChangeParams(env, argc, argv);
-    if (cbStatus != napi_ok) {
-        return FusionConnectivity::NapiGetUndefined(env);
-    }
-    if (IsStateChangeNapiCallbackExist(env)) {
-        HILOGI("Napi ResultCallback");
-        return FusionConnectivity::NapiGetInt32(env, FusionConnectivity::FCM_ERR_DEVICE_ALREADY_BOUNDED);
-    }
-    auto napiStateCb = std::make_shared<FusionConnectivity::NapiCallback>(env, argv[FusionConnectivity::PARAM0]);
-    auto stateCallback = [env, napiStateCb](const RangingStateChangeInfo &state) {
-        auto ret = std::make_shared<NapiNativeStateChnageData>(state);
-        auto callback = [env, napiStateCb, ret]() {
-            FusionConnectivity::NapiHandleScope scope(env);
-            napiStateCb->CallFunction(ret);
-        };
-        FusionConnectivity::DoInJsMainThread(env, callback);
-    };
-    auto asynWorkFunc = [stateCallback]() {
-        return ExecuteRegisterStateChangeWork(stateCallback);
-    };
-    auto asyncWork = FusionConnectivity::NapiAsyncWorkFactory::CreateAsyncWork(
-        env, info, asynWorkFunc, FusionConnectivity::ASYNC_WORK_NO_NEED_CALLBACK);
-    asyncWork->Run();
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, asyncWork, FusionConnectivity::FCM_ERR_INTERNAL_ERROR);
-    {
-        std::lock_guard<std::mutex> lock(g_stateChangeCallbacksMutex);
-        g_stateChangeCallbacks[env] = napiStateCb;
-    }
-    HILOGI("OnRangingStateChange success");
-    return asyncWork->GetRet();
     if (napiCallback_ != nullptr) {
-        auto status = napiCallback_->eventSubscribe_.RegisterWithName(env, info,
-            STR_FUSION_RANGING_CALLBACK_STATE_CHANGE);
-        NAPI_FCM_ASSERT_RETURN_UNDEF(env, status == napi_ok, FusionConnectivity::FCM_ERR_INTERNAL_ERROR);
+        auto status =
+            napiCallback_->eventSubscribe_.RegisterWithName(env, info, STR_FUSION_RANGING_CALLBACK_STATE_CHANGE);
+        NAPI_FCM_ASSERT_RETURN_UNDEF(env, status == napi_ok, FCM_ERR_INTERNAL_ERROR);
     }
-    return NapiGetUndefinedRet(env);
+    return NapiGetUndefined(env);
 }
 
 napi_value OffRangingStateChange(napi_env env, napi_callback_info info)
 {
-    auto asyncWorkFunc = []() -> FusionConnectivity::NapiAsyncWorkRet {
-        auto ret = FusionRangingManager::GetInstance()->OffRangingStateChange();
-        HILOGI("OffRangingStateChange ret:%{public}d", ret);
-        return {ret, nullptr};
-    };
-    auto asyncWork = FusionConnectivity::NapiAsyncWorkFactory::CreateAsyncWork(
-        env, info, asyncWorkFunc, FusionConnectivity::ASYNC_WORK_NO_NEED_CALLBACK);
-    asyncWork->Run();
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, asyncWork, FusionConnectivity::FCM_ERR_INTERNAL_ERROR);
-    {
-        std::lock_guard<std::mutex> lock(g_stateChangeCallbacksMutex);
-        auto it = g_stateChangeCallbacks.find(env);
-        if (it != g_stateChangeCallbacks.end()) {
-            HILOGI("OffRangingStateChange: cleanup callback ref");
-            g_stateChangeCallbacks.erase(it);
-        }
-    }
-    return asyncWork->GetRet();
     if (napiCallback_) {
-        auto status = napiCallback_->eventSubscribe_.DeregisterWithName(env, info,
-            STR_FUSION_RANGING_CALLBACK_STATE_CHANGE);
-        NAPI_FCM_ASSERT_RETURN_UNDEF(env, status == napi_ok, FusionConnectivity::FCM_ERR_INTERNAL_ERROR);
+        auto status =
+            napiCallback_->eventSubscribe_.DeregisterWithName(env, info, STR_FUSION_RANGING_CALLBACK_STATE_CHANGE);
+        NAPI_FCM_ASSERT_RETURN_UNDEF(env, status == napi_ok, FCM_ERR_INTERNAL_ERROR);
     }
-    return NapiGetUndefinedRet(env);
+    return NapiGetUndefined(env);
 }
 
 EXTERN_C_START
