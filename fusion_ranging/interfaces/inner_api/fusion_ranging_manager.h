@@ -27,10 +27,12 @@
 namespace OHOS {
 namespace FusionRanging {
 
-class FusionRaningCallback {
+class FusionRangingObserver {
 public:
-    virtual void OnRangingStateChanged(const RangingStateChangeInfo &info) {};
-    virtual void OnRangingResult(const RangingResult &result) {};
+    virtual ~FusionRangingObserver() = default;
+
+    virtual void OnRangingStateChanged(const RangingStateChangeInfo &statechange) = 0;
+    virtual void OnRangingResult(const RangingResult &rangingResult) = 0;
 };
 
 class FusionRangingManager {
@@ -39,25 +41,23 @@ public:
 
     bool IsRangingSupported() const;
     int GetRangingCapability(RangingCapabilitySupported &capability);
-    int StartRanging(const RangingParams &params, const std::function<void(const RangingResult &)> &callback);
-    int StopRanging(const std::string &deviceId);
-    int OnRangingStateChange(const std::function<void(const RangingStateChangeInfo &)> &callback);
-    int OffRangingStateChange();
-    int RegisterFusionRangingObserver(const FusionRangingObserver &observer);
-    int UnRegisterFusionRangingObserver(const FusionRangingObserver &observer);
-
-    struct impl;
+    int RegisterFusionRangingObserver(const std::shared_ptr<FusionRangingObserver> &observer);
+    int DeregisterFusionRangingObserver(const std::shared_ptr<FusionRangingObserver> &observer);
+    int StartRanging(const RangingParams &params);
+    int StopRanging(const RangingParams &params);
+    int StartPassiveRanging(RangingTypes capabilityType, int32_t &handle);
+    int StopPassiveRanging(RangingTypes capabilityType, int32_t handle);
 
 private:
     FusionRangingManager();
     ~FusionRangingManager();
 
+    struct impl;
     std::unique_ptr<impl> pimpl;
 
     FusionRangingManager(const FusionRangingManager &) = delete;
     FusionRangingManager &operator=(const FusionRangingManager &) = delete;
 };
-
 }  // namespace FusionRanging
 }  // namespace OHOS
 #endif  // FUSION_RANGING_MANAGER_H
