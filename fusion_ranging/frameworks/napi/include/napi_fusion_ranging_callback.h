@@ -17,28 +17,49 @@
 
 #include <shared_mutex>
 #include "fusion_ranging_manager.h"
+#include "napi_async_work.h"
+#include "napi_event_subscribe_module.h"
+#include "safe_map.h"
 
 namespace OHOS {
 namespace FusionRanging {
+using namespace FusionConnectivity;
+const char *const STR_FUSION_RANGING_CALLBACK_STATE_CHANGE = "FusionRangingStateChange";
 
-const char * const STR_FUSION_RANGING_CALLBACK_STATE_CHANGE = "FusionRangingStateChange";
-const char * const STR_FUSION_RANGING_CALLBACK_RESULT = "FusionRangingResult";
-class NapiGattClient;
+struct NapiRangingResutlCallback {
+    NapiRangingResutlCallback(const RangingParams &params, const std::shared_ptr<NapiCallback> &napiCallack,
+                              const std::function<void(const RangingResult &)> &callback)
+        : params_(params.GetDeviceId(), params.GetCapabilityType()),
+          napiCallback_(napiCallack),
+          callback_(callback)
+    {
+    }
+    ~NapiRangingResutlCallback() = default;
 
-class NapiFusionRangingCallback : public FusionRangingObserver {
+    RangingParams params_;
+    std::shared_ptr<NapiCallback> napiCallback_;
+    std::function<void(const RangingResult &)> callback_;
+};
+
+class NapiFusionRangingObserver : public FusionRangingObserver {
 public:
+    NapiFusionRangingObserver();
+    ~NapiFusionRangingObserver() override = default;
+
     void OnRangingStateChanged(const RangingStateChangeInfo &info) override;
     void OnRangingResult(const RangingResult &result) override;
 
-    NapiFusionRangingCallback();
-    ~NapiFusionRangingCallback() override = default;
+    void RegisterRangingResultCallback(const RangingParams &params, const std::shared_ptr<NapiCallback> &napiCallack,
+                                       const std::function<void(const RangingResult &)> &callback);
+    void DeregisterRangingResultCallbackWithDeviceId(const napi_env env, napi_value callback,
+                                                     const std::string &deviceId);
+    std::vector<RangingParams> GetRangParamsByNapiCallback(const napi_env env, napi_value callback);
+    bool IsRangingResultCallbackEmpty();
 
-    NapiAsyncWorkMap asyncWorkMap_ {};
+    FusionConnectivity::NapiEventSubscribeModule eventSubscribe_;
+
 private:
-    friend class NapiGattClient;
-    NapiEventSubscribeModule eventSubscribe_;
-
-    std::string deviceAddr_ = INVALID_MAC_ADDRESS;
+    SafeMap<std::string, std::shared_ptr<NapiRangingResutlCallback>> rangingResultCallback_{};
 };
 }  // namespace Bluetooth
 }  // namespace OHOS
