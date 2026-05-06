@@ -26,15 +26,15 @@ namespace FusionRanging {
 using namespace FusionConnectivity;
 const char *const STR_FUSION_RANGING_CALLBACK_STATE_CHANGE = "FusionRangingStateChange";
 
-struct NapiRangingResutlCallback {
-    NapiRangingResutlCallback(const RangingParams &params, const std::shared_ptr<NapiCallback> &napiCallack,
+struct NapiRangingResultCallback {
+    NapiRangingResultCallback(const RangingParams &params, const std::shared_ptr<NapiCallback> &napiCallback,
                               const std::function<void(const RangingResult &)> &callback)
         : params_(params.GetDeviceId(), params.GetCapabilityType()),
-          napiCallback_(napiCallack),
+          napiCallback_(napiCallback),
           callback_(callback)
     {
     }
-    ~NapiRangingResutlCallback() = default;
+    ~NapiRangingResultCallback() = default;
 
     RangingParams params_;
     std::shared_ptr<NapiCallback> napiCallback_;
@@ -49,7 +49,7 @@ public:
     void OnRangingStateChanged(const RangingStateChangeInfo &info) override;
     void OnRangingResult(const RangingResult &result) override;
 
-    void RegisterRangingResultCallback(const RangingParams &params, const std::shared_ptr<NapiCallback> &napiCallack,
+    void RegisterRangingResultCallback(const RangingParams &params, const std::shared_ptr<NapiCallback> &napiCallback,
                                        const std::function<void(const RangingResult &)> &callback);
     void DeregisterRangingResultCallbackWithDeviceId(const napi_env env, napi_value callback,
                                                      const std::string &deviceId);
@@ -59,7 +59,7 @@ public:
     FusionConnectivity::NapiEventSubscribeModule eventSubscribe_;
 
 private:
-    SafeMap<std::string, std::shared_ptr<NapiRangingResutlCallback>> rangingResultCallback_{};
+    SafeMap<std::string, std::shared_ptr<NapiRangingResultCallback>> rangingResultCallback_{};
 };
 }  // namespace Bluetooth
 }  // namespace OHOS

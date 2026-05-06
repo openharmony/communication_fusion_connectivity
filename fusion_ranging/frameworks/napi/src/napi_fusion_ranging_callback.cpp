@@ -35,7 +35,7 @@ void NapiFusionRangingObserver::OnRangingStateChanged(const RangingStateChangeIn
 
 void NapiFusionRangingObserver::OnRangingResult(const RangingResult &result)
 {
-    std::shared_ptr<NapiRangingResutlCallback> napiResultCallback;
+    std::shared_ptr<NapiRangingResultCallback> napiResultCallback;
     bool found = rangingResultCallback_.Find(result.GetDeviceId(), napiResultCallback);
     if (found && napiResultCallback != nullptr && napiResultCallback->callback_) {
         napiResultCallback->callback_(result);
@@ -43,13 +43,13 @@ void NapiFusionRangingObserver::OnRangingResult(const RangingResult &result)
 }
 
 void NapiFusionRangingObserver::RegisterRangingResultCallback(
-    const RangingParams &params, const std::shared_ptr<NapiCallback> &napiCallack,
+    const RangingParams &params, const std::shared_ptr<NapiCallback> &napiCallback,
     const std::function<void(const RangingResult &)> &callback)
 {
-    if (napiCallack == nullptr || callback == nullptr) {
+    if (napiCallback == nullptr || callback == nullptr) {
         return;
     }
-    auto value = std::make_shared<NapiRangingResutlCallback>(params, napiCallack, callback);
+    auto value = std::make_shared<NapiRangingResultCallback>(params, napiCallback, callback);
     if (value != nullptr) {
         rangingResultCallback_.EnsureInsert(params.GetDeviceId(), value);
     }
@@ -62,7 +62,7 @@ void NapiFusionRangingObserver::DeregisterRangingResultCallbackWithDeviceId(cons
         return;
     }
 
-    std::shared_ptr<NapiRangingResutlCallback> value = nullptr;
+    std::shared_ptr<NapiRangingResultCallback> value = nullptr;
     auto ret = rangingResultCallback_.Find(deviceId, value);
     if (ret && value != nullptr && value->napiCallback_->Equal(env, callback)) {
         rangingResultCallback_.Erase(deviceId);
@@ -78,7 +78,7 @@ std::vector<RangingParams> NapiFusionRangingObserver::GetRangParamsByNapiCallbac
     }
 
     rangingResultCallback_.Iterate(
-        [&](const std::string &deviceId, const std::shared_ptr<NapiRangingResutlCallback> &value) {
+        [&](const std::string &deviceId, const std::shared_ptr<NapiRangingResultCallback> &value) {
             if (value != nullptr && value->napiCallback_ != nullptr && value->napiCallback_->Equal(env, callback)) {
                 findParams.push_back(value->params_);
             }

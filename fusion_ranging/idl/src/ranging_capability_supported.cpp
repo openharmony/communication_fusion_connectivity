@@ -13,26 +13,30 @@
  * limitations under the License.
  */
 
-#ifndef FUSION_RANGING_ERRORCODE_H
-#define FUSION_RANGING_ERRORCODE_H
+#include "ranging_capability_supported.h"
 
 namespace OHOS {
 namespace FusionRanging {
 
-enum RangingErrCode {
-    RANGING_NO_ERROR = 0,
-    RANGING_ERR_PERMISSION_FAILED = 201,
-    RANGING_ERR_INVALID_PARAM = 401,
-    RANGING_ERR_API_NOT_SUPPORT = 801,
-    RANGING_ERR_OBJECT_NOT_FOUND = 34900050,
-    RANGING_ERR_OBJECT_ALREADY_EXIST = 34900051,
-    RANGING_ERR_ADAPTER_NOT_SUPPORT = 34900052,
-    RANGING_ERR_SWITCH_IS_OFF = 34900053,
-    RANGING_ERR_SERVICE_NOT_PROVIDED = 34900054,
-    RANGING_ERR_PARAM_IS_OCCUPIED = 34900055,
-    RANGING_ERR_OPERATION_NOT_ALLOW = 34900056,
-    RANGING_ERR_INTERNAL_ERROR = 34900099,
-};
+bool RangingCapabilitySupported::Marshalling(Parcel &parcel) const
+{
+    if (!parcel.WriteBool(nearlinkHadm_)) {
+        return false;
+    }
+    return true;
+}
+
+RangingCapabilitySupported *RangingCapabilitySupported::Unmarshalling(Parcel &parcel)
+{
+    bool nearlinkHadm = false;
+    if (!parcel.ReadBool(nearlinkHadm)) {
+        return nullptr;
+    }
+    auto *capability = new (std::nothrow) RangingCapabilitySupported();
+    if (capability != nullptr) {
+        capability->SetNearlinkHadm(nearlinkHadm);
+    }
+    return capability;
+}
 }  // namespace FusionRanging
 }  // namespace OHOS
-#endif  // FUSION_RANGING_ERRORCODE_H

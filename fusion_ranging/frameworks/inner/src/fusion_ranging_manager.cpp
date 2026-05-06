@@ -59,11 +59,12 @@ struct FusionRangingManager::impl {
     ~impl();
     class FusionRangingSystemAbility : public SystemAbilityStatusChangeStub {
     public:
-        explicit FusionRangingSystemAbility(){};
+        explicit FusionRangingSystemAbility(impl *outer) : outer_(outer){};
         void OnAddSystemAbility(int32_t systemAbilityId, const std::string &deviceId) override;
         void OnRemoveSystemAbility(int32_t systemAbilityId, const std::string &deviceId) override;
 
     private:
+        impl *outer_ = nullptr;
         std::atomic<bool> isSaRemoved_ = false;
     };
 
@@ -110,7 +111,7 @@ struct FusionRangingManager::impl {
 FusionRangingManager::impl::impl()
 {
     HILOGI("FusionRangingManager impl()");
-    systemAbility_ = sptr<FusionRangingSystemAbility>::MakeSptr();
+    systemAbility_ = sptr<FusionRangingSystemAbility>::MakeSptr(this);
     sptr<ISystemAbilityManager> samgrProxy = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     int ret = samgrProxy->SubscribeSystemAbility(FUSION_RANGING_SYS_ABILITY_ID, systemAbility_);
     if (ret != RANGING_NO_ERROR) {
@@ -124,6 +125,10 @@ FusionRangingManager::impl::~impl()
     auto proxy = GetRemoteProxy();
     if (proxy && rangObserver_) {
         proxy->DeregisterObserver(rangObserver_);
+    }
+    sptr<ISystemAbilityManager> samgrProxy = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (samgrProxy && systemAbility_) {
+        samgrProxy->UnSubscribeSystemAbility(FUSION_RANGING_SYS_ABILITY_ID, systemAbility_);
     }
 }
 
@@ -150,6 +155,9 @@ void FusionRangingManager::impl::FusionRangingSystemAbility::OnAddSystemAbility(
         }
         if (isSaRemoved_.load()) {
             isSaRemoved_ = false;
+            if (outer_ && outer_->rangObserver_) {
+                proxy->RegisterObserver(outer_->rangObserver_);
+            }
         }
     }
 }
@@ -220,7 +228,7 @@ int FusionRangingManager::StopRanging(const RangingParams &params)
 
     if (params.GetDeviceId().empty()) {
         HILOGE("StopRanging not found device");
-        return RANGING_ERR_DEVICE_NOT_FOUND;
+        return RANGING_ERR_OBJECT_NOT_FOUND;
     }
     auto proxy = GetRemoteProxy();
     FCM_CHECK_RETURN_RET(proxy != nullptr, RANGING_ERR_SERVICE_NOT_PROVIDED, "proxy null");
@@ -243,13 +251,14 @@ int FusionRangingManager::StartPassiveRanging(RangingTypes capabilityType, int32
 
 int FusionRangingManager::StopPassiveRanging(RangingTypes capabilityType, int32_t handle)
 {
-    if (!IsRangingSupported() || handle < 0) {
+    if (!IsRangingSupported()) {
         return static_cast<int32_t>(RangingErrCode::RANGING_ERR_API_NOT_SUPPORT);
     }
+    FCM_CHECK_RETURN_RET(handle >= 0, RANGING_ERR_INVALID_PARAM, "invalid handle");
     auto proxy = GetRemoteProxy();
     FCM_CHECK_RETURN_RET(proxy != nullptr, RANGING_ERR_SERVICE_NOT_PROVIDED, "proxy null");
     int ret = proxy->StopPassiveRanging(static_cast<int>(capabilityType), handle);
-    HILOGI("StartPassiveRanging ret:%{public}d", ret);
+    HILOGI("StopPassiveRanging ret:%{public}d", ret);
     return ret;
 }
 

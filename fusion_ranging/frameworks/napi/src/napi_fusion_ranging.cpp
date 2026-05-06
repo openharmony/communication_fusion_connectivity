@@ -152,7 +152,7 @@ napi_value StartRanging(napi_env env, napi_callback_info info)
     if (ret != FCM_NO_ERROR) {
         napiCallback_->DeregisterRangingResultCallbackWithDeviceId(env, argv[PARAM1], params.GetDeviceId());
         FusionRangingManager::GetInstance()->DeregisterFusionRangingObserver(napiCallback_);
-        NAPI_FCM_ASSERT_RETURN_UNDEF(env, false, FCM_ERR_DEVICE_ALREADY_BOUNDED);
+        NAPI_FCM_ASSERT_RETURN_UNDEF(env, false, ret);
     }
     return NapiGetUndefined(env);
 }
@@ -189,14 +189,17 @@ napi_value StopRanging(napi_env env, napi_callback_info info)
 
     auto rangParams = napiCallback_->GetRangParamsByNapiCallback(env, argv[PARAM0]);
     int stopRet = FCM_NO_ERROR;
-    for (auto it = rangParams.begin(); it != rangParams.end();) {
+    for (auto it = rangParams.begin(); it != rangParams.end(); ++it) {
         stopRet = FusionRangingManager::GetInstance()->StopRanging(*it);
         napiCallback_->DeregisterRangingResultCallbackWithDeviceId(env, argv[PARAM0], it->GetDeviceId());
+        if (stopRet != RANGING_NO_ERROR) {
+            break;
+        }
     }
     if (napiCallback_->IsRangingResultCallbackEmpty()) {
         FusionRangingManager::GetInstance()->DeregisterFusionRangingObserver(napiCallback_);
     }
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, stopRet == FCM_NO_ERROR, FCM_ERR_DEVICE_ALREADY_BOUNDED);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, stopRet == FCM_NO_ERROR, stopRet);
     return NapiGetUndefined(env);
 }
 

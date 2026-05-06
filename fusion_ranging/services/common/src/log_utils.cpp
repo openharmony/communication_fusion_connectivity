@@ -13,26 +13,28 @@
  * limitations under the License.
  */
 
-#ifndef FUSION_RANGING_ERRORCODE_H
-#define FUSION_RANGING_ERRORCODE_H
+#include "log_utils.h"
 
 namespace OHOS {
 namespace FusionRanging {
 
-enum RangingErrCode {
-    RANGING_NO_ERROR = 0,
-    RANGING_ERR_PERMISSION_FAILED = 201,
-    RANGING_ERR_INVALID_PARAM = 401,
-    RANGING_ERR_API_NOT_SUPPORT = 801,
-    RANGING_ERR_OBJECT_NOT_FOUND = 34900050,
-    RANGING_ERR_OBJECT_ALREADY_EXIST = 34900051,
-    RANGING_ERR_ADAPTER_NOT_SUPPORT = 34900052,
-    RANGING_ERR_SWITCH_IS_OFF = 34900053,
-    RANGING_ERR_SERVICE_NOT_PROVIDED = 34900054,
-    RANGING_ERR_PARAM_IS_OCCUPIED = 34900055,
-    RANGING_ERR_OPERATION_NOT_ALLOW = 34900056,
-    RANGING_ERR_INTERNAL_ERROR = 34900099,
-};
+constexpr int START_POS = 3;
+constexpr int END_POS = 10;
+constexpr int ADDRESS_LENGTH = 17;
+
+std::string GetEncryptAddr(const std::string &addr)
+{
+    if (addr.empty() || addr.length() != ADDRESS_LENGTH) {
+        HILOGE("addr is invalid.");
+        return std::string("");
+    }
+    std::string tmp = "**:**:**:**:**:**";
+    std::string out = addr;
+    // 00:**:**:**:04:05
+    for (int i = START_POS; i <= END_POS; i++) {
+        out[i] = tmp[i];
+    }
+    return out;
+}
 }  // namespace FusionRanging
 }  // namespace OHOS
-#endif  // FUSION_RANGING_ERRORCODE_H

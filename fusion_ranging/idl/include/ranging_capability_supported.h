@@ -13,26 +13,35 @@
  * limitations under the License.
  */
 
-#ifndef FUSION_RANGING_ERRORCODE_H
-#define FUSION_RANGING_ERRORCODE_H
+#ifndef FUSION_RANGING_CAPABILITY_SUPPORTED_H
+#define FUSION_RANGING_CAPABILITY_SUPPORTED_H
+
+#include "parcel.h"
 
 namespace OHOS {
 namespace FusionRanging {
 
-enum RangingErrCode {
-    RANGING_NO_ERROR = 0,
-    RANGING_ERR_PERMISSION_FAILED = 201,
-    RANGING_ERR_INVALID_PARAM = 401,
-    RANGING_ERR_API_NOT_SUPPORT = 801,
-    RANGING_ERR_OBJECT_NOT_FOUND = 34900050,
-    RANGING_ERR_OBJECT_ALREADY_EXIST = 34900051,
-    RANGING_ERR_ADAPTER_NOT_SUPPORT = 34900052,
-    RANGING_ERR_SWITCH_IS_OFF = 34900053,
-    RANGING_ERR_SERVICE_NOT_PROVIDED = 34900054,
-    RANGING_ERR_PARAM_IS_OCCUPIED = 34900055,
-    RANGING_ERR_OPERATION_NOT_ALLOW = 34900056,
-    RANGING_ERR_INTERNAL_ERROR = 34900099,
+class RangingCapabilitySupported : public Parcelable {
+public:
+    explicit RangingCapabilitySupported() = default;
+    ~RangingCapabilitySupported() = default;
+
+    bool Marshalling(Parcel &parcel) const override;
+    static RangingCapabilitySupported *Unmarshalling(Parcel &parcel);
+
+    bool GetNearlinkHadm() const
+    {
+        return nearlinkHadm_;
+    }
+
+    void SetNearlinkHadm(bool nearlinkHadm)
+    {
+        nearlinkHadm_ = nearlinkHadm;
+    }
+
+private:
+    bool nearlinkHadm_ = false;
 };
 }  // namespace FusionRanging
 }  // namespace OHOS
-#endif  // FUSION_RANGING_ERRORCODE_H
+#endif  // FUSION_RANGING_CAPABILITY_SUPPORTED_H
