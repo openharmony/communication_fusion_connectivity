@@ -32,6 +32,7 @@ namespace OHOS {
 namespace FusionRanging {
 
 constexpr int32_t FUSION_RANGING_SYS_ABILITY_ID = 8631;
+constexpr int32_t FUSION_RANGING_DELAY_CHECK_SA_UNLOAD_MS = 10000;
 
 sptr<FusionRangingServer> FusionRangingServer::instance_ = nullptr;
 std::mutex FusionRangingServer::instanceLock_;
@@ -133,15 +134,12 @@ bool FusionRangingServer::impl::AppStateObserver::UnSubscribeAppState()
 void FusionRangingServer::impl::AppStateObserver::AppStateAwareObserver::OnForegroundApplicationChanged(
     const AppExecFwk::AppStateData &appStateData)
 {
-    HILOGI("FusionRangingServer OnForegroundApplicationChanged");
     if (!ValidateAppStateData(appStateData)) {
         HILOGI("validate app state data failed");
         return;
     }
-    FusionConnectivity::FcmThreadUtil::GetInstance().PostTask(
-        FusionConnectivity::THREAD_ID_MAIN,
-        [appStateData]() { FusionRangingServer::GetInstance()->OnForegroundApplicationChanged(appStateData); }, 0,
-        "OnForegroundApplicationChanged_Task");
+    FusionConnectivity::DoInRangingThread(
+        [appStateData]() { FusionRangingServer::GetInstance()->OnForegroundApplicationChanged(appStateData); });
 }
 
 inline bool FusionRangingServer::impl::AppStateObserver::AppStateAwareObserver::ValidateAppStateData(
@@ -157,7 +155,6 @@ void FusionRangingServer::impl::RegisterAppObserver()
         auto ret = appStateObserverImp_->SubscribeAppState();
         HILOGI("FusionRangingServer SubscribeAppState ret:%{public}d", ret);
     }
-    HILOGI("FusionRangingServer SubscribeAppState appStateObserverImp_:%{public}d", appStateObserverImp_ != nullptr);
 }
 
 void FusionRangingServer::impl::DeregisterAppObserver()
@@ -236,9 +233,7 @@ void FusionRangingServer::OnStart()
 
     bool res = Publish(this);
     HILOGI("Publish result is %{public}d.", res);
-    FusionConnectivity::FcmThreadUtil::GetInstance().PostTask(
-        FusionConnectivity::THREAD_ID_MAIN, [this]() { pimpl->RegisterAppObserver(); }, 0,
-        "OnForegroundApplicationChanged_Task");
+    FusionConnectivity::DoInRangingThread([this]() { pimpl->RegisterAppObserver(); });
 }
 
 void FusionRangingServer::OnStop()
@@ -261,6 +256,8 @@ ErrCode FusionRangingServer::GetRangingCapability(RangingCapabilitySupported &ca
     auto isSupport = FusionRangingService::GetInstance()->IsRangingSupported(RangingTypes::NEARLINK_HADM);
     HILOGI("GetRangingCapability isSupport:%{public}d", isSupport);
     capability.SetNearlinkHadm(isSupport);
+    FusionConnectivity::DoInRangingThread([this]() { CheckAndUnloadIfIdle(); },
+                                          FUSION_RANGING_DELAY_CHECK_SA_UNLOAD_MS);
     return static_cast<int32_t>(RangingErrCode::RANGING_NO_ERROR);
 }
 
@@ -274,18 +271,12 @@ ErrCode FusionRangingServer::StartRanging(const RangingParams &params)
     FCM_CHECK_RETURN_RET(findRet && observer != nullptr, RANGING_ERR_INTERNAL_ERROR, "observer not found");
 
     std::string deviceId = params.GetDeviceId();
-    auto callback = [observer](const RangingResult &result) {
-        if (observer != nullptr) {
-            observer->OnRangingResult(result);
-        }
-    };
-    int32_t ret = FusionRangingService::GetInstance()->StartRanging(params, callback, callerUid);
+    int32_t ret = FusionRangingService::GetInstance()->StartRanging(params, observer, callerUid);
     HILOGI("StartRanging: ret=%{public}d", ret);
     if (ret != 0) {
         FusionRangingService::GetInstance()->StopRanging(deviceId, callerUid);
         return RANGING_ERR_INTERNAL_ERROR;
     }
-    NotifyStateObservers(callerUid, RangingState::STATE_STARTED, RangingStoppedCause::NO_ERROR);
     return RANGING_NO_ERROR;
 }
 
@@ -294,15 +285,20 @@ ErrCode FusionRangingServer::StopRanging(const RangingParams &params)
     HILOGI("StopRanging server, deviceId=%{public}s", GET_ENCRYPT_ADDR(params.GetDeviceId()));
     int32_t ret = FusionRangingService::GetInstance()->StopRanging(params.GetDeviceId(), IPCSkeleton::GetCallingUid());
     HILOGI("StopRanging: ret=%{public}d", ret);
-    CheckAndUnloadIfIdle();
+    FusionConnectivity::DoInRangingThread([this]() { CheckAndUnloadIfIdle(); },
+                                          FUSION_RANGING_DELAY_CHECK_SA_UNLOAD_MS);
     return ret;
 }
 
 ErrCode FusionRangingServer::StartPassiveRanging(int32_t capabilityType, int32_t &handle)
 {
+    sptr<IRangingObserver> observer = nullptr;
     int32_t callerUid = IPCSkeleton::GetCallingUid();
+    FCM_CHECK_RETURN_RET(pimpl != nullptr, RANGING_ERR_INTERNAL_ERROR, "pimpl is nullptr");
+    auto findRet = pimpl->observers_.Find(callerUid, observer);
+    FCM_CHECK_RETURN_RET(findRet && observer != nullptr, RANGING_ERR_INTERNAL_ERROR, "observer not found");
     int32_t ret = FusionRangingService::GetInstance()->StartPassiveRanging(static_cast<RangingTypes>(capabilityType),
-                                                                           handle, callerUid);
+                                                                           handle, observer, callerUid);
     HILOGI("StartPassiveRanging handle:%{public}d, uid:%{public}d", handle, callerUid);
     return ret;
 }
@@ -350,19 +346,9 @@ ErrCode FusionRangingServer::DeregisterObserver(const sptr<IRangingObserver> &ob
                          "processDeathManager_ is nullptr");
     pimpl->processDeathManager_->DeregisterProcessDeath(callerUid);
     pimpl->observers_.Erase(callerUid);
-    CheckAndUnloadIfIdle();
+    FusionConnectivity::DoInRangingThread([this]() { CheckAndUnloadIfIdle(); },
+                                          FUSION_RANGING_DELAY_CHECK_SA_UNLOAD_MS);
     return RANGING_NO_ERROR;
-}
-
-void FusionRangingServer::NotifyStateObservers(int32_t uid, RangingState state, RangingStoppedCause cause)
-{
-    RangingStateChangeInfo info(state, cause);
-    FCM_CHECK_RETURN(pimpl != nullptr, "pimpl is nullptr");
-    pimpl->observers_.Iterate([&](int32_t callerUid, const sptr<IRangingObserver> observer) {
-        if (callerUid == uid && observer != nullptr) {
-            observer->OnRangingStateChanged(info);
-        }
-    });
 }
 
 void FusionRangingServer::HandleProcessDeath(int32_t uid)
@@ -374,19 +360,18 @@ void FusionRangingServer::HandleProcessDeath(int32_t uid)
     }
     pimpl->observers_.Erase(uid);
     FusionRangingService::GetInstance()->HandleProcessDeath(uid);
-    CheckAndUnloadIfIdle();
+    FusionConnectivity::DoInRangingThread([this]() { CheckAndUnloadIfIdle(); },
+                                          FUSION_RANGING_DELAY_CHECK_SA_UNLOAD_MS);
 }
 
 void FusionRangingServer::OnForegroundApplicationChanged(const AppExecFwk::AppStateData &appStateData)
 {
-    HILOGI("OnForegroundApplicationChanged");
     int32_t uid = appStateData.uid;
+    HILOGI("OnForegroundApplicationChanged uid:%{public}d, state:%{public}d", uid, appStateData.state);
     if (appStateData.state == static_cast<int32_t>(AppExecFwk::ApplicationState::APP_STATE_FOREGROUND)) {
         FusionRangingService::GetInstance()->ResumeRangingByUid(uid);
-        NotifyStateObservers(uid, RangingState::STATE_STARTED, RangingStoppedCause::NO_ERROR);
     } else if (appStateData.state == static_cast<int32_t>(AppExecFwk::ApplicationState::APP_STATE_BACKGROUND)) {
         FusionRangingService::GetInstance()->PauseRangingByUid(uid);
-        NotifyStateObservers(uid, RangingState::STATE_STOPPED, RangingStoppedCause::BACKGROUND_PAUSED);
     } else if (appStateData.state == static_cast<int32_t>(AppExecFwk::ApplicationState::APP_STATE_TERMINATED)) {
         HandleProcessDeath(uid);
         HILOGI("APP_STATE_TERMINATED: completed for uid=%{public}d", uid);
