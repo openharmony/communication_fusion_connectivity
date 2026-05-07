@@ -13,16 +13,39 @@
  * limitations under the License.
  */
 
-#ifndef FUSION_RANGING_LOG_UTIL_H
-#define FUSION_RANGING_LOG_UTIL_H
-
-#include <string>
-#include "log.h"
+#include "common_utils.h"
 
 namespace OHOS {
 namespace FusionRanging {
-std::string GetEncryptAddr(const std::string &addr);
-#define GET_ENCRYPT_ADDR(addr) (GetEncryptAddr(addr).c_str())
-} // namespace FusionRanging
-} // namespace OHOS
-#endif // FUSION_RANGING_LOG_UTIL_H
+namespace {
+constexpr size_t ADDRESS_LENGTH = 17;
+constexpr size_t ADDRESS_COLON_INDEX = 2;
+constexpr size_t ADDRESS_SEPARATOR_UNIT = 3;
+}  // namespace
+
+bool IsValidAddress(const std::string &addr)
+{
+    if (addr.empty() || addr.length() != ADDRESS_LENGTH) {
+        return false;
+    }
+    for (size_t i = 0; i < ADDRESS_LENGTH; i++) {
+        char c = addr[i];
+        switch (i % ADDRESS_SEPARATOR_UNIT) {
+            case 0:
+            case 1:
+                if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
+                    break;
+                }
+                return false;
+            case ADDRESS_COLON_INDEX:
+            default:
+                if (c == ':') {
+                    break;
+                }
+                return false;
+        }
+    }
+    return true;
+}
+}  // namespace FusionRanging
+}  // namespace OHOS
