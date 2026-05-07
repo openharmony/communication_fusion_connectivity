@@ -24,6 +24,60 @@
 namespace OHOS {
 namespace FusionRanging {
 
+enum AdapterRangingType {
+    ADAPTER_RANGING,
+    ADAPTER_PASSIVE_RANGING,
+};
+
+class AdapterRangingStateInfo {
+public:
+    AdapterRangingStateInfo() = default;
+    AdapterRangingStateInfo(AdapterRangingType type, const std::string &deviceId, int32_t handle, RangingState state)
+        : type_(type),
+          deviceId_(deviceId),
+          handle_(handle),
+          state_(state)
+    {
+    }
+
+    AdapterRangingType GetType() const
+    {
+        return type_;
+    }
+
+    std::string GetDeviceId() const
+    {
+        return deviceId_;
+    }
+
+    int32_t GetHandle() const
+    {
+        return handle_;
+    }
+
+    RangingState GetState() const
+    {
+        return state_;
+    }
+
+    void SetStoppedCause(RangingStoppedCause cause)
+    {
+        cause_ = cause;
+    }
+
+    RangingStoppedCause GetStoppedCause() const
+    {
+        return cause_;
+    }
+
+private:
+    AdapterRangingType type_;
+    std::string deviceId_ = "";
+    int32_t handle_ = -1; /* -1 as invalid handle */
+    RangingState state_ = RangingState::STATE_STOPPED;
+    RangingStoppedCause cause_ = RangingStoppedCause::NO_ERROR;
+};
+
 class AdapterRangingData {
 public:
     AdapterRangingData() = default;
@@ -78,7 +132,7 @@ private:
 class BaseRangingAdapterCallback {
 public:
     virtual ~BaseRangingAdapterCallback() = default;
-    virtual void OnRangingStateChange(int32_t state) = 0;
+    virtual void OnRangingStateChange(const AdapterRangingStateInfo &Info) = 0;
     virtual void OnRangingResult(const AdapterRangingData &data) = 0;
 };
 
