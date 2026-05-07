@@ -14,6 +14,7 @@
  */
 
 #include "ranging_params.h"
+#include "common_utils.h"
 
 namespace OHOS {
 namespace FusionRanging {
@@ -32,7 +33,7 @@ bool RangingParams::Marshalling(Parcel &parcel) const
 RangingParams *RangingParams::Unmarshalling(Parcel &parcel)
 {
     std::string deviceId = "";
-    if (!parcel.ReadString(deviceId)) {
+    if (!parcel.ReadString(deviceId) || !IsValidAddress(deviceId)) {
         return nullptr;
     }
 
