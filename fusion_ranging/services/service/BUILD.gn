@@ -53,6 +53,7 @@ ohos_shared_library("fusion_ranging_service") {
     "hilog:libhilog",
     "c_utils:utils",
     "ffrt:libffrt",
+    "ipc:ipc_core",
   ]
 
   defines = [
