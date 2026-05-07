@@ -21,6 +21,7 @@
 #include <functional>
 #include <dlfcn.h>
 #include <mutex>
+#include <chrono>
 #include "ranging_adapter_factory.h"
 #include "fusion_ranging_errorcode.h"
 #include "fcm_thread_util.h"
@@ -40,14 +41,15 @@ std::once_flag g_rangingAdapterFlag;
 
 namespace OHOS {
 namespace FusionRanging {
+constexpr int32_t START_PASSIVE_RANGING_PROMISE_TIMEOUT_MS = 500;
 
 class FusionRangingAdapterCallback : public BaseRangingAdapterCallback {
 public:
     explicit FusionRangingAdapterCallback() {}
 
-    void OnRangingStateChange(int32_t state) override
+    void OnRangingStateChange(const AdapterRangingStateInfo &info) override
     {
-        FusionRangingService::GetInstance()->OnAdapterRangingStateChanged(state);
+        FusionRangingService::GetInstance()->OnAdapterRangingStateChanged(info);
     }
 
     void OnRangingResult(const AdapterRangingData &data) override
@@ -92,25 +94,15 @@ bool FusionRangingService::IsRangingSupported(RangingTypes capabilityType)
     return RangingAdapterFactory::Instance().IsRangingAdapterSupported(capabilityType);
 }
 
-int FusionRangingService::StartRanging(const RangingParams &params,
-                                       const std::function<void(const RangingResult &)> &callback, int32_t callerUid)
+int FusionRangingService::StartRanging(const RangingParams &params, const sptr<IRangingObserver> &observer,
+                                       int32_t callerUid)
 {
-    auto promise = std::make_shared<std::promise<int>>();
-    auto self = this;
-
-    FusionConnectivity::FcmThreadUtil::GetInstance().PostTask(
-        FusionConnectivity::THREAD_ID_MAIN,
-        [self, params, callback, callerUid, promise]() {
-            int result = self->HandleStartRanging(params, callback, callerUid);
-            promise->set_value(result);
-        },
-        0, "StartRanging_Task");
-
-    return promise->get_future().get();
+    FusionConnectivity::DoInRangingThread(
+        [this, params, observer, callerUid]() { HandleStartRanging(params, observer, callerUid); }, 0);
+    return RANGING_NO_ERROR;
 }
 
-int FusionRangingService::HandleStartRanging(const RangingParams &params,
-                                             const std::function<void(const RangingResult &)> &callback,
+int FusionRangingService::HandleStartRanging(const RangingParams &params, const sptr<IRangingObserver> &observer,
                                              int32_t callerUid)
 {
     HILOGI("HandleStartRanging in main thread");
@@ -141,7 +133,7 @@ int FusionRangingService::HandleStartRanging(const RangingParams &params,
         adapter->StopRanging(params.GetDeviceId());
         return RANGING_ERR_INTERNAL_ERROR;
     }
-    auto info = std::make_shared<RangingDeviceInfo>(callerUid, params, callback, RangingState::STATE_STARTED);
+    auto info = std::make_shared<RangingDeviceInfo>(callerUid, params, observer, RangingState::STATE_STARTED);
     devicesInfo_.EnsureInsert(params.GetDeviceId(), info);
     HILOGI("HandleStartRanging for device: %{public}s, capabilityType: %{public}d",
            GET_ENCRYPT_ADDR(params.GetDeviceId()), static_cast<int>(params.GetCapabilityType()));
@@ -165,22 +157,26 @@ int FusionRangingService::StopRanging(const std::string &deviceId, int32_t calle
     return RANGING_NO_ERROR;
 }
 
-int FusionRangingService::StartPassiveRanging(RangingTypes capabilityType, int32_t &handle, int32_t callerUid)
+int FusionRangingService::StartPassiveRanging(RangingTypes capabilityType, int32_t &handle,
+                                              const sptr<IRangingObserver> &observer, int32_t callerUid)
 {
     auto promise = std::make_shared<std::promise<int>>();
     auto self = this;
-    FusionConnectivity::FcmThreadUtil::GetInstance().PostTask(
-        FusionConnectivity::THREAD_ID_MAIN,
-        [self, capabilityType, &handle, callerUid, promise]() {
-            int result = self->HandleStartPassiveRanging(capabilityType, handle, callerUid);
-            promise->set_value(result);
-        },
-        0, "StartPassiveRanging_Task");
-
-    return promise->get_future().get();
+    FusionConnectivity::DoInRangingThread([self, capabilityType, &handle, observer, callerUid, promise]() {
+        int result = self->HandleStartPassiveRanging(capabilityType, handle, observer, callerUid);
+        promise->set_value(result);
+    });
+    auto future = promise->get_future();
+    auto status = future.wait_for(std::chrono::milliseconds(START_PASSIVE_RANGING_PROMISE_TIMEOUT_MS));
+    if (status == std::future_status::timeout) {
+        HILOGE("StartPassiveRanging timeout");
+        return RANGING_ERR_INTERNAL_ERROR;
+    }
+    return future.get();
 }
 
-int FusionRangingService::HandleStartPassiveRanging(RangingTypes capabilityType, int32_t &advHandle, int32_t callerUid)
+int FusionRangingService::HandleStartPassiveRanging(RangingTypes capabilityType, int32_t &advHandle,
+                                                    const sptr<IRangingObserver> &observer, int32_t callerUid)
 {
     const bool isSupport = RangingAdapterFactory::Instance().IsRangingAdapterSupported(capabilityType);
     HILOGI("StartPassiveRanging type:%{public}d, isSupport:%{public}d", capabilityType, isSupport);
@@ -191,11 +187,13 @@ int FusionRangingService::HandleStartPassiveRanging(RangingTypes capabilityType,
                          capabilityType);
     auto adapter = GetAdapter(capabilityType);
     FCM_CHECK_RETURN_RET(adapter != nullptr, RANGING_ERR_INTERNAL_ERROR, "Get adapter fail");
+    auto rangingCallback = std::make_shared<FusionRangingAdapterCallback>();
+    adapter->SetCallback(rangingCallback);
     ret = adapter->StartPassiveRanging(advHandle);
     if (ret == RANGING_NO_ERROR) {
         HILOGI("HandleStartPassiveRanging add handle:%{public}d, uid:%{public}d", advHandle, callerUid);
         if (GetPassiveRangingHandle(advHandle) == nullptr) {
-            auto handleInfo = std::make_shared<PassiveRangingHandle>(callerUid, capabilityType, advHandle);
+            auto handleInfo = std::make_shared<PassiveRangingHandle>(callerUid, capabilityType, advHandle, observer);
             advHandles_.EnsureInsert(advHandle, handleInfo);
         }
     }
@@ -304,16 +302,38 @@ std::shared_ptr<BaseRangingAdapter> FusionRangingService::GetAdapter(RangingType
     return nullptr;
 }
 
-void FusionRangingService::OnAdapterRangingStateChanged(int32_t state)
+void FusionRangingService::OnAdapterRangingStateChanged(const AdapterRangingStateInfo &info)
 {
-    HILOGI("OnAdapterRangingStateChanged:%{public}d", state);
+    HILOGI("OnAdapterRangingStateChanged:%{public}d", static_cast<int32_t>(info.GetState()));
+    switch (info.GetType()) {
+        case ADAPTER_RANGING: {
+            auto deviceInfo = GetRangingDevice(info.GetDeviceId());
+            if (deviceInfo != nullptr && deviceInfo->observer_ != nullptr) {
+                RangingStateChangeInfo stateInfo(info.GetDeviceId(), info.GetHandle(), info.GetState(),
+                                                 info.GetStoppedCause());
+                deviceInfo->observer_->OnRangingStateChanged(stateInfo);
+            }
+            break;
+        }
+        case ADAPTER_PASSIVE_RANGING: {
+            auto handleInfo = GetPassiveRangingHandle(info.GetHandle());
+            if (handleInfo && handleInfo->observer_) {
+                RangingStateChangeInfo stateInfo(info.GetDeviceId(), info.GetHandle(), info.GetState(),
+                                                 info.GetStoppedCause());
+                handleInfo->observer_->OnRangingStateChanged(stateInfo);
+            }
+            break;
+        }
+        default:
+            break;
+    }
 }
 
 void FusionRangingService::OnRangingResult(const RangingResult &result)
 {
     auto deviceInfo = GetRangingDevice(result.GetDeviceId());
-    if (deviceInfo != nullptr && deviceInfo->callback_ != nullptr) {
-        deviceInfo->callback_(result);
+    if (deviceInfo != nullptr && deviceInfo->observer_ != nullptr) {
+        deviceInfo->observer_->OnRangingResult(result);
     }
 }
 
@@ -339,6 +359,7 @@ std::shared_ptr<PassiveRangingHandle> FusionRangingService::GetPassiveRangingHan
 
 void FusionRangingService::HandleProcessDeath(int32_t uid)
 {
+    HILOGI("HandleProcessDeath uid:%{public}d", uid);
     std::vector<std::shared_ptr<PassiveRangingHandle>> handleInfos;
     advHandles_.Iterate([&](int32_t handle, const std::shared_ptr<PassiveRangingHandle> info) {
         if (info->callerUid_ == uid) {
@@ -349,12 +370,7 @@ void FusionRangingService::HandleProcessDeath(int32_t uid)
         StopPassiveRanging((*it)->cap_, (*it)->advHandle_, uid);
     }
 
-    std::vector<std::shared_ptr<RangingDeviceInfo>> devicesInfo;
-    devicesInfo_.Iterate([&](const std::string &deviceId, const std::shared_ptr<RangingDeviceInfo> &info) {
-        if (info->callerUid_ == uid) {
-            devicesInfo.push_back(info);
-        }
-    });
+    std::vector<std::shared_ptr<RangingDeviceInfo>> devicesInfo = GetRangingDevicesInfoByUid(uid);
     for (auto it = devicesInfo.begin(); it != devicesInfo.end(); it++) {
         StopRanging((*it)->params_.GetDeviceId(), uid);
     }
@@ -362,25 +378,36 @@ void FusionRangingService::HandleProcessDeath(int32_t uid)
 
 void FusionRangingService::PauseRangingByUid(int32_t uid)
 {
-    devicesInfo_.Iterate([&](const std::string &deviceId, const std::shared_ptr<RangingDeviceInfo> &info) {
-        if (info->callerUid_ == uid) {
-            PauseRanging(deviceId);
-        }
-    });
+    HILOGI("PauseRangingByUid uid:%{public}d, size:%{public}d", uid, devicesInfo_.Size());
+    std::vector<std::shared_ptr<RangingDeviceInfo>> devicesInfo = GetRangingDevicesInfoByUid(uid);
+    for (auto it = devicesInfo.begin(); it != devicesInfo.end(); it++) {
+        PauseRanging((*it)->params_.GetDeviceId());
+    }
 }
 
 void FusionRangingService::ResumeRangingByUid(int32_t uid)
 {
-    devicesInfo_.Iterate([&](const std::string &deviceId, const std::shared_ptr<RangingDeviceInfo> &info) {
-        if (info->callerUid_ == uid) {
-            ResumeRanging(deviceId);
-        }
-    });
+    HILOGI("ResumeRangingByUid uid:%{public}d, size:%{public}d", uid, devicesInfo_.Size());
+    std::vector<std::shared_ptr<RangingDeviceInfo>> devicesInfo = GetRangingDevicesInfoByUid(uid);
+    for (auto it = devicesInfo.begin(); it != devicesInfo.end(); it++) {
+        ResumeRanging((*it)->params_.GetDeviceId());
+    }
 }
 
 bool FusionRangingService::IsRangingEmpty()
 {
     return devicesInfo_.IsEmpty() && advHandles_.IsEmpty();
+}
+
+std::vector<std::shared_ptr<RangingDeviceInfo>> FusionRangingService::GetRangingDevicesInfoByUid(int32_t uid)
+{
+    std::vector<std::shared_ptr<RangingDeviceInfo>> devicesInfo;
+    devicesInfo_.Iterate([&](const std::string &deviceId, const std::shared_ptr<RangingDeviceInfo> &info) {
+        if (info->callerUid_ == uid) {
+            devicesInfo.push_back(info);
+        }
+    });
+    return devicesInfo;
 }
 }  // namespace FusionRanging
 }  // namespace OHOS
