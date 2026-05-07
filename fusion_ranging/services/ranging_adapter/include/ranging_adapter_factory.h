@@ -62,32 +62,23 @@ private:
     void RegisterRangingAdapterPriv(const RangingTypes type, const RangingAdapterInstanceGenerator &generator)
     {
         std::lock_guard<std::mutex> lock(mutex_);
+        auto it = generators_.find(type);
+        if (it != generators_.end()) {
+            return;
+        }
         if (generator == nullptr) {
-            auto result = generators_.emplace(type, []() { return std::make_shared<T>(); });
-            if (!result.second) {
-                result.first->second = generator;
-            }
+            generators_.emplace(type, []() { return std::make_shared<T>(); });
         } else {
-            auto result = generators_.emplace(type, generator);
-            if (!result.second) {
-                result.first->second = generator;
-            }
+            generators_.emplace(type, generator);
         }
     }
 
     void RegisterCheckerPriv(const RangingTypes type, const RangingAdapterSupportChecker &checker)
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (checker == nullptr) {
-            auto result = checkers_.emplace(type, []() { return true; });
-            if (!result.second) {
-                result.first->second = checker;
-            }
-        } else {
-            auto result = checkers_.emplace(type, checker);
-            if (!result.second) {
-                result.first->second = checker;
-            }
+        auto result = checkers_.emplace(type, checker);
+        if (!result.second) {
+            result.first->second = checker;
         }
     }
 
