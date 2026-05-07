@@ -30,6 +30,7 @@ config("fusion_ranging_common_config") {
 ohos_static_library("fusion_ranging_common") {
   sources = [
     "src/log_utils.cpp",
+    "src/common_utils.cpp",
   ]
 
   include_dirs = [
