@@ -28,7 +28,7 @@ std::shared_ptr<BaseRangingAdapter> RangingAdapterFactory::CreateRangingAdapter(
 {
     std::lock_guard<std::mutex> lock(mutex_);
     auto it = generators_.find(type);
-    if (it != generators_.end()) {
+    if (it != generators_.end() && it->second != nullptr) {
         return it->second();
     }
     return nullptr;
@@ -43,7 +43,7 @@ bool RangingAdapterFactory::IsRangingAdapterSupportedPriv(const RangingTypes typ
 {
     std::lock_guard<std::mutex> lock(mutex_);
     auto it = checkers_.find(type);
-    if (it != checkers_.end()) {
+    if (it != checkers_.end() && it->second != nullptr) {
         return it->second();
     }
     return false;
