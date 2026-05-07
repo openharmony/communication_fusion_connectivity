@@ -36,6 +36,7 @@ enum class RangingStoppedCause {
     BUSINESS_CONFLICT = 2,
     LIMITED_RESOURCE = 3,
     BACKGROUND_PAUSED = 4,
+    LINK_DISCONNECT = 5,
 };
 
 enum class RangingConfidence {
