@@ -45,7 +45,7 @@ idl_gen_interface("fusion_ranging") {
   ]
   configs = []
   sequenceable_ext_deps = [
-    "c_utils:c_utils",
+    "c_utils:utils",
     "ipc:ipc_core",
   ]
 
