@@ -34,6 +34,7 @@ using ThreadUtilFunc = std::function<void(void)>;
 
 
 void DoInMainThread(const ThreadUtilFunc &func, uint64_t delayTime = 0);
+void DoInRangingThread(const ThreadUtilFunc &func, uint64_t delayTime = 0);
 
 class FcmThreadUtil {
 public:
