@@ -25,6 +25,7 @@ namespace FusionConnectivity {
 
 enum ThreadId {
     THREAD_ID_MAIN = 0,
+    THREAD_ID_RANGING = 1,
     // please add before this.
     THREAD_ID_BUTT
 };

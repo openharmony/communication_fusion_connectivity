@@ -42,6 +42,8 @@ void DoInMainThread(const ThreadUtilFunc &func, uint64_t delayTime)
     PostTaskToThread(THREAD_ID_MAIN, func, delayTime);
 }
 
+DoInMainThread
+
 // Only for test.
 void FcmThreadUtil::ClearThreadStateMap()
 {

@@ -84,6 +84,7 @@ bool ParseInt32(napi_env env, int32_t &param, napi_value args);
 bool IsValidAddress(const std::string &addr);
 
 void SetNamedPropertyByInteger(napi_env env, napi_value dstObj, int32_t objName, const char *propName);
+void SetNamedPropertyByInteger(napi_env env, napi_value dstObj, int32_t objName, const char *propName);
 
 napi_status CheckEmptyParams(napi_env env, napi_callback_info info);
 

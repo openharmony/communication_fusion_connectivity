@@ -206,6 +206,7 @@ void SetNamedPropertyByInteger(napi_env env, napi_value dstObj, int32_t objName,
     }
 }
 
+void SetNamedPropertyByInteger(napi_env env, napi_value dstObj, int32_t objName, const char *propName)
 napi_status CheckEmptyParams(napi_env env, napi_callback_info info)
 {
     size_t argc = ARGS_SIZE_ZERO;

@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 #ifndef LOG_TAG
-#define LOG_TAG "bt_napi_event_subscribe"
+#define LOG_TAG "fcm_napi_event_subscribe"
 #endif
 
 #include "napi_event_subscribe_module.h"
