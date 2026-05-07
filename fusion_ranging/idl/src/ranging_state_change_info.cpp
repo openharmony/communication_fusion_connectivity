@@ -20,6 +20,12 @@ namespace FusionRanging {
 
 bool RangingStateChangeInfo::Marshalling(Parcel &parcel) const
 {
+    if (!parcel.WriteString(deviceId_)) {
+        return false;
+    }
+    if (!parcel.WriteInt32(handle_)) {
+        return false;
+    }
     if (!parcel.WriteInt32(static_cast<int32_t>(state_))) {
         return false;
     }
@@ -31,6 +37,14 @@ bool RangingStateChangeInfo::Marshalling(Parcel &parcel) const
 
 RangingStateChangeInfo *RangingStateChangeInfo::Unmarshalling(Parcel &parcel)
 {
+    std::string deviceId = "";
+    if (!parcel.ReadString(deviceId)) { /* deviceId empty for passive ranging */
+        return nullptr;
+    }
+    int32_t handle = -1; /* default -1 is invalid handle */
+    if (!parcel.ReadInt32(handle)) {
+        return nullptr;
+    }
     int32_t state = 0;
     if (!parcel.ReadInt32(state)) {
         return nullptr;
@@ -45,8 +59,8 @@ RangingStateChangeInfo *RangingStateChangeInfo::Unmarshalling(Parcel &parcel)
     if (cause < 0 || cause > static_cast<int32_t>(RangingStoppedCause::BACKGROUND_PAUSED)) {
         return nullptr;
     }
-    auto *info = new (std::nothrow)
-        RangingStateChangeInfo(static_cast<RangingState>(state), static_cast<RangingStoppedCause>(cause));
+    auto *info = new (std::nothrow) RangingStateChangeInfo(deviceId, handle, static_cast<RangingState>(state),
+                                                           static_cast<RangingStoppedCause>(cause));
     return info;
 }
 }  // namespace FusionRanging
