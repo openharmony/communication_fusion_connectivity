@@ -70,7 +70,6 @@ public:
     void HandleProcessDeath(int32_t uid);
 
 private:
-    void NotifyStateObservers(int32_t uid, RangingState state, RangingStoppedCause cause);
     void CheckAndUnloadIfIdle();
     void CheckAndUnloadSA();
     void InitializePermissionsMap();
