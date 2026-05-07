@@ -42,7 +42,10 @@ void DoInMainThread(const ThreadUtilFunc &func, uint64_t delayTime)
     PostTaskToThread(THREAD_ID_MAIN, func, delayTime);
 }
 
-DoInMainThread
+void DoInRangingThread(const ThreadUtilFunc &func, uint64_t delayTime)
+{
+    PostTaskToThread(THREAD_ID_RANGING, func, delayTime);
+}
 
 // Only for test.
 void FcmThreadUtil::ClearThreadStateMap()
