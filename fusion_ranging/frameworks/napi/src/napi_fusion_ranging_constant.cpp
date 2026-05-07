@@ -22,12 +22,12 @@ namespace {
 constexpr int32_t RANGING_TYPES_NEARLINK_HADM = 1;
 
 constexpr int32_t RANGING_STATE_STOPPED = 0;
-constexpr int32_t RANGING_STATE_STARTED = 2;
+constexpr int32_t RANGING_STATE_STARTED = 1;
 
 constexpr int32_t RANGING_STOPPED_CAUSE_NO_ERROR = 0;
 constexpr int32_t RANGING_STOPPED_CAUSE_INTERNAL_ERROR = 1;
 constexpr int32_t RANGING_STOPPED_CAUSE_BUSINESS_CONFLICT = 2;
-constexpr int32_t RANGING_STOPPED_CAUSE_BACKGROUND_PAUSSED = 3;
+constexpr int32_t RANGING_STOPPED_CAUSE_BACKGROUND_PAUSED = 3;
 
 constexpr int32_t RANGING_CONFIDENCE_HIGH = 0;
 constexpr int32_t RANGING_CONFIDENCE_MEDIUM = 1;
@@ -86,7 +86,7 @@ napi_value NapiFusionRangingConstant::RangingStoppedCauseInit(napi_env env)
                                                   "INTERNAL_ERROR");
     FusionConnectivity::SetNamedPropertyByInteger(env, rangingStoppedCause, RANGING_STOPPED_CAUSE_BUSINESS_CONFLICT,
                                                   "BUSINESS_CONFLICT");
-    FusionConnectivity::SetNamedPropertyByInteger(env, rangingStoppedCause, RANGING_STOPPED_CAUSE_BACKGROUND_PAUSSED,
+    FusionConnectivity::SetNamedPropertyByInteger(env, rangingStoppedCause, RANGING_STOPPED_CAUSE_BACKGROUND_PAUSED,
                                                   "BACKGROUND_PAUSED");
     return rangingStoppedCause;
 }

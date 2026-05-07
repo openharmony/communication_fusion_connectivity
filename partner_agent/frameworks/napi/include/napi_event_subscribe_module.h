@@ -24,8 +24,8 @@
 #include "napi_native_object.h"
 #include "safe_map.h"
 
-#ifndef BT_MODULE_NAME
-#define BT_MODULE_NAME "default"
+#ifndef FCM_MODULE_NAME
+#define FCM_MODULE_NAME "default"
 #endif
 
 namespace OHOS {

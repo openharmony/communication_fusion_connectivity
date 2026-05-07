@@ -206,11 +206,39 @@ void SetNamedPropertyByInteger(napi_env env, napi_value dstObj, int32_t objName,
     }
 }
 
+void SetNamedPropertyByString(napi_env env, napi_value dstObj, const std::string &strValue, const char *propName)
+{
+    napi_value prop = nullptr;
+    if (napi_create_string_utf8(env, strValue.c_str(), NAPI_AUTO_LENGTH, &prop) == napi_ok) {
+        napi_set_named_property(env, dstObj, propName, prop);
+    }
+}
+
 napi_status CheckEmptyParams(napi_env env, napi_callback_info info)
 {
     size_t argc = ARGS_SIZE_ZERO;
     NAPI_FCM_CALL_RETURN(napi_get_cb_info(env, info, &argc, nullptr, nullptr, nullptr));
     NAPI_FCM_RETURN_IF(argc != ARGS_SIZE_ZERO, "Requires 0 argument.", napi_invalid_arg);
+    return napi_ok;
+}
+
+napi_status NapiCheckObjectPropertiesName(napi_env env, napi_value object, const std::vector<std::string> &names)
+{
+    uint32_t len = 0;
+    napi_value properties;
+    NAPI_FCM_CALL_RETURN(NapiIsObject(env, object));
+    NAPI_FCM_CALL_RETURN(napi_get_property_names(env, object, &properties));
+    NAPI_FCM_CALL_RETURN(napi_get_array_length(env, properties, &len));
+    for (uint32_t i = 0; i < len; ++i) {
+        std::string name {};
+        napi_value actualName;
+        NAPI_FCM_CALL_RETURN(napi_get_element(env, properties, i, &actualName));
+        NAPI_FCM_CALL_RETURN(NapiParseString(env, actualName, name));
+        if (std::find(names.begin(), names.end(), name) == names.end()) {
+            HILOGE("Unexpect object property name: \"%{public}s\"", name.c_str());
+            return napi_invalid_arg;
+        }
+    }
     return napi_ok;
 }
 

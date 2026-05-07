@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 #ifndef LOG_TAG
-#define LOG_TAG "bt_napi_event_subscribe"
+#define LOG_TAG "fcm_napi_event_subscribe"
 #endif
 
 #include "napi_event_subscribe_module.h"
@@ -47,11 +47,11 @@ napi_status NapiEventSubscribeModule::Register(napi_env env, napi_callback_info 
     size_t argc = ARGS_SIZE_TWO;
     napi_value argv[ARGS_SIZE_TWO] = {nullptr};
     napi_value thisVar = nullptr;
-    NAPI_BT_CALL_RETURN(napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-    NAPI_BT_RETURN_IF(argc != ARGS_SIZE_TWO, "Requires 2 arguments", napi_invalid_arg);
+    NAPI_FCM_CALL_RETURN(napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
+    NAPI_FCM_RETURN_IF(argc != ARGS_SIZE_TWO, "Requires 2 arguments", napi_invalid_arg);
 
     std::string name {};
-    NAPI_BT_CALL_RETURN(NapiParseString(env, argv[PARAM0], name));
+    NAPI_FCM_CALL_RETURN(NapiParseString(env, argv[PARAM0], name));
     if (!IsValidEventName(name)) {
         HILOGE("Invalid name %{public}s, valid name is %{public}s",
             name.c_str(), ToLogString(validEventNameVec_).c_str());
@@ -59,7 +59,7 @@ napi_status NapiEventSubscribeModule::Register(napi_env env, napi_callback_info 
     }
 
     napi_value callback = argv[PARAM1];
-    NAPI_BT_CALL_RETURN(NapiIsFunction(env, callback));
+    NAPI_FCM_CALL_RETURN(NapiIsFunction(env, callback));
 
     RegisterCallback(env, name, callback);
     return napi_ok;
@@ -70,8 +70,8 @@ napi_status NapiEventSubscribeModule::RegisterWithName(napi_env env, napi_callba
     size_t argc = ARGS_SIZE_ONE;
     napi_value argv[ARGS_SIZE_ONE] = {nullptr};
     napi_value thisVar = nullptr;
-    NAPI_BT_CALL_RETURN(napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-    NAPI_BT_RETURN_IF(argc != ARGS_SIZE_ONE, "Requires 1 arguments", napi_invalid_arg);
+    NAPI_FCM_CALL_RETURN(napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
+    NAPI_FCM_RETURN_IF(argc != ARGS_SIZE_ONE, "Requires 1 arguments", napi_invalid_arg);
 
     if (!IsValidEventName(name)) {
         HILOGE("Invalid name %{public}s, valid name is %{public}s",
@@ -80,7 +80,7 @@ napi_status NapiEventSubscribeModule::RegisterWithName(napi_env env, napi_callba
     }
 
     napi_value callback = argv[PARAM0];
-    NAPI_BT_CALL_RETURN(NapiIsFunction(env, callback));
+    NAPI_FCM_CALL_RETURN(NapiIsFunction(env, callback));
 
     RegisterCallback(env, name, callback);
     return napi_ok;
@@ -91,12 +91,12 @@ napi_status NapiEventSubscribeModule::Deregister(napi_env env, napi_callback_inf
     size_t argc = ARGS_SIZE_TWO;
     napi_value argv[ARGS_SIZE_TWO] = {nullptr};
     napi_value thisVar = nullptr;
-    NAPI_BT_CALL_RETURN(napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-    NAPI_BT_RETURN_IF(
+    NAPI_FCM_CALL_RETURN(napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
+    NAPI_FCM_RETURN_IF(
         argc != ARGS_SIZE_ONE && argc != ARGS_SIZE_TWO, "Requires 1 or 2 arguments", napi_invalid_arg);
 
     std::string name {};
-    NAPI_BT_CALL_RETURN(NapiParseString(env, argv[PARAM0], name));
+    NAPI_FCM_CALL_RETURN(NapiParseString(env, argv[PARAM0], name));
     if (!IsValidEventName(name)) {
         HILOGE("Invalid name %{public}s, valid name is %{public}s",
             name.c_str(), ToLogString(validEventNameVec_).c_str());
@@ -110,7 +110,7 @@ napi_status NapiEventSubscribeModule::Deregister(napi_env env, napi_callback_inf
     }
     // The argc is ARGS_SIZE_TWO
     napi_value callback = argv[PARAM1];
-    NAPI_BT_CALL_RETURN(NapiIsFunction(env, callback));
+    NAPI_FCM_CALL_RETURN(NapiIsFunction(env, callback));
     
     DeregisterCallback(env, name, callback);
     return napi_ok;
@@ -121,8 +121,8 @@ napi_status NapiEventSubscribeModule::DeregisterWithName(napi_env env, napi_call
     size_t argc = ARGS_SIZE_ONE;
     napi_value argv[ARGS_SIZE_ONE] = {nullptr};
     napi_value thisVar = nullptr;
-    NAPI_BT_CALL_RETURN(napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
-    NAPI_BT_RETURN_IF(
+    NAPI_FCM_CALL_RETURN(napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
+    NAPI_FCM_RETURN_IF(
         argc != ARGS_SIZE_ZERO && argc != ARGS_SIZE_ONE, "Requires 0 or 1 arguments", napi_invalid_arg);
 
     if (!IsValidEventName(name)) {
@@ -138,7 +138,7 @@ napi_status NapiEventSubscribeModule::DeregisterWithName(napi_env env, napi_call
     }
     // The argc is ARGS_SIZE_ONE
     napi_value callback = argv[PARAM0];
-    NAPI_BT_CALL_RETURN(NapiIsFunction(env, callback));
+    NAPI_FCM_CALL_RETURN(NapiIsFunction(env, callback));
 
     DeregisterCallback(env, name, callback);
     return napi_ok;

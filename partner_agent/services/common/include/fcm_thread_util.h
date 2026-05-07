@@ -25,6 +25,7 @@ namespace FusionConnectivity {
 
 enum ThreadId {
     THREAD_ID_MAIN = 0,
+    THREAD_ID_RANGING = 1,
     // please add before this.
     THREAD_ID_BUTT
 };
@@ -33,6 +34,7 @@ using ThreadUtilFunc = std::function<void(void)>;
 
 
 void DoInMainThread(const ThreadUtilFunc &func, uint64_t delayTime = 0);
+void DoInRangingThread(const ThreadUtilFunc &func, uint64_t delayTime = 0);
 
 class FcmThreadUtil {
 public:

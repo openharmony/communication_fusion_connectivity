@@ -20,7 +20,7 @@ namespace OHOS {
 namespace FusionRanging {
 using namespace FusionConnectivity;
 
-static napi_value CreateNapiRangingMeasureMentValue(napi_env env, const RangingMeasurement &measurement)
+static napi_value CreateNapiRangingMeasurementValue(napi_env env, const RangingMeasurement &measurement)
 {
     napi_value result = nullptr;
     napi_create_object(env, &result);
@@ -35,8 +35,15 @@ static napi_value GenerateRangingStateChangeInfo(napi_env env, const RangingStat
     napi_value result = nullptr;
     napi_create_object(env, &result);
     NAPI_FCM_RETURN_IF(result == nullptr, "Generate statechange Err", result);
-    FusionConnectivity::SetNamedPropertyByInteger(env, result, static_cast<int32_t>(info.GetState()), "state");
-    FusionConnectivity::SetNamedPropertyByInteger(env, result, static_cast<int32_t>(info.GetCause()), "cause");
+
+    SetNamedPropertyByInteger(env, result, static_cast<int32_t>(info.GetState()), "state");
+    SetNamedPropertyByInteger(env, result, static_cast<int32_t>(info.GetCause()), "cause");
+    if (!info.GetDeviceId().empty()) {
+        SetNamedPropertyByString(env, result, info.GetDeviceId(), "deviceId");
+    }
+    if (info.GetHandle() >= 0) {
+        SetNamedPropertyByInteger(env, result, info.GetHandle(), "handle");
+    }
     return result;
 }
 
@@ -45,17 +52,19 @@ static napi_value GenerateRangingResult(napi_env env, const RangingResult &resul
     napi_value retObj = nullptr;
     napi_create_object(env, &retObj);
     NAPI_FCM_RETURN_IF(retObj == nullptr, "Generate result err", retObj);
-    FusionConnectivity::SetNamedPropertyByString(env, retObj, result.GetDeviceId(), "deviceId");
+    SetNamedPropertyByString(env, retObj, result.GetDeviceId(), "deviceId");
 
-    napi_value distance = CreateNapiRangingMeasureMentValue(env, result.GetDistance());
-    NAPI_FCM_RETURN_IF(distance == nullptr, "Create Napi distance err", retObj);
-    napi_set_named_property(env, retObj, "distance", distance);
+    napi_value distance = CreateNapiRangingMeasurementValue(env, result.GetDistance());
+    NAPI_FCM_RETURN_IF(distance == nullptr, "Create Napi distance err", nullptr);
+    napi_status setRet = napi_set_named_property(env, retObj, "distance", distance);
+    NAPI_FCM_RETURN_IF(setRet != napi_ok, "Set distance property err", nullptr);
 
-    napi_value angle = CreateNapiRangingMeasureMentValue(env, result.GetAngle());
-    NAPI_FCM_RETURN_IF(angle == nullptr, "Create Napi angle err", retObj);
-    napi_set_named_property(env, retObj, "angle", angle);
+    napi_value angle = CreateNapiRangingMeasurementValue(env, result.GetAngle());
+    NAPI_FCM_RETURN_IF(angle == nullptr, "Create Napi angle err", nullptr);
+    setRet = napi_set_named_property(env, retObj, "angle", angle);
+    NAPI_FCM_RETURN_IF(setRet != napi_ok, "Set angle property err", nullptr);
 
-    FusionConnectivity::SetNamedPropertyByInteger(env, retObj, result.GetRssi(), "rssi");
+    SetNamedPropertyByInteger(env, retObj, result.GetRssi(), "rssi");
     return retObj;
 }
 

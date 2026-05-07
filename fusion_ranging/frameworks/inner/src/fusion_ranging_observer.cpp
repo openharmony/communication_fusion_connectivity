@@ -23,46 +23,6 @@
 namespace OHOS {
 namespace FusionRanging {
 
-int32_t RangingObserverStub::OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply,
-                                             MessageOption &option)
-{
-    std::u16string localDescriptor = GetDescriptor();
-    std::u16string remoteDescriptor = data.ReadInterfaceToken();
-    if (localDescriptor != remoteDescriptor) {
-        return ERR_TRANSACTION_FAILED;
-    }
-    switch (code) {
-        case static_cast<uint32_t>(IRangingObserverIpcCode::COMMAND_ON_RANGING_STATE_CHANGED): {
-            std::unique_ptr<RangingStateChangeInfo> stateInfo(data.ReadParcelable<RangingStateChangeInfo>());
-            if (!stateInfo) {
-                HILOGE("Read [RangingStateChangeInfo] failed!");
-                return ERR_INVALID_DATA;
-            }
-            ErrCode errCode = OnRangingStateChanged(*stateInfo);
-            if (!reply.WriteInt32(errCode)) {
-                HILOGE("Write Int32 failed!");
-                return ERR_INVALID_VALUE;
-            }
-            return ERR_NONE;
-        }
-        case static_cast<uint32_t>(IRangingObserverIpcCode::COMMAND_ON_RANGING_RESULT): {
-            std::unique_ptr<RangingResult> rangingResult(data.ReadParcelable<RangingResult>());
-            if (!rangingResult) {
-                HILOGE("Read [RangingResult] failed!");
-                return ERR_INVALID_DATA;
-            }
-            ErrCode errCode = OnRangingResult(*rangingResult);
-            if (!reply.WriteInt32(errCode)) {
-                HILOGE("Write Int32 failed!");
-                return ERR_INVALID_VALUE;
-            }
-            return ERR_NONE;
-        }
-        default:
-            return IRemoteStub::OnRemoteRequest(code, data, reply, option);
-    }
-}
-
 int32_t RangingObserverImpl::OnRangingStateChanged(const RangingStateChangeInfo &info)
 {
     HILOGI("RangingObserverImpl::OnRangingStateChanged state: %{public}d, cause: %{public}d",

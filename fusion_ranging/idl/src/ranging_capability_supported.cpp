@@ -13,37 +13,30 @@
  * limitations under the License.
  */
 
-#ifndef FUSION_RANGING_TYPES_H
-#define FUSION_RANGING_TYPES_H
-
-#include <cstdint>
+#include "ranging_capability_supported.h"
 
 namespace OHOS {
 namespace FusionRanging {
 
-enum class RangingTypes {
-    NEARLINK_HADM = 1,
-};
+bool RangingCapabilitySupported::Marshalling(Parcel &parcel) const
+{
+    if (!parcel.WriteBool(nearlinkHadm_)) {
+        return false;
+    }
+    return true;
+}
 
-enum class RangingState {
-    STATE_STOPPED = 0,
-    STATE_STARTED = 1,
-};
-
-enum class RangingStoppedCause {
-    NO_ERROR = 0,
-    INTERNAL_ERROR = 1,
-    BUSINESS_CONFLICT = 2,
-    LIMITED_RESOURCE = 3,
-    BACKGROUND_PAUSED = 4,
-    LINK_DISCONNECT = 5,
-};
-
-enum class RangingConfidence {
-    HIGH = 0,
-    MEDIUM = 1,
-    LOW = 2,
-};
+RangingCapabilitySupported *RangingCapabilitySupported::Unmarshalling(Parcel &parcel)
+{
+    bool nearlinkHadm = false;
+    if (!parcel.ReadBool(nearlinkHadm)) {
+        return nullptr;
+    }
+    auto *capability = new (std::nothrow) RangingCapabilitySupported();
+    if (capability != nullptr) {
+        capability->SetNearlinkHadm(nearlinkHadm);
+    }
+    return capability;
+}
 }  // namespace FusionRanging
 }  // namespace OHOS
-#endif  // FUSION_RANGING_TYPES_H

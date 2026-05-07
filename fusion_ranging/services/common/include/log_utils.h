@@ -13,37 +13,16 @@
  * limitations under the License.
  */
 
-#ifndef FUSION_RANGING_TYPES_H
-#define FUSION_RANGING_TYPES_H
+#ifndef FUSION_RANGING_LOG_UTIL_H
+#define FUSION_RANGING_LOG_UTIL_H
 
-#include <cstdint>
+#include <string>
+#include "log.h"
 
 namespace OHOS {
 namespace FusionRanging {
-
-enum class RangingTypes {
-    NEARLINK_HADM = 1,
-};
-
-enum class RangingState {
-    STATE_STOPPED = 0,
-    STATE_STARTED = 1,
-};
-
-enum class RangingStoppedCause {
-    NO_ERROR = 0,
-    INTERNAL_ERROR = 1,
-    BUSINESS_CONFLICT = 2,
-    LIMITED_RESOURCE = 3,
-    BACKGROUND_PAUSED = 4,
-    LINK_DISCONNECT = 5,
-};
-
-enum class RangingConfidence {
-    HIGH = 0,
-    MEDIUM = 1,
-    LOW = 2,
-};
-}  // namespace FusionRanging
-}  // namespace OHOS
-#endif  // FUSION_RANGING_TYPES_H
+std::string GetEncryptAddr(const std::string &addr);
+#define GET_ENCRYPT_ADDR(addr) (GetEncryptAddr(addr).c_str())
+} // namespace FusionRanging
+} // namespace OHOS
+#endif // FUSION_RANGING_LOG_UTIL_H

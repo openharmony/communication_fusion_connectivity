@@ -13,37 +13,35 @@
  * limitations under the License.
  */
 
-#ifndef FUSION_RANGING_TYPES_H
-#define FUSION_RANGING_TYPES_H
+#ifndef FUSION_RANGING_CAPABILITY_SUPPORTED_H
+#define FUSION_RANGING_CAPABILITY_SUPPORTED_H
 
-#include <cstdint>
+#include "parcel.h"
 
 namespace OHOS {
 namespace FusionRanging {
 
-enum class RangingTypes {
-    NEARLINK_HADM = 1,
-};
+class RangingCapabilitySupported : public Parcelable {
+public:
+    explicit RangingCapabilitySupported() = default;
+    ~RangingCapabilitySupported() = default;
 
-enum class RangingState {
-    STATE_STOPPED = 0,
-    STATE_STARTED = 1,
-};
+    bool Marshalling(Parcel &parcel) const override;
+    static RangingCapabilitySupported *Unmarshalling(Parcel &parcel);
 
-enum class RangingStoppedCause {
-    NO_ERROR = 0,
-    INTERNAL_ERROR = 1,
-    BUSINESS_CONFLICT = 2,
-    LIMITED_RESOURCE = 3,
-    BACKGROUND_PAUSED = 4,
-    LINK_DISCONNECT = 5,
-};
+    bool GetNearlinkHadm() const
+    {
+        return nearlinkHadm_;
+    }
 
-enum class RangingConfidence {
-    HIGH = 0,
-    MEDIUM = 1,
-    LOW = 2,
+    void SetNearlinkHadm(bool nearlinkHadm)
+    {
+        nearlinkHadm_ = nearlinkHadm;
+    }
+
+private:
+    bool nearlinkHadm_ = false;
 };
 }  // namespace FusionRanging
 }  // namespace OHOS
-#endif  // FUSION_RANGING_TYPES_H
+#endif  // FUSION_RANGING_CAPABILITY_SUPPORTED_H
