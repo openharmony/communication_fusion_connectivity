@@ -32,12 +32,14 @@ idl_gen_interface("fusion_ranging") {
     "src/ranging_result.cpp",
     "src/ranging_state_change_info.cpp",
     "src/ranging_capability_supported.cpp",
+    "../services/common/src/common_utils.cpp",
   ]
   sub_include = [
     "include",
     "${target_gen_dir}",
     "../services/server/include",
     "../services/service/include",
+    "../services/common/include",
     "../interfaces/inner_api",
     "../frameworks/inner/include",
   ]
