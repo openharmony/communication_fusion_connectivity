@@ -44,7 +44,10 @@ idl_gen_interface("fusion_ranging") {
     "../frameworks/inner/include",
   ]
   configs = []
-  sequenceable_ext_deps = []
+  sequenceable_ext_deps = [
+    "c_utils:c_utils",
+    "ipc:ipc_core",
+  ]
 
   sanitize = {
    cfi = true
