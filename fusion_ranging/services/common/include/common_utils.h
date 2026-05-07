@@ -13,16 +13,14 @@
  * limitations under the License.
  */
 
-#ifndef FUSION_RANGING_LOG_UTIL_H
-#define FUSION_RANGING_LOG_UTIL_H
+#ifndef COMMON_UTILS_H
+#define COMMON_UTILS_H
 
 #include <string>
-#include "log.h"
 
 namespace OHOS {
 namespace FusionRanging {
-std::string GetEncryptAddr(const std::string &addr);
-#define GET_ENCRYPT_ADDR(addr) (GetEncryptAddr(addr).c_str())
+bool IsValidAddress(const std::string &addr);
 } // namespace FusionRanging
 } // namespace OHOS
-#endif // FUSION_RANGING_LOG_UTIL_H
+#endif  // COMMON_UTILS_H
