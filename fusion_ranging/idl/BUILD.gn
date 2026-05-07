@@ -1,0 +1,58 @@
+# Copyright (C) 2026 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//build/ohos_var.gni")
+import("//build/config/components/idl_tool/idl.gni")
+
+# 使用idl_gen_interface生成模板文件、输入的参数名在deps中会使用
+idl_gen_interface("fusion_ranging") {
+  sources = [
+   "IFusionRanging.idl",
+  ]
+  sources_common = []
+  sources_callback = [
+    "IRangingObserver.idl",
+  ]
+  part_name = "fusion_connectivity"
+  subsystem_name = "communication"
+  sources_cpp = [
+    "src/ranging_measurement.cpp",
+    "src/ranging_params.cpp",
+    "src/ranging_result.cpp",
+    "src/ranging_state_change_info.cpp",
+    "src/ranging_capability_supported.cpp",
+  ]
+  sub_include = [
+    "include",
+    "${target_gen_dir}",
+    "../services/server/include",
+    "../services/service/include",
+    "../interfaces/inner_api",
+    "../frameworks/inner/include",
+  ]
+  configs = []
+  sequenceable_ext_deps = []
+
+  sanitize = {
+   cfi = true
+   boundary_sanitize = true
+   cfi_cross_dso = true
+   integer_overflow = true
+   ubsan = true
+   debug = false
+  }
+
+  log_domainid = "0xD000100"
+  log_tag = "fusion_ranging"
+}
