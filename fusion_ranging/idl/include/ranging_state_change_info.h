@@ -24,12 +24,38 @@ namespace FusionRanging {
 
 class RangingStateChangeInfo : public Parcelable {
 public:
-    RangingStateChangeInfo(RangingState state, RangingStoppedCause cause) : state_(state), cause_(cause) {}
+    RangingStateChangeInfo(const std::string &deviceId, int32_t handle, RangingState state, RangingStoppedCause cause)
+        : deviceId_(deviceId),
+          handle_(handle),
+          state_(state),
+          cause_(cause)
+    {
+    }
     RangingStateChangeInfo() = default;
     ~RangingStateChangeInfo() = default;
 
     bool Marshalling(Parcel &parcel) const override;
     static RangingStateChangeInfo *Unmarshalling(Parcel &parcel);
+
+    std::string GetDeviceId() const
+    {
+        return deviceId_;
+    }
+
+    void SetDeviceId(const std::string &deviceId)
+    {
+        deviceId_ = deviceId;
+    }
+
+    int32_t GetHandle() const
+    {
+        return handle_;
+    }
+
+    void SetHandle(int32_t handle)
+    {
+        handle_ = handle;
+    }
 
     RangingState GetState() const
     {
@@ -52,6 +78,8 @@ public:
     }
 
 private:
+    std::string deviceId_ = "";
+    int32_t handle_ = -1; /* default -1 invalid handle */
     RangingState state_ = RangingState::STATE_STOPPED;
     RangingStoppedCause cause_ = RangingStoppedCause::NO_ERROR;
 };
