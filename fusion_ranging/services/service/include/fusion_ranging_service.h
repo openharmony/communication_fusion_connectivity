@@ -24,36 +24,40 @@
 #include "ranging_params.h"
 #include "ranging_result.h"
 #include "base_ranging_adapter.h"
+#include "ranging_observer_stub.h"
+#include "ranging_state_change_info.h"
 #include "safe_map.h"
 
 namespace OHOS {
 namespace FusionRanging {
 
-using RangingResultCallback = std::function<void(const RangingResult &)>;
 struct RangingDeviceInfo {
-    RangingDeviceInfo(int32_t callerUid, const RangingParams &p, RangingResultCallback cb, RangingState st)
+    RangingDeviceInfo(int32_t callerUid, const RangingParams &p, const sptr<IRangingObserver> &observer,
+                      RangingState st)
         : callerUid_(callerUid),
-          params_(p.GetDeviceId(), p.GetCapabilityType()),
-          callback_(cb),
+          params_(p),
+          observer_(observer),
           state_(st)
     {
     }
     int32_t callerUid_;
     RangingParams params_;
-    RangingResultCallback callback_;
+    sptr<IRangingObserver> observer_;
     RangingState state_;
 };
 
 struct PassiveRangingHandle {
-    PassiveRangingHandle(int32_t uid, RangingTypes cap, int32_t advHandle)
+    PassiveRangingHandle(int32_t uid, RangingTypes cap, int32_t advHandle, const sptr<IRangingObserver> &observer)
         : callerUid_(uid),
           cap_(cap),
-          advHandle_(advHandle)
+          advHandle_(advHandle),
+          observer_(observer)
     {
     }
     int32_t callerUid_;
     RangingTypes cap_;
     int32_t advHandle_;
+    sptr<IRangingObserver> observer_;
 };
 
 class FusionRangingService {
@@ -63,12 +67,12 @@ public:
     virtual ~FusionRangingService();
 
     bool IsRangingSupported(RangingTypes capabilityType);
-    int StartRanging(const RangingParams &params, const std::function<void(const RangingResult &)> &callback,
-                     int32_t callerUid);
+    int StartRanging(const RangingParams &params, const sptr<IRangingObserver> &observer, int32_t callerUid);
     int StopRanging(const std::string &deviceId, int32_t callerUid);
-    int StartPassiveRanging(RangingTypes capabilityType, int32_t &handle, int32_t callerUid);
+    int StartPassiveRanging(RangingTypes capabilityType, int32_t &handle, const sptr<IRangingObserver> &observer,
+                            int32_t callerUid);
     int StopPassiveRanging(RangingTypes capabilityType, int32_t handle, int32_t callerUid);
-    void OnAdapterRangingStateChanged(int32_t state);
+    void OnAdapterRangingStateChanged(const AdapterRangingStateInfo &info);
     void OnRangingResult(const RangingResult &result);
 
     void HandleProcessDeath(int32_t uid);
@@ -80,11 +84,12 @@ private:
     void InitConfiguration();
     void DeInitConfiguration();
     int CreateRangingAdapter(RangingTypes capabilityType);
-    int HandleStartRanging(const RangingParams &params, const std::function<void(const RangingResult &)> &callback,
-                           int32_t callerUid);
-    int HandleStartPassiveRanging(RangingTypes capabilityType, int32_t &advHandle, int32_t callerUid);
+    int HandleStartRanging(const RangingParams &params, const sptr<IRangingObserver> &observer, int32_t callerUid);
+    int HandleStartPassiveRanging(RangingTypes capabilityType, int32_t &advHandle,
+                                  const sptr<IRangingObserver> &observer, int32_t callerUid);
     int PauseRanging(const std::string &deviceId);
     int ResumeRanging(const std::string &deviceId);
+    std::vector<std::shared_ptr<RangingDeviceInfo>> GetRangingDevicesInfoByUid(int32_t uid);
 
     std::shared_ptr<BaseRangingAdapter> GetAdapter(RangingTypes capabilityType);
     std::shared_ptr<RangingDeviceInfo> GetRangingDevice(const std::string &deviceId);
