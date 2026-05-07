@@ -39,6 +39,10 @@ RangingMeasurement *RangingMeasurement::Unmarshalling(Parcel &parcel)
     if (!parcel.ReadInt32(confidence)) {
         return nullptr;
     }
+    if (confidence < static_cast<int32_t>(RangingConfidence::HIGH) ||
+        confidence > static_cast<int32_t>(RangingConfidence::LOW)) {
+        return nullptr;
+    }
     auto *measurement = new (std::nothrow) RangingMeasurement(value, static_cast<RangingConfidence>(confidence));
     return measurement;
 }
