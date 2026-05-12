@@ -24,6 +24,11 @@
 #include "partner_device.h"
 #include "log.h"
 
+#include "accesstoken_kit.h"
+#include "nativetoken_kit.h"
+#include "token_setproc.h"
+
+using namespace OHOS;
 using namespace OHOS::FusionConnectivity;
 using namespace testing;
 using namespace testing::ext;
@@ -34,6 +39,28 @@ public:
     MOCK_METHOD(void, startExtension, (), ());
     MOCK_METHOD(void, destroyExtension, (int), ());
 };
+
+static void SetNativeTokenInfo()
+{
+    constexpr int permissionNum = 2;
+    const char *perms[permissionNum] = {
+        "ohos.permission.MANAGE_BLUETOOTH",
+        "ohos.permission.ACCESS_BLUETOOTH",
+    };
+    NativeTokenInfoParams infoInstance = {
+        .dcapsNum = 0,
+        .permsNum = permissionNum,
+        .aclsNum = 0,
+        .dcaps = nullptr,
+        .perms = perms,
+        .acls = nullptr,
+        .processName = "device_agent_unittest",
+        .aplStr = "system_basic",
+    };
+    uint64_t tokenId = GetAccessTokenId(&infoInstance);
+    SetSelfTokenID(tokenId);
+    Security::AccessToken::AccessTokenKit::ReloadNativeTokenInfo();
+}
 
 class DeviceAgentCapabilityBrTest : public testing::Test {
 public:
@@ -50,7 +77,9 @@ public:
 };
 
 void DeviceAgentCapabilityBrTest::SetUpTestCase(void)
-{}
+{
+    SetNativeTokenInfo();
+}
 void DeviceAgentCapabilityBrTest::TearDownTestCase(void)
 {}
 void DeviceAgentCapabilityBrTest::SetUp()
