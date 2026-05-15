@@ -61,6 +61,8 @@ private:
         const std::string &abilityName, PartnerDeviceAddress &deviceAddress, BusinessCapability &businessCapability);
     int32_t OnDestroyWithReasonExtensionService(
         const std::string &bundleName, const std::string &abilityName, int destroyReason);
+    bool CheckPartnerAgentExtensionAbilityExtensionService(const std::string &bundleName,
+        const std::string &abilityName);
 
     bool IsDeviceBoundByCallingApp(const PartnerDeviceAddress &deviceAddress);
     bool IsDeviceBoundByAll(const PartnerDeviceAddress &deviceAddress);

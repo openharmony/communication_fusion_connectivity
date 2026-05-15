@@ -4,6 +4,7 @@
   *Connect*;
   *Destroy*;
   *OnDeviceDiscovered*;
+  *CheckPartnerAgentExtensionAbility*;
   local:
     *;
 };

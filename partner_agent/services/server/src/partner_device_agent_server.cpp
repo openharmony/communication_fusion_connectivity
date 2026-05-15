@@ -45,6 +45,7 @@ using CONNECT = int32_t (*)(const std::string, const std::string, const int32_t)
 using ONDEVICEDISCOVERED = void (*)(const std::string&,
     const std::string&, const int32_t, const PartnerDeviceAddress&, const NotificationType&);
 using ONDESTROYWITHREASON = void (*)(const std::string&, const std::string&, const int32_t, const int32_t);
+using CHECKPARTNERAGENTEXTENSIONABILITY = bool (*)(const std::string, const std::string, const int32_t);
 
 namespace {
     const int32_t PARTNER_DEVICE_AGENT_SYS_ABILITY_ID = 8630;
@@ -253,6 +254,12 @@ ErrCode PartnerDeviceAgentServer::BindDevice(
         HILOGE("%{public}s device is already bound", GET_ENCRYPT_ADDR(deviceAddress));
         AttemptUnloadPartnerAgent();
         return FCM_ERR_DEVICE_ALREADY_BOUNDED;
+    }
+    if (CheckPartnerAgentExtensionAbilityExtensionService(PermissionManager::GetCallingName(),
+        partnerAgentExtensionAbilityName) == false) {
+        HILOGE("%{public}s extension is not partnerAgent type.", partnerAgentExtensionAbilityName.c_str());
+        AttemptUnloadPartnerAgent();
+        return FCM_ERR_INTERNAL_ERROR;
     }
     // 应用注册虚拟地址，partnerAgent服务需要固化该虚拟地址
     if (deviceAddress.GetAddressType() == BluetoothAddressType::VIRTUAL) {
@@ -475,6 +482,27 @@ int32_t PartnerDeviceAgentServer::OnDestroyWithReasonExtensionService(
     HILOGW("OnDestroyWithReason end.");
     partnerAgentExtensionLoaded_.store(true);
     return 0;
+}
+
+bool PartnerDeviceAgentServer::CheckPartnerAgentExtensionAbilityExtensionService(const std::string &bundleName,
+    const std::string &abilityName)
+{
+    std::string path_ = PARTNER_AGENT_EXTENSION_SERVICE_MODULE_NAME;
+    if (partnerAgentExtensionHandler_ == nullptr) {
+        partnerAgentExtensionHandler_ =
+            std::make_shared<FusionConnectivityLoadUtils>(PARTNER_AGENT_EXTENSION_SERVICE_MODULE_NAME);
+    }
+    // 一个partnerAgentSA可以拉起多个extension
+    CHECKPARTNERAGENTEXTENSIONABILITY checkPartnerAgentExtensionAbility =
+        reinterpret_cast<CHECKPARTNERAGENTEXTENSIONABILITY>(partnerAgentExtensionHandler_->
+        GetProxyFunc("CheckPartnerAgentExtensionAbility"));
+    if (checkPartnerAgentExtensionAbility == nullptr) {
+        HILOGW("GetProxyFunc checkPartnerAgentExtensionAbility init failed.");
+        return false;
+    }
+    bool result = checkPartnerAgentExtensionAbility(bundleName, abilityName, GetCurrentActiveUserId());
+    partnerAgentExtensionLoaded_.store(true);
+    return result;
 }
 
 int32_t PartnerDeviceAgentServer::OnDeviceDiscoveredExtensionService(const std::string &bundleName,
