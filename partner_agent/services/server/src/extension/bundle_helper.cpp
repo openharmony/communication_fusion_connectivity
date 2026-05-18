@@ -104,9 +104,8 @@ bool BundleHelper::GetBundleInfoV9(
     }
     return true;
 }
-
-
-bool BundleHelper::CheckPartnerAgentExtensionAbility(const std::string &bundleName, const int32_t userId)
+bool BundleHelper::CheckPartnerAgentExtensionAbility(const std::string &bundleName,
+    const int32_t userId, const std::string& extensionName)
 {
     auto flags = static_cast<int32_t>(AppExecFwk::GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_APPLICATION)
         | static_cast<int32_t>(AppExecFwk::GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_HAP_MODULE)
@@ -115,13 +114,15 @@ bool BundleHelper::CheckPartnerAgentExtensionAbility(const std::string &bundleNa
 
     AppExecFwk::BundleInfo bundleInfo;
     if (!GetBundleInfoV9(bundleName, flags, bundleInfo, userId)) {
-        HILOGE("GetBundleInfoV9 error, bundleName = %{public}s, userId = %{public}d",
-            bundleName.c_str(), userId);
+        HILOGE("GetBundleInfoV9 error, bundleName = %{public}s, userId = %{public}d",  bundleName.c_str(), userId);
         return false;
     }
     for (const auto& hapmodule : bundleInfo.hapModuleInfos) {
         for (const auto& extInfo : hapmodule.extensionInfos) {
-            if (extInfo.type == AppExecFwk::ExtensionAbilityType::PARTNER_AGENT) {
+            HILOGI("Get ExtInfo, moduleName = %{public}s, type = %{public}d name = %{public}s",
+                extInfo.bundleName.c_str(), extInfo.type, extInfo.name.c_str());
+            if (extInfo.type == AppExecFwk::ExtensionAbilityType::PARTNER_AGENT
+                && extInfo.name == extensionName) {
                 return true;
             }
         }

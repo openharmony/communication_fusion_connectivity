@@ -19,6 +19,7 @@
 
 #include <cstdint>
 
+#include "bundle_helper.h"
 #include "extension_service_common.h"
 #include "extension_service_connection_service.h"
 #include "fusion_conn_load_utils.h"
@@ -54,6 +55,13 @@ SYMBOL_EXPORT void OnDeviceDiscovered(const std::string& bundleName, const std::
         std::make_shared<ExtensionSubscriberInfo>(bundleName, extensionName, userId);
     ExtensionServiceConnectionService::GetInstance()->NotifyOnDeviceDiscovered(extensionSubscriberInfo,
         deviceAddress, type);
+}
+
+SYMBOL_EXPORT bool CheckPartnerAgentExtensionAbility(const std::string& bundleName,
+    const std::string& extensionName, const int32_t userId)
+{
+    HILOGI("SYMBOL_EXPORT CheckPartnerAgentExtensionAbility");
+    return BundleHelper::GetInstance().CheckPartnerAgentExtensionAbility(bundleName, userId, extensionName);
 }
 #ifdef __cplusplus
 }

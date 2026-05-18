@@ -44,7 +44,8 @@ public:
     bool GetBundleInfoV9(const std::string& bundle, const int32_t flag,
         AppExecFwk::BundleInfo &bundleInfo, const int32_t userId);
 
-    bool CheckPartnerAgentExtensionAbility(const std::string &bundleName, const int32_t userId);
+    bool CheckPartnerAgentExtensionAbility(const std::string &bundleName,
+        const int32_t userId, const std::string& extensionName);
 
     bool GetPartnerAgentExtensionAbilityLabel(const std::string &bundleName, const int32_t userId, std::string &label);
 
