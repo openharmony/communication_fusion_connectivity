@@ -39,7 +39,7 @@ bool RangingResult::Marshalling(Parcel &parcel) const
 RangingResult *RangingResult::Unmarshalling(Parcel &parcel)
 {
     std::string deviceId = "";
-    if (!parcel.ReadString(deviceId)) {
+    if (!parcel.ReadString(deviceId) || !IsValidAddress(deviceId)) {
         return nullptr;
     }
     RangingMeasurement *distance = RangingMeasurement::Unmarshalling(parcel);
