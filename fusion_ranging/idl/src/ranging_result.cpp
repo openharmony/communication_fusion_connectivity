@@ -14,6 +14,7 @@
  */
 
 #include "ranging_result.h"
+#include "common_utils.h"
 
 namespace OHOS {
 namespace FusionRanging {

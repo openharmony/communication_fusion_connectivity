@@ -23,6 +23,7 @@ namespace FusionRanging {
 
 enum class RangingTypes {
     NEARLINK_HADM = 1,
+    RANGING_TYPE_MAX,
 };
 
 enum class RangingState {

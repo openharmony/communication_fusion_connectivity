@@ -180,10 +180,10 @@ int FusionRangingService::HandleStartPassiveRanging(RangingTypes capabilityType,
 {
     const bool isSupport = RangingAdapterFactory::Instance().IsRangingAdapterSupported(capabilityType);
     HILOGI("StartPassiveRanging type:%{public}d, isSupport:%{public}d", capabilityType, isSupport);
-    FCM_CHECK_RETURN_RET(isSupport, RANGING_ERR_ADAPTER_NOT_SUPPORT, "Faild capability type:%{public}d",
+    FCM_CHECK_RETURN_RET(isSupport, RANGING_ERR_RANGING_TYPE_NOT_SUPPORT, "Faild capability type:%{public}d",
                          capabilityType);
     auto ret = CreateRangingAdapter(capabilityType);
-    FCM_CHECK_RETURN_RET(ret == RANGING_NO_ERROR, RANGING_ERR_ADAPTER_NOT_SUPPORT, "crate capability type:%{public}d",
+    FCM_CHECK_RETURN_RET(ret == RANGING_NO_ERROR, RANGING_ERR_RANGING_TYPE_NOT_SUPPORT, "crate capability type:%{public}d",
                          capabilityType);
     auto adapter = GetAdapter(capabilityType);
     FCM_CHECK_RETURN_RET(adapter != nullptr, RANGING_ERR_INTERNAL_ERROR, "Get adapter fail");

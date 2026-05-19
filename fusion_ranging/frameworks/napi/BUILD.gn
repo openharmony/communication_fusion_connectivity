@@ -72,6 +72,10 @@ ohos_shared_library("ranging") {
 
   cflags = [
     "-Wno-unused-parameter",
+    "-ffunction-sections",
+    "-fno-asynchronous-unwind-tables",
+    "-fno-unwind-tables",
+    "-Os",
   ]
 
   relative_install_dir = "module/fusionconnectivity"

@@ -20,6 +20,7 @@
 #include "iservice_registry.h"
 #include "if_system_ability_manager.h"
 #include "parameter.h"
+#include "common_utils.h"
 #include "log_utils.h"
 
 #ifndef LOG_TAG
@@ -204,7 +205,7 @@ int32_t FusionRangingManager::GetRangingCapability(RangingCapabilitySupported &c
         return static_cast<int32_t>(RangingErrCode::RANGING_ERR_API_NOT_SUPPORT);
     }
     auto proxy = GetRemoteProxy();
-    FCM_CHECK_RETURN_RET(proxy != nullptr, RANGING_ERR_SERVICE_NOT_PROVIDED, "proxy null");
+    FCM_CHECK_RETURN_RET(proxy != nullptr, RANGING_ERR_RANGING_SERVICE_DISABLED, "proxy null");
     return proxy->GetRangingCapability(capability);
 }
 
@@ -213,8 +214,12 @@ int FusionRangingManager::StartRanging(const RangingParams &params)
     if (!IsRangingSupported()) {
         return static_cast<int32_t>(RangingErrCode::RANGING_ERR_API_NOT_SUPPORT);
     }
+    if (!IsValidAddress(params.GetDeviceId())) {
+        HILOGE("param not valid");
+        return RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS;
+    }
     auto proxy = GetRemoteProxy();
-    FCM_CHECK_RETURN_RET(proxy != nullptr, RANGING_ERR_SERVICE_NOT_PROVIDED, "proxy null");
+    FCM_CHECK_RETURN_RET(proxy != nullptr, RANGING_ERR_RANGING_SERVICE_DISABLED, "proxy null");
     int ret = proxy->StartRanging(params);
     HILOGI("StartRanging ret:%{public}d", ret);
     return ret;
@@ -226,12 +231,12 @@ int FusionRangingManager::StopRanging(const RangingParams &params)
         return static_cast<int32_t>(RangingErrCode::RANGING_ERR_API_NOT_SUPPORT);
     }
 
-    if (params.GetDeviceId().empty()) {
-        HILOGE("StopRanging not found device");
-        return RANGING_ERR_OBJECT_NOT_FOUND;
+    if (!IsValidAddress(params.GetDeviceId())) {
+        HILOGE("param not valid");
+        return RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS;
     }
     auto proxy = GetRemoteProxy();
-    FCM_CHECK_RETURN_RET(proxy != nullptr, RANGING_ERR_SERVICE_NOT_PROVIDED, "proxy null");
+    FCM_CHECK_RETURN_RET(proxy != nullptr, RANGING_ERR_RANGING_SERVICE_DISABLED, "proxy null");
     int ret = proxy->StopRanging(params);
     HILOGI("StopRanging ret:%{public}d", ret);
     return ret;
@@ -243,7 +248,7 @@ int FusionRangingManager::StartPassiveRanging(RangingTypes capabilityType, int32
         return static_cast<int32_t>(RangingErrCode::RANGING_ERR_API_NOT_SUPPORT);
     }
     auto proxy = GetRemoteProxy();
-    FCM_CHECK_RETURN_RET(proxy != nullptr, RANGING_ERR_SERVICE_NOT_PROVIDED, "proxy null");
+    FCM_CHECK_RETURN_RET(proxy != nullptr, RANGING_ERR_RANGING_SERVICE_DISABLED, "proxy null");
     int ret = proxy->StartPassiveRanging(static_cast<int>(capabilityType), handle);
     HILOGI("StartPassiveRanging ret:%{public}d", ret);
     return ret;
@@ -254,9 +259,9 @@ int FusionRangingManager::StopPassiveRanging(RangingTypes capabilityType, int32_
     if (!IsRangingSupported()) {
         return static_cast<int32_t>(RangingErrCode::RANGING_ERR_API_NOT_SUPPORT);
     }
-    FCM_CHECK_RETURN_RET(handle >= 0, RANGING_ERR_INVALID_PARAM, "invalid handle");
+    FCM_CHECK_RETURN_RET(handle >= 0, RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS, "invalid handle");
     auto proxy = GetRemoteProxy();
-    FCM_CHECK_RETURN_RET(proxy != nullptr, RANGING_ERR_SERVICE_NOT_PROVIDED, "proxy null");
+    FCM_CHECK_RETURN_RET(proxy != nullptr, RANGING_ERR_RANGING_SERVICE_DISABLED, "proxy null");
     int ret = proxy->StopPassiveRanging(static_cast<int>(capabilityType), handle);
     HILOGI("StopPassiveRanging ret:%{public}d", ret);
     return ret;
@@ -291,7 +296,7 @@ int FusionRangingManager::DeregisterFusionRangingObserver(const std::shared_ptr<
             ++it;
         }
     }
-    return RANGING_ERR_INTERNAL_ERROR;
+    return RANGING_ERR_OPERATION_FAILED;
 }
 }  // namespace FusionRanging
 }  // namespace OHOS

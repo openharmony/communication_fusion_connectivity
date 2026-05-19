@@ -49,6 +49,11 @@ static napi_value GenerateRangingCapabilitySupported(napi_env env, const Ranging
     napi_set_named_property(env, result, "nearlinkHadm", nearlinkHadm);
     return result;
 }
+
+static int32_t OutPutStandardErr(int32_t ret)
+{
+    
+}
 }  // anonymous namespace
 
 class NapiNativeRangingCapabilityData : public NapiNativeObject {

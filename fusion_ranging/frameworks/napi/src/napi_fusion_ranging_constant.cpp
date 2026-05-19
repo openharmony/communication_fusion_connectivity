@@ -42,7 +42,6 @@ napi_value NapiFusionRangingConstant::DefineJSConstant(napi_env env, napi_value 
 
 napi_value NapiFusionRangingConstant::ConstantPropertyValueInit(napi_env env, napi_value exports)
 {
-    HILOGD("enter");
     napi_value rangingTypesObj = RangingTypesInit(env);
     napi_value rangingStateObj = RangingStateInit(env);
     napi_value rangingStoppedCauseObj = RangingStoppedCauseInit(env);
