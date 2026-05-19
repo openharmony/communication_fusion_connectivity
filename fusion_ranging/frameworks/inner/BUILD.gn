@@ -14,7 +14,7 @@
 import("//build/ohos.gni")
 
 FUSION_RANGING = "//foundation/communication/fusion_connectivity/fusion_ranging"
-
+123
 ohos_shared_library("fusion_ranging_manager_framework") {
   sanitize = {
     cfi = true

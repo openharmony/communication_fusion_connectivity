@@ -22,11 +22,12 @@
 #include "fusion_ranging_errorcode.h"
 #include "fusion_ranging_service.h"
 #include "ipc_skeleton.h"
-#include "log_utils.h"
 #include "process_death_manager.h"
 #include "fcm_thread_util.h"
 #include "application_state_observer_stub.h"
 #include "system_ability_definition.h"
+#include "common_utils.h"
+#include "log_utils.h"
 
 namespace OHOS {
 namespace FusionRanging {
