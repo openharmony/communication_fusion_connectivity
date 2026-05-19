@@ -1,0 +1,10 @@
+{
+  global:
+    *GetRangingCapability*;
+    *StartRanging*;
+    *StopRanging*;
+    *StartPassiveRanging*;
+    *StopPassiveRanging*;
+  local:
+    *;
+};
