@@ -49,6 +49,16 @@ static napi_value GenerateRangingCapabilitySupported(napi_env env, const Ranging
     napi_set_named_property(env, result, "nearlinkHadm", nearlinkHadm);
     return result;
 }
+
+static int32_t OutputStandardErr(int32_t ret)
+{
+    if ((ret >= RANGING_NO_ERROR && ret <= RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS) ||
+        (ret == RANGING_ERR_OPERATION_FAILED)) {
+        return ret;
+    } else {
+        return RANGING_ERR_OPERATION_FAILED;
+    }
+}
 }  // anonymous namespace
 
 class NapiNativeRangingCapabilityData : public NapiNativeObject {
@@ -82,7 +92,7 @@ void DefineRangingInterface(napi_env env, napi_value exports)
 
 napi_value IsRangingSupported(napi_env env, napi_callback_info info)
 {
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, CheckEmptyParams(env, info) == napi_ok, FCM_ERR_INVALID_PARAM);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, CheckEmptyParams(env, info) == napi_ok, RANGING_ERR_INVALID_PARAM);
     bool isSupported = FusionRangingManager::GetInstance()->IsRangingSupported();
     HILOGI("IsRangingSupported result is %{public}d", isSupported);
     return NapiGetBooleanRet(env, isSupported);
@@ -91,7 +101,7 @@ napi_value IsRangingSupported(napi_env env, napi_callback_info info)
 napi_value GetRangingCapability(napi_env env, napi_callback_info info)
 {
     HILOGI("enter");
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, CheckEmptyParams(env, info) == napi_ok, FCM_ERR_INVALID_PARAM);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, CheckEmptyParams(env, info) == napi_ok, RANGING_ERR_INVALID_PARAM);
     auto asyncWorkFunc = [env]() -> NapiAsyncWorkRet {
         RangingCapabilitySupported cap;
         int ret = FusionRangingManager::GetInstance()->GetRangingCapability(cap);
@@ -100,7 +110,7 @@ napi_value GetRangingCapability(napi_env env, napi_callback_info info)
     };
 
     auto asyncWork = NapiAsyncWorkFactory::CreateAsyncWork(env, info, asyncWorkFunc, ASYNC_WORK_NO_NEED_CALLBACK);
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, asyncWork, FCM_ERR_INTERNAL_ERROR);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, asyncWork, RANGING_ERR_OPERATION_FAILED);
     asyncWork->Run();
     return asyncWork->GetRet();
 }
@@ -127,15 +137,15 @@ napi_value StartRanging(napi_env env, napi_callback_info info)
     HILOGI("StartRanging napi enter.");
     size_t argc = ARGS_SIZE_TWO;
     napi_value argv[ARGS_SIZE_TWO] = {nullptr};
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, (napiCallback_ != nullptr), FCM_ERR_INVALID_PARAM);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, (napiCallback_ != nullptr), RANGING_ERR_INVALID_PARAM);
     napi_status cbInfoStatus = napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
     HILOGI("StartRanging: cbInfoStatus=%{public}d argc=%{public}zu", cbInfoStatus, argc);
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, argc == ARGS_SIZE_TWO, FCM_ERR_INVALID_PARAM);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, argc == ARGS_SIZE_TWO, RANGING_ERR_INVALID_PARAM);
     RangingParams params;
     napi_status parseStatus = ParseStartRangingParams(env, argv[PARAM0], params);
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, (parseStatus == napi_ok), FCM_ERR_INVALID_PARAM);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, (parseStatus == napi_ok), RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS);
     auto status = NapiIsFunction(env, argv[PARAM1]);
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, (status == napi_ok), FCM_ERR_INVALID_PARAM);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, (status == napi_ok), RANGING_ERR_INVALID_PARAM);
 
     auto napiCallback = std::make_shared<NapiCallback>(env, argv[PARAM1]);
     auto resultCallback = [env, napiCallback](const RangingResult &result) {
@@ -152,7 +162,7 @@ napi_value StartRanging(napi_env env, napi_callback_info info)
     if (ret != FCM_NO_ERROR) {
         napiCallback_->DeregisterRangingResultCallbackWithDeviceId(env, argv[PARAM1], params.GetDeviceId());
         FusionRangingManager::GetInstance()->DeregisterFusionRangingObserver(napiCallback_);
-        NAPI_FCM_ASSERT_RETURN_UNDEF(env, false, ret);
+        NAPI_FCM_ASSERT_RETURN_UNDEF(env, false, OutputStandardErr(ret));
     }
     return NapiGetUndefined(env);
 }
@@ -161,13 +171,13 @@ static napi_value StopRangingWithParams(napi_env env, napi_value napiCallback, n
 {
     RangingParams userParams;
     auto ret = ParseStartRangingParams(env, object, userParams);
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, (ret == napi_ok), FCM_ERR_INVALID_PARAM);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, (ret == napi_ok), RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS);
     int stopRet = FusionRangingManager::GetInstance()->StopRanging(userParams);
     napiCallback_->DeregisterRangingResultCallbackWithDeviceId(env, napiCallback, userParams.GetDeviceId());
     if (napiCallback_->IsRangingResultCallbackEmpty()) {
         FusionRangingManager::GetInstance()->DeregisterFusionRangingObserver(napiCallback_);
     }
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, stopRet == FCM_NO_ERROR, FCM_ERR_DEVICE_ALREADY_BOUNDED);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, stopRet == FCM_NO_ERROR, OutputStandardErr(stopRet));
     return NapiGetUndefined(env);
 }
 
@@ -175,14 +185,14 @@ napi_value StopRanging(napi_env env, napi_callback_info info)
 {
     size_t argc = ARGS_SIZE_TWO;
     napi_value argv[ARGS_SIZE_TWO] = {nullptr};
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, (napiCallback_ != nullptr), FCM_ERR_DEVICE_NOT_FOUND);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, (napiCallback_ != nullptr), RANGING_ERR_OPERATION_FAILED);
 
     napi_status cbInfoStatus = napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
     HILOGI("StopRanging: cbInfoStatus=%{public}d argc=%{public}zu", cbInfoStatus, argc);
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, cbInfoStatus == napi_ok, FCM_ERR_INVALID_PARAM);
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, argc >= ARGS_SIZE_ONE && argc <= ARGS_SIZE_TWO, FCM_ERR_INVALID_PARAM);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, cbInfoStatus == napi_ok, RANGING_ERR_INVALID_PARAM);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, argc >= ARGS_SIZE_ONE && argc <= ARGS_SIZE_TWO, RANGING_ERR_INVALID_PARAM);
     napi_status ret = NapiIsFunction(env, argv[PARAM0]);
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, (ret == napi_ok), FCM_ERR_INVALID_PARAM);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, (ret == napi_ok), RANGING_ERR_INVALID_PARAM);
     if (argc == ARGS_SIZE_TWO) {
         return StopRangingWithParams(env, argv[PARAM0], argv[PARAM1]);
     }
@@ -199,7 +209,7 @@ napi_value StopRanging(napi_env env, napi_callback_info info)
     if (napiCallback_->IsRangingResultCallbackEmpty()) {
         FusionRangingManager::GetInstance()->DeregisterFusionRangingObserver(napiCallback_);
     }
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, stopRet == FCM_NO_ERROR, stopRet);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, stopRet == FCM_NO_ERROR, OutputStandardErr(stopRet));
     return NapiGetUndefined(env);
 }
 
@@ -210,9 +220,9 @@ napi_value StartPassiveRanging(napi_env env, napi_callback_info info)
     napi_value argv[ARGS_SIZE_ONE] = {nullptr};
     napi_status cbInfoStatus = napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
     HILOGI("StartPassiveRanging: cbInfoStatus=%{public}d argc=%{public}zu", cbInfoStatus, argc);
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, argc == ARGS_SIZE_ONE, FCM_ERR_INVALID_PARAM);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, argc == ARGS_SIZE_ONE, RANGING_ERR_INVALID_PARAM);
     int32_t capabilityType = 0;
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, ParseInt32(env, capabilityType, argv[PARAM0]), FCM_ERR_INVALID_PARAM);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, ParseInt32(env, capabilityType, argv[PARAM0]), RANGING_ERR_INVALID_PARAM);
 
     auto asyncWorkFunc = [env, capabilityType]() -> NapiAsyncWorkRet {
         int handle = -1; /* -1 default as invaild handle */
@@ -223,7 +233,7 @@ napi_value StartPassiveRanging(napi_env env, napi_callback_info info)
     };
 
     auto asyncWork = NapiAsyncWorkFactory::CreateAsyncWork(env, info, asyncWorkFunc, ASYNC_WORK_NO_NEED_CALLBACK);
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, asyncWork, FCM_ERR_INTERNAL_ERROR);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, asyncWork, RANGING_ERR_OPERATION_FAILED);
     asyncWork->Run();
     FusionRangingManager::GetInstance()->RegisterFusionRangingObserver(napiCallback_);
     return asyncWork->GetRet();
@@ -235,15 +245,19 @@ napi_value StopPassiveRanging(napi_env env, napi_callback_info info)
     napi_value argv[ARGS_SIZE_TWO] = {nullptr};
     napi_status cbInfoStatus = napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
     HILOGI("StopPassiveRanging: cbInfoStatus=%{public}d argc=%{public}zu", cbInfoStatus, argc);
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, cbInfoStatus == napi_ok && argc == ARGS_SIZE_TWO, FCM_ERR_INVALID_PARAM);
-    int handle;
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, ParseInt32(env, handle, argv[PARAM0]), FCM_ERR_INVALID_PARAM);
-    int capabilityType;
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, ParseInt32(env, capabilityType, argv[PARAM1]), FCM_ERR_INVALID_PARAM);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, cbInfoStatus == napi_ok && argc == ARGS_SIZE_TWO, RANGING_ERR_INVALID_PARAM);
+    int handle = -1; /* default -1 as invalid handle. */
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, ParseInt32(env, handle, argv[PARAM0]), RANGING_ERR_INVALID_PARAM);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, handle >= 0, RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS);
+
+    int capabilityType = 0;
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, ParseInt32(env, capabilityType, argv[PARAM1]), RANGING_ERR_INVALID_PARAM);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, (capabilityType >= static_cast<int>(RangingTypes::NEARLINK_HADM)) &&
+        (capabilityType < static_cast<int>(RangingTypes::RANGING_TYPE_MAX)), RANGING_ERR_INVALID_PARAM);
     HILOGI("StopPassiveRanging: capabilityType=%{public}d handle=%{public}d", capabilityType, handle);
     int stopRet =
         FusionRangingManager::GetInstance()->StopPassiveRanging(static_cast<RangingTypes>(capabilityType), handle);
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, stopRet == FCM_NO_ERROR, stopRet);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, stopRet == FCM_NO_ERROR, OutputStandardErr(stopRet));
     return NapiGetUndefined(env);
 }
 
@@ -252,7 +266,7 @@ napi_value OnRangingStateChange(napi_env env, napi_callback_info info)
     if (napiCallback_ != nullptr) {
         auto status =
             napiCallback_->eventSubscribe_.RegisterWithName(env, info, STR_FUSION_RANGING_CALLBACK_STATE_CHANGE);
-        NAPI_FCM_ASSERT_RETURN_UNDEF(env, status == napi_ok, FCM_ERR_INTERNAL_ERROR);
+        NAPI_FCM_ASSERT_RETURN_UNDEF(env, status == napi_ok, RANGING_ERR_OPERATION_FAILED);
     }
     return NapiGetUndefined(env);
 }
@@ -262,7 +276,7 @@ napi_value OffRangingStateChange(napi_env env, napi_callback_info info)
     if (napiCallback_) {
         auto status =
             napiCallback_->eventSubscribe_.DeregisterWithName(env, info, STR_FUSION_RANGING_CALLBACK_STATE_CHANGE);
-        NAPI_FCM_ASSERT_RETURN_UNDEF(env, status == napi_ok, FCM_ERR_INTERNAL_ERROR);
+        NAPI_FCM_ASSERT_RETURN_UNDEF(env, status == napi_ok, RANGING_ERR_OPERATION_FAILED);
     }
     return NapiGetUndefined(env);
 }

@@ -22,11 +22,12 @@
 #include "fusion_ranging_errorcode.h"
 #include "fusion_ranging_service.h"
 #include "ipc_skeleton.h"
-#include "log_utils.h"
 #include "process_death_manager.h"
 #include "fcm_thread_util.h"
 #include "application_state_observer_stub.h"
 #include "system_ability_definition.h"
+#include "common_utils.h"
+#include "log_utils.h"
 
 namespace OHOS {
 namespace FusionRanging {
@@ -85,7 +86,6 @@ FusionRangingServer::impl::~impl()
 
 sptr<AppExecFwk::IAppMgr> FusionRangingServer::impl::AppStateObserver::GetAppMgrProxy()
 {
-    HILOGD("start");
     sptr<ISystemAbilityManager> systemAbilityManager =
         SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     FCM_CHECK_RETURN_RET(systemAbilityManager != nullptr, nullptr, "systemAbilityManager is nullptr");
@@ -211,7 +211,6 @@ void FusionRangingServer::InitializePermissionsMap()
 
 int32_t FusionRangingServer::CallbackEnter(uint32_t code)
 {
-    HILOGD("FusionRangingServer CallbackEnter ipc code: %{public}u", code);
     auto it = permissionsMap_.find(static_cast<int>(code));
     if (it == permissionsMap_.end()) {
         HILOGE("Unknown ipc code: %{public}u", code);
@@ -266,16 +265,17 @@ ErrCode FusionRangingServer::StartRanging(const RangingParams &params)
     HILOGI("StartRanging server.");
     sptr<IRangingObserver> observer = nullptr;
     int32_t callerUid = IPCSkeleton::GetCallingUid();
-    FCM_CHECK_RETURN_RET(pimpl != nullptr, RANGING_ERR_INTERNAL_ERROR, "pimpl is nullptr");
+    FCM_CHECK_RETURN_RET(pimpl != nullptr, RANGING_ERR_OPERATION_FAILED, "pimpl is nullptr");
     auto findRet = pimpl->observers_.Find(callerUid, observer);
-    FCM_CHECK_RETURN_RET(findRet && observer != nullptr, RANGING_ERR_INTERNAL_ERROR, "observer not found");
+    FCM_CHECK_RETURN_RET(findRet && observer != nullptr, RANGING_ERR_OPERATION_FAILED, "observer not found");
 
     std::string deviceId = params.GetDeviceId();
+    FCM_CHECK_RETURN_RET(IsValidAddress(deviceId), RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS, "device invalid");
     int32_t ret = FusionRangingService::GetInstance()->StartRanging(params, observer, callerUid);
     HILOGI("StartRanging: ret=%{public}d", ret);
     if (ret != 0) {
         FusionRangingService::GetInstance()->StopRanging(deviceId, callerUid);
-        return RANGING_ERR_INTERNAL_ERROR;
+        return RANGING_ERR_OPERATION_FAILED;
     }
     return RANGING_NO_ERROR;
 }
@@ -283,6 +283,8 @@ ErrCode FusionRangingServer::StartRanging(const RangingParams &params)
 ErrCode FusionRangingServer::StopRanging(const RangingParams &params)
 {
     HILOGI("StopRanging server, deviceId=%{public}s", GET_ENCRYPT_ADDR(params.GetDeviceId()));
+    FCM_CHECK_RETURN_RET(IsValidAddress(params.GetDeviceId()), RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS,
+                         "device invalid");
     int32_t ret = FusionRangingService::GetInstance()->StopRanging(params.GetDeviceId(), IPCSkeleton::GetCallingUid());
     HILOGI("StopRanging: ret=%{public}d", ret);
     FusionConnectivity::DoInRangingThread([this]() { CheckAndUnloadIfIdle(); },
@@ -294,9 +296,9 @@ ErrCode FusionRangingServer::StartPassiveRanging(int32_t capabilityType, int32_t
 {
     sptr<IRangingObserver> observer = nullptr;
     int32_t callerUid = IPCSkeleton::GetCallingUid();
-    FCM_CHECK_RETURN_RET(pimpl != nullptr, RANGING_ERR_INTERNAL_ERROR, "pimpl is nullptr");
+    FCM_CHECK_RETURN_RET(pimpl != nullptr, RANGING_ERR_OPERATION_FAILED, "pimpl is nullptr");
     auto findRet = pimpl->observers_.Find(callerUid, observer);
-    FCM_CHECK_RETURN_RET(findRet && observer != nullptr, RANGING_ERR_INTERNAL_ERROR, "observer not found");
+    FCM_CHECK_RETURN_RET(findRet && observer != nullptr, RANGING_ERR_OPERATION_FAILED, "observer not found");
     int32_t ret = FusionRangingService::GetInstance()->StartPassiveRanging(static_cast<RangingTypes>(capabilityType),
                                                                            handle, observer, callerUid);
     HILOGI("StartPassiveRanging handle:%{public}d, uid:%{public}d", handle, callerUid);
@@ -305,6 +307,7 @@ ErrCode FusionRangingServer::StartPassiveRanging(int32_t capabilityType, int32_t
 
 ErrCode FusionRangingServer::StopPassiveRanging(int32_t capabilityType, int32_t handle)
 {
+    FCM_CHECK_RETURN_RET(handle >= 0, RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS, "device invalid");
     int32_t ret = FusionRangingService::GetInstance()->StopPassiveRanging(static_cast<RangingTypes>(capabilityType),
                                                                           handle, IPCSkeleton::GetCallingUid());
     HILOGI("StopPassiveRanging ret=%{public}d", ret);
@@ -315,13 +318,13 @@ ErrCode FusionRangingServer::RegisterObserver(const sptr<IRangingObserver> &obse
 {
     int32_t callerUid = IPCSkeleton::GetCallingUid();
     bool isExist = false;
-    FCM_CHECK_RETURN_RET(pimpl != nullptr, RANGING_ERR_INTERNAL_ERROR, "pimpl is nullptr");
+    FCM_CHECK_RETURN_RET(pimpl != nullptr, RANGING_ERR_OPERATION_FAILED, "pimpl is nullptr");
     pimpl->observers_.Iterate([&](int32_t uid, const sptr<IRangingObserver> &value) {
         if (observer == value && uid == callerUid) {
             isExist = true;
         }
     });
-    FCM_CHECK_RETURN_RET(!isExist, RANGING_ERR_OBJECT_ALREADY_EXIST, "observer is already exist");
+    FCM_CHECK_RETURN_RET(!isExist, RANGING_ERR_OPERATION_FAILED, "observer is already exist");
     pimpl->observers_.EnsureInsert(callerUid, observer);
     sptr<IRemoteObject> remoteObj = observer->AsObject();
     if (remoteObj != nullptr && pimpl->processDeathManager_ != nullptr) {
@@ -335,14 +338,14 @@ ErrCode FusionRangingServer::DeregisterObserver(const sptr<IRangingObserver> &ob
 {
     int32_t callerUid = IPCSkeleton::GetCallingUid();
     bool isExist = false;
-    FCM_CHECK_RETURN_RET(pimpl != nullptr, RANGING_ERR_INTERNAL_ERROR, "pimpl is nullptr");
+    FCM_CHECK_RETURN_RET(pimpl != nullptr, RANGING_ERR_OPERATION_FAILED, "pimpl is nullptr");
     pimpl->observers_.Iterate([&](int32_t uid, const sptr<IRangingObserver> &value) {
         if (observer == value && uid == callerUid) {
             isExist = true;
         }
     });
-    FCM_CHECK_RETURN_RET(isExist, RANGING_ERR_OBJECT_NOT_FOUND, "observer not exist");
-    FCM_CHECK_RETURN_RET(pimpl->processDeathManager_ != nullptr, RANGING_ERR_INTERNAL_ERROR,
+    FCM_CHECK_RETURN_RET(isExist, RANGING_ERR_OPERATION_FAILED, "observer not exist");
+    FCM_CHECK_RETURN_RET(pimpl->processDeathManager_ != nullptr, RANGING_ERR_OPERATION_FAILED,
                          "processDeathManager_ is nullptr");
     pimpl->processDeathManager_->DeregisterProcessDeath(callerUid);
     pimpl->observers_.Erase(callerUid);

@@ -16,23 +16,61 @@ import("//build/ohos_var.gni")
 
 FUSION_RANGING = "//foundation/communication/fusion_connectivity/fusion_ranging"
 
-config("fusion_ranging_config") {
+fusion_ranging_server_sources = [
+  "src/fusion_ranging_server.cpp",
+  "src/process_death_manager.cpp",
+  "src/fusion_ranging_service.cpp",
+  "$FUSION_RANGING/../partner_agent/services/common/src/permission_manager.cpp",
+  "$FUSION_RANGING/../partner_agent/services/common/src/fcm_thread_util.cpp",
+]
+
+fusion_ranging_server_external_deps = [
+  "hilog:libhilog",
+  "ipc:ipc_single",
+  "c_utils:utils",
+  "ffrt:libffrt",
+  "safwk:system_ability_fwk",
+  "samgr:samgr_proxy",
+  "ability_runtime:app_manager",
+  "access_token:libaccesstoken_sdk",
+  "access_token:libtokenid_sdk",
+  "access_token:libprivacy_sdk",
+  "bundle_framework:appexecfwk_base",
+]
+
+fusion_ranging_serve_deps = [
+  "$FUSION_RANGING/idl:libfusion_ranging_proxy",
+  "$FUSION_RANGING/idl:libfusion_ranging_stub",
+  "$FUSION_RANGING/services/etc/init:etc",
+  "$FUSION_RANGING/services/ranging_adapter:fusion_ranging_adapter",
+  "$FUSION_RANGING/services/common:fusion_ranging_common",
+]
+
+config("fusion_ranging_server_config") {
   include_dirs = [
+    "include",
     "${target_gen_dir}",
     "$FUSION_RANGING/interfaces/inner_api",
-    "include",
+    "$FUSION_RANGING/idl/include",
+    "$FUSION_RANGING/services/common/include",
     "$FUSION_RANGING/../partner_agent/frameworks/inner/include",
     "$FUSION_RANGING/../partner_agent/interfaces/inner_api",
     "$FUSION_RANGING/../partner_agent/services/common/include",
-    "../common/include",
   ]
 
   cflags_cc = [
     "-Wno-return-type-c-linkage",
+    "-fdata-sections",
+    "-ffunction-sections",
+    "-fno-unwind-tables",
+    "-fno-asynchronous-unwind-tables",
+    "-Os",
+    "-fvisibility=hidden",
   ]
 }
 
 ohos_shared_library("fusion_ranging_server") {
+  version_script = "libfusion_ranging_server_version_script.txt"
   branch_protector_ret = "pac_ret"
   sanitize = {
     cfi = true
@@ -43,58 +81,33 @@ ohos_shared_library("fusion_ranging_server") {
     debug = false
   }
 
-  cflags_cc = [
-    "-fdata-sections",
-    "-ffunction-sections",
-    "-fno-unwind-tables",
-    "-fno-asynchronous-unwind-tables",
-    "-Os",
-    "-fvisibility=hidden",
-  ]
-
   configs = [
-    ":fusion_ranging_config"
+    ":fusion_ranging_server_config"
   ]
 
   defines = [
     "LOG_DOMAIN = 0xD000100",
   ]
 
-  sources = [
-    "src/fusion_ranging_server.cpp",
-    "src/process_death_manager.cpp",
-    "$FUSION_RANGING/../partner_agent/services/common/src/permission_manager.cpp",
-  ]
+  sources = fusion_ranging_server_sources
 
-  include_dirs = [
-    "include",
-    "${target_gen_dir}",
-    "$FUSION_RANGING/interfaces/inner_api",
-    "$FUSION_RANGING/idl/include",
-    "$FUSION_RANGING/../partner_agent/services/common/include",
-  ]
+  deps = fusion_ranging_serve_deps
 
-  deps = [
-    "$FUSION_RANGING/idl:libfusion_ranging_proxy",
-    "$FUSION_RANGING/idl:libfusion_ranging_stub",
-    "$FUSION_RANGING/services/etc/init:etc",
-    "$FUSION_RANGING/services/service:fusion_ranging_service",
-    "$FUSION_RANGING/services/ranging_adapter:fusion_ranging_adapter",
-    "$FUSION_RANGING/services/common:fusion_ranging_common",
-  ]
+  external_deps = fusion_ranging_server_external_deps
 
-  external_deps = [
-    "hilog:libhilog",
-    "ipc:ipc_single",
-    "c_utils:utils",
-    "safwk:system_ability_fwk",
-    "samgr:samgr_proxy",
-    "ability_runtime:app_manager",
-    "access_token:libaccesstoken_sdk",
-    "access_token:libtokenid_sdk",
-    "access_token:libprivacy_sdk",
-    "bundle_framework:appexecfwk_base",
-  ]
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_nearlink_service)) {
+    if (target_cpu == "arm64" || is_emulator) {
+      nearlink_ranging_adapter_path = "\"/system/lib64\""
+    } else {
+      nearlink_ranging_adapter_path = "\"/system/lib\""
+    }
+
+    defines += [
+      "SUPPORT_NEARLINK_RANGING",
+      "NEARLINK_RANGING_ADAPTER_PATH=${nearlink_ranging_adapter_path}",
+    ]
+  }
 
   part_name = "fusion_connectivity"
   subsystem_name = "communication"

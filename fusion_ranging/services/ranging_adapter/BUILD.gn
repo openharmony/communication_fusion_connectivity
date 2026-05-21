@@ -53,6 +53,10 @@ ohos_shared_library("fusion_ranging_adapter") {
 
   cflags = [
     "-Wno-unused-parameter",
+    "-ffunction-sections",
+    "-fno-asynchronous-unwind-tables",
+    "-fno-unwind-tables",
+    "-Os",
   ]
 
   part_name = "fusion_connectivity"

@@ -109,20 +109,20 @@ int FusionRangingService::HandleStartRanging(const RangingParams &params, const 
     FCM_CHECK_RETURN_RET(!params.GetDeviceId().empty(), RANGING_ERR_INVALID_PARAM, "empty device:%{public}s",
                          GET_ENCRYPT_ADDR(params.GetDeviceId()));
     auto deviceInfo = GetRangingDevice(params.GetDeviceId());
-    FCM_CHECK_RETURN_RET(deviceInfo == nullptr, RANGING_ERR_OBJECT_ALREADY_EXIST, "already exist device:%{public}s",
+    FCM_CHECK_RETURN_RET(deviceInfo == nullptr, RANGING_ERR_DEVICE_ALREADY_INITIATED, "already exist device:%{public}s",
                          GET_ENCRYPT_ADDR(params.GetDeviceId()));
 
     const bool isSupport = RangingAdapterFactory::Instance().IsRangingAdapterSupported(params.GetCapabilityType());
     HILOGI("HandleStartRanging type:%{public}d, isSupport:%{public}d", params.GetCapabilityType(), isSupport);
-    FCM_CHECK_RETURN_RET(isSupport, RANGING_ERR_INTERNAL_ERROR, "Faild capability type:%{public}d",
+    FCM_CHECK_RETURN_RET(isSupport, RANGING_ERR_OPERATION_FAILED, "Faild capability type:%{public}d",
                          params.GetCapabilityType());
     auto ret = CreateRangingAdapter(params.GetCapabilityType());
     HILOGI("HandleStartRanging CreateRangingAdapter ret:%{public}d", ret);
-    FCM_CHECK_RETURN_RET(ret == RANGING_NO_ERROR, RANGING_ERR_INTERNAL_ERROR, "Fail create ret:%{public}d", ret);
+    FCM_CHECK_RETURN_RET(ret == RANGING_NO_ERROR, RANGING_ERR_OPERATION_FAILED, "Fail create ret:%{public}d", ret);
 
     auto rangingCallback = std::make_shared<FusionRangingAdapterCallback>();
     auto adapter = GetAdapter(params.GetCapabilityType());
-    FCM_CHECK_RETURN_RET(adapter != nullptr, RANGING_ERR_INTERNAL_ERROR, "Get adapter fail");
+    FCM_CHECK_RETURN_RET(adapter != nullptr, RANGING_ERR_OPERATION_FAILED, "Get adapter fail");
 
     adapter->SetCallback(rangingCallback);
     ret = adapter->StartRanging(params.GetDeviceId());
@@ -131,7 +131,7 @@ int FusionRangingService::HandleStartRanging(const RangingParams &params, const 
         HILOGE("Adapter start ranging failed for device: %{public}s, ret: %{public}d",
                GET_ENCRYPT_ADDR(params.GetDeviceId()), ret);
         adapter->StopRanging(params.GetDeviceId());
-        return RANGING_ERR_INTERNAL_ERROR;
+        return RANGING_ERR_OPERATION_FAILED;
     }
     auto info = std::make_shared<RangingDeviceInfo>(callerUid, params, observer, RangingState::STATE_STARTED);
     devicesInfo_.EnsureInsert(params.GetDeviceId(), info);
@@ -145,9 +145,9 @@ int FusionRangingService::StopRanging(const std::string &deviceId, int32_t calle
     FCM_CHECK_RETURN_RET(!deviceId.empty(), RANGING_ERR_INVALID_PARAM, "invalid device:%{public}s",
                          GET_ENCRYPT_ADDR(deviceId));
     auto info = GetRangingDevice(deviceId);
-    FCM_CHECK_RETURN_RET(info != nullptr, RANGING_ERR_OBJECT_NOT_FOUND, "not found device:%{public}s",
+    FCM_CHECK_RETURN_RET(info != nullptr, RANGING_ERR_DEVICE_NOT_INITIATED, "not found device:%{public}s",
                          GET_ENCRYPT_ADDR(deviceId));
-    FCM_CHECK_RETURN_RET(info->callerUid_ == callerUid, RANGING_ERR_OPERATION_NOT_ALLOW, "Operation not allow");
+    FCM_CHECK_RETURN_RET(info->callerUid_ == callerUid, RANGING_ERR_OPERATION_FAILED, "Operation not allow");
     auto adapter = GetAdapter(info->params_.GetCapabilityType());
     if (adapter != nullptr) {
         adapter->StopRanging(deviceId);
@@ -170,7 +170,7 @@ int FusionRangingService::StartPassiveRanging(RangingTypes capabilityType, int32
     auto status = future.wait_for(std::chrono::milliseconds(START_PASSIVE_RANGING_PROMISE_TIMEOUT_MS));
     if (status == std::future_status::timeout) {
         HILOGE("StartPassiveRanging timeout");
-        return RANGING_ERR_INTERNAL_ERROR;
+        return RANGING_ERR_OPERATION_FAILED;
     }
     return future.get();
 }
@@ -180,13 +180,13 @@ int FusionRangingService::HandleStartPassiveRanging(RangingTypes capabilityType,
 {
     const bool isSupport = RangingAdapterFactory::Instance().IsRangingAdapterSupported(capabilityType);
     HILOGI("StartPassiveRanging type:%{public}d, isSupport:%{public}d", capabilityType, isSupport);
-    FCM_CHECK_RETURN_RET(isSupport, RANGING_ERR_ADAPTER_NOT_SUPPORT, "Faild capability type:%{public}d",
+    FCM_CHECK_RETURN_RET(isSupport, RANGING_ERR_RANGING_TYPE_NOT_SUPPORT, "Faild capability type:%{public}d",
                          capabilityType);
     auto ret = CreateRangingAdapter(capabilityType);
-    FCM_CHECK_RETURN_RET(ret == RANGING_NO_ERROR, RANGING_ERR_ADAPTER_NOT_SUPPORT, "crate capability type:%{public}d",
+    FCM_CHECK_RETURN_RET(ret == RANGING_NO_ERROR, RANGING_ERR_OPERATION_FAILED, "crate capability type:%{public}d",
                          capabilityType);
     auto adapter = GetAdapter(capabilityType);
-    FCM_CHECK_RETURN_RET(adapter != nullptr, RANGING_ERR_INTERNAL_ERROR, "Get adapter fail");
+    FCM_CHECK_RETURN_RET(adapter != nullptr, RANGING_ERR_OPERATION_FAILED, "Get adapter fail");
     auto rangingCallback = std::make_shared<FusionRangingAdapterCallback>();
     adapter->SetCallback(rangingCallback);
     ret = adapter->StartPassiveRanging(advHandle);
@@ -204,15 +204,15 @@ int FusionRangingService::StopPassiveRanging(RangingTypes capabilityType, int32_
 {
     auto handleInfo = GetPassiveRangingHandle(handle);
     HILOGI("StopPassiveRanging capabiity:%{public}d, handle:%{public}d", capabilityType, handle);
-    FCM_CHECK_RETURN_RET(handleInfo != nullptr, RANGING_ERR_OBJECT_NOT_FOUND, "not found handle");
-    FCM_CHECK_RETURN_RET(handleInfo->callerUid_ == callerUid, RANGING_ERR_OPERATION_NOT_ALLOW, "Operation not allow");
+    FCM_CHECK_RETURN_RET(handleInfo != nullptr, RANGING_ERR_OPERATION_FAILED, "not found handle");
+    FCM_CHECK_RETURN_RET(handleInfo->callerUid_ == callerUid, RANGING_ERR_OPERATION_FAILED, "Operation not allow");
     auto adapter = GetAdapter(capabilityType);
-    FCM_CHECK_RETURN_RET(adapter != nullptr, RANGING_ERR_INTERNAL_ERROR, "Get adapter fail");
+    FCM_CHECK_RETURN_RET(adapter != nullptr, RANGING_ERR_OPERATION_FAILED, "Get adapter fail");
     auto ret = adapter->StopPassiveRanging(handle);
     advHandles_.Erase(handle);
     HILOGI("StopPassiveRanging handle:%{public}d, ret=%{public}d", handle, ret);
     if (ret != RANGING_NO_ERROR) {
-        return RANGING_ERR_INTERNAL_ERROR;
+        return RANGING_ERR_OPERATION_FAILED;
     }
     return ret;
 }
@@ -220,12 +220,12 @@ int FusionRangingService::StopPassiveRanging(RangingTypes capabilityType, int32_
 int FusionRangingService::PauseRanging(const std::string &deviceId)
 {
     auto info = GetRangingDevice(deviceId);
-    FCM_CHECK_RETURN_RET(info != nullptr, RANGING_ERR_OBJECT_NOT_FOUND, "not found device:%{public}s",
+    FCM_CHECK_RETURN_RET(info != nullptr, RANGING_ERR_OPERATION_FAILED, "not found device:%{public}s",
                          GET_ENCRYPT_ADDR(deviceId));
     auto adapter = GetAdapter(info->params_.GetCapabilityType());
-    FCM_CHECK_RETURN_RET(adapter != nullptr, RANGING_ERR_INTERNAL_ERROR, "Get adapter fail");
+    FCM_CHECK_RETURN_RET(adapter != nullptr, RANGING_ERR_OPERATION_FAILED, "Get adapter fail");
     auto ret = adapter->PauseRanging(deviceId);
-    FCM_CHECK_RETURN_RET(ret != RANGING_NO_ERROR, RANGING_ERR_INTERNAL_ERROR, "ret:%{public}d", ret);
+    FCM_CHECK_RETURN_RET(ret != RANGING_NO_ERROR, RANGING_ERR_OPERATION_FAILED, "ret:%{public}d", ret);
     HILOGI("Pause ranging for device: %{public}s", GET_ENCRYPT_ADDR(deviceId));
     return RANGING_NO_ERROR;
 }
@@ -233,14 +233,14 @@ int FusionRangingService::PauseRanging(const std::string &deviceId)
 int FusionRangingService::ResumeRanging(const std::string &deviceId)
 {
     auto info = GetRangingDevice(deviceId);
-    FCM_CHECK_RETURN_RET(info != nullptr, RANGING_ERR_OBJECT_NOT_FOUND, "not found device:%{public}s",
+    FCM_CHECK_RETURN_RET(info != nullptr, RANGING_ERR_OPERATION_FAILED, "not found device:%{public}s",
                          GET_ENCRYPT_ADDR(deviceId));
 
     auto adapter = GetAdapter(info->params_.GetCapabilityType());
-    FCM_CHECK_RETURN_RET(adapter != nullptr, RANGING_ERR_INTERNAL_ERROR, "Get adapter fail");
+    FCM_CHECK_RETURN_RET(adapter != nullptr, RANGING_ERR_OPERATION_FAILED, "Get adapter fail");
     auto ret = adapter->ResumeRanging(deviceId);
     HILOGI("Resume ranging for device: %{public}s, ret:%{public}d", GET_ENCRYPT_ADDR(deviceId), ret);
-    FCM_CHECK_RETURN_RET(ret != RANGING_NO_ERROR, RANGING_ERR_INTERNAL_ERROR, "ret:%{public}d", ret);
+    FCM_CHECK_RETURN_RET(ret != RANGING_NO_ERROR, RANGING_ERR_OPERATION_FAILED, "ret:%{public}d", ret);
     return RANGING_NO_ERROR;
 }
 
@@ -251,12 +251,12 @@ int FusionRangingService::CreateRangingAdapter(RangingTypes capabilityType)
                          capabilityType);
 
     auto newAdapter = RangingAdapterFactory::Instance().CreateRangingAdapter(capabilityType);
-    FCM_CHECK_RETURN_RET(newAdapter != nullptr, RANGING_ERR_INTERNAL_ERROR, "create adapter fail");
+    FCM_CHECK_RETURN_RET(newAdapter != nullptr, RANGING_ERR_OPERATION_FAILED, "create adapter fail");
     int ret = newAdapter->Init();
     if (ret != RANGING_NO_ERROR) {
         HILOGE("Adapter init failed, releasing adapter");
         newAdapter->DeInit();
-        return RANGING_ERR_INTERNAL_ERROR;
+        return RANGING_ERR_OPERATION_FAILED;
     }
     adapters_.EnsureInsert(capabilityType, newAdapter);
     HILOGI("Create adapter for capability type: %{public}d", static_cast<int>(capabilityType));

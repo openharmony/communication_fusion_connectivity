@@ -1,0 +1,14 @@
+{
+  global:
+    *GetInstance*;
+    *IsRangingSupported*;
+    *GetRangingCapability*;
+    *RegisterFusionRangingObserver*;
+    *DeregisterFusionRangingObserver*;
+    *StartRanging*;
+    *StopRanging*;
+    *StartPassiveRanging*;
+    *StopPassiveRanging*;
+  local:
+    *;
+};

@@ -15,7 +15,46 @@ import("//build/ohos.gni")
 
 FUSION_RANGING = "//foundation/communication/fusion_connectivity/fusion_ranging"
 
+fusion_ranging_manager_framework_sources = [
+  "src/fusion_ranging_manager.cpp",
+  "src/fusion_ranging_observer.cpp",
+]
+
+fusion_ranging_manager_framework_deps = [
+  "$FUSION_RANGING/idl:libfusion_ranging_proxy",
+  "$FUSION_RANGING/idl:libfusion_ranging_stub",
+  "$FUSION_RANGING/services/common:fusion_ranging_common",
+]
+
+fusion_ranging_manager_framework_external_deps = [
+  "hilog:libhilog",
+  "ipc:ipc_core",
+  "ipc:ipc_napi",
+  "c_utils:utils",
+  "samgr:samgr_proxy",
+  "init:libbegetutil",
+]
+
+config("fusion_ranging_manager_framework_config") {
+  include_dirs = [
+    "${target_gen_dir}",
+    "$FUSION_RANGING/idl/include",
+    "$FUSION_RANGING/interfaces/inner_api",
+    "$FUSION_RANGING/frameworks/inner/include",
+    "$FUSION_RANGING/../frameworks/inner/include",
+    "$FUSION_RANGING/services/common/include",
+  ]
+
+  cflags = [
+    "-ffunction-sections",
+    "-fno-asynchronous-unwind-tables",
+    "-fno-unwind-tables",
+    "-Os",
+  ]
+}
+
 ohos_shared_library("fusion_ranging_manager_framework") {
+  version_script = "libfusion_ranging_manager_framework_version_script.txt"
   sanitize = {
     cfi = true
     boundary_sanitize = true
@@ -28,37 +67,18 @@ ohos_shared_library("fusion_ranging_manager_framework") {
 
   install_enable = true
 
-  sources = [
-    "src/fusion_ranging_manager.cpp",
-    "src/fusion_ranging_observer.cpp",
-  ]
+  sources = fusion_ranging_manager_framework_sources
 
   defines = [
     "LOG_DOMAIN = 0xD000100",
   ]
 
-  deps = [
-    "$FUSION_RANGING/idl:libfusion_ranging_proxy",
-    "$FUSION_RANGING/idl:libfusion_ranging_stub",
-    "$FUSION_RANGING/services/common:fusion_ranging_common",
-  ]
+  deps = fusion_ranging_manager_framework_deps
 
-  include_dirs = [
-    "${target_gen_dir}",
-    "$FUSION_RANGING/idl/include",
-    "$FUSION_RANGING/interfaces/inner_api",
-    "$FUSION_RANGING/frameworks/inner/include",
-    "$FUSION_RANGING/../frameworks/inner/include",
-    "$FUSION_RANGING/services/common/include",
-  ]
+  external_deps = fusion_ranging_manager_framework_external_deps
 
-  external_deps = [
-    "hilog:libhilog",
-    "ipc:ipc_core",
-    "ipc:ipc_napi",
-    "c_utils:utils",
-    "samgr:samgr_proxy",
-    "init:libbegetutil",
+  configs = [
+    ":fusion_ranging_manager_framework_config"
   ]
 
   if (defined(global_parts_info) &&

@@ -47,11 +47,6 @@ bool ProcessDeathManager::RegisterProcessDeath(int32_t uid, const sptr<IRemoteOb
     }
 
     auto object = std::make_shared<ProcessDeathHandler>(deathRecipient, remoteObject);
-    if (object == nullptr) {
-        HILOGE("crate death recipient object fail");
-        remoteObject->RemoveDeathRecipient(deathRecipient);
-        return false;
-    }
     processRecipients_.EnsureInsert(uid, object);
     HILOGI("success, uid=%{public}d", uid);
     return true;
