@@ -14,7 +14,7 @@
 import("//build/test.gni")
 import("//build/ohos_var.gni")
 
-module_output_path = "fusion_ranging/fusion_ranging"
+module_output_path = "fusion_connectivity/fusion_ranging"
 FUSION_RANGING = "//foundation/communication/fusion_connectivity/fusion_ranging"
 
 config("unittest_config") {
