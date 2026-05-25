@@ -45,7 +45,7 @@ using CONNECT = int32_t (*)(const std::string, const std::string, const int32_t)
 using ONDEVICEDISCOVERED = void (*)(const std::string&,
     const std::string&, const int32_t, const PartnerDeviceAddress&, const NotificationType&);
 using ONDESTROYWITHREASON = void (*)(const std::string&, const std::string&, const int32_t, const int32_t);
-using CHECKPARTNERAGENTEXTENSIONABILITY = bool (*)(const std::string, const std::string, const int32_t);
+using CHECKPARTNERAGENTEXTENSIONABILITY = bool (*)(const std::string&, const std::string&, const int32_t);
 
 namespace {
     const int32_t PARTNER_DEVICE_AGENT_SYS_ABILITY_ID = 8630;
