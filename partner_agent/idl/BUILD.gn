@@ -96,7 +96,10 @@ config("partner_agent_extension_ipc_public_config") {
 } 
 
 
-ohos_source_set("partner_agent_extension_proxy") { 
+ohos_source_set("partner_agent_extension_proxy") {
+
+  branch_protector_ret = "pac_ret"
+
   sanitize = { 
     integer_overflow = true 
     ubsan = true 
@@ -131,7 +134,10 @@ ohos_source_set("partner_agent_extension_proxy") {
 } 
 
 
-ohos_source_set("partner_agent_extension_stub") { 
+ohos_source_set("partner_agent_extension_stub") {
+
+  branch_protector_ret = "pac_ret"
+
   sanitize = { 
     integer_overflow = true 
     ubsan = true 
