@@ -60,7 +60,8 @@ private:
     int32_t OnDeviceDiscoveredExtensionService(const std::string &bundleName,
         const std::string &abilityName, PartnerDeviceAddress &deviceAddress, BusinessCapability &businessCapability);
     int32_t OnDestroyWithReasonExtensionService(
-        const std::string &bundleName, const std::string &abilityName, int destroyReason);
+        const std::string &bundleName, const std::string &abilityName,
+        const PartnerDeviceAddress &deviceAddress, int destroyReason);
     bool CheckPartnerAgentExtensionAbilityExtensionService(const std::string &bundleName,
         const std::string &abilityName);
 

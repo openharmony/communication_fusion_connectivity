@@ -50,7 +50,7 @@ public:
     struct DependencyFuncs {
         std::function<void(void)> updateConfig;
         std::function<void(std::string, std::string, PartnerDeviceAddress, BusinessCapability)> discoverExtension;
-        std::function<void(std::string, std::string, int)> destroyExtension;
+        std::function<void(std::string, std::string, PartnerDeviceAddress, int)> destroyExtension;
         std::function<void()> updateExpiredDevice;
     };
 

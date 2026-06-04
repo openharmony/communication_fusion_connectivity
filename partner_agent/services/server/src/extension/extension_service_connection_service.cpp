@@ -32,6 +32,44 @@ std::shared_ptr<ExtensionServiceConnectionService> ExtensionServiceConnectionSer
     return ExtensionServiceConnectionService::instance_;
 }
 
+void ExtensionServiceConnectionService::AddDeviceRefCount(const std::string& bundleName,
+    const std::string& extensionName, const PartnerDeviceAddress& deviceAddress)
+{
+    std::string abilityKey = bundleName + "_" + extensionName;
+    std::string deviceAddr = deviceAddress.GetAddress();
+    std::lock_guard<ffrt::recursive_mutex> lock(abilityConnectMapLock_);
+    auto& deviceSet = abilityConnectMap_[abilityKey];
+    auto insertResult = deviceSet.insert(deviceAddr);
+    if (!insertResult.second) {
+        HILOGI("device already in ability %{public}s", abilityKey.c_str());
+    }
+    HILOGI("AddDeviceRefCount: abilityConnectMap_[%{public}s] size: %{public}zu",
+           abilityKey.c_str(), deviceSet.size());
+}
+
+bool ExtensionServiceConnectionService::RemoveDeviceRefCount(const std::string& bundleName,
+    const std::string& extensionName, const PartnerDeviceAddress& deviceAddress)
+{
+    std::string abilityKey = bundleName + "_" + extensionName;
+    std::string deviceAddr = deviceAddress.GetAddress();
+    bool isEmpty = false;
+    std::lock_guard<ffrt::recursive_mutex> lock(abilityConnectMapLock_);
+    auto mapIter = abilityConnectMap_.find(abilityKey);
+    if (mapIter != abilityConnectMap_.end()) {
+        mapIter->second.erase(deviceAddr);
+        HILOGI("RemoveDeviceRefCount: abilityConnectMap_[%{public}s] size after erase: %{public}zu",
+               abilityKey.c_str(), mapIter->second.size());
+        if (mapIter->second.empty()) {
+            HILOGI("device list is empty");
+            isEmpty = true;
+            abilityConnectMap_.erase(mapIter);
+        }
+    } else {
+        HILOGE("abilityKey %{public}s not found in abilityConnectMap_", abilityKey.c_str());
+    }
+    return isEmpty;
+}
+
 void ExtensionServiceConnectionService::NotifyOnDeviceDiscovered(
     const std::shared_ptr<ExtensionSubscriberInfo> subscriberInfo,
     const PartnerDeviceAddress& deviceAddress, const NotificationType& type)
@@ -40,6 +78,8 @@ void ExtensionServiceConnectionService::NotifyOnDeviceDiscovered(
         HILOGE("invalid notification type, ignore start extension");
         return;
     }
+    // 添加设备引用计数
+    AddDeviceRefCount(subscriberInfo->bundleName, subscriberInfo->extensionName, deviceAddress);
     auto connection = GetConnection(subscriberInfo);
     if (connection == nullptr) {
         HILOGE("null connection");
@@ -50,15 +90,28 @@ void ExtensionServiceConnectionService::NotifyOnDeviceDiscovered(
 }
 
 void ExtensionServiceConnectionService::NotifyOnDestroyWithReason(
-    const std::shared_ptr<ExtensionSubscriberInfo> subscriberInfo, const int32_t reason)
+    const std::shared_ptr<ExtensionSubscriberInfo> subscriberInfo,
+    const PartnerDeviceAddress& deviceAddress, const int32_t reason)
 {
-    auto connection = GetConnection(subscriberInfo);
-    if (connection == nullptr) {
-        HILOGE("null connection");
-        return;
+    std::string connectionKey = subscriberInfo->GetKey();
+    HILOGI("NotifyOnDestroyWithReason: %{public}s", connectionKey.c_str());
+
+    // 减少设备引用计数，返回是否列表为空
+    bool isDeviceListEmpty = RemoveDeviceRefCount(
+        subscriberInfo->bundleName, subscriberInfo->extensionName, deviceAddress);
+    // 只有设备列表为空时才真正关闭连接
+    if (isDeviceListEmpty) {
+        HILOGI("device list is empty, really close connection for %{public}s", connectionKey.c_str());
+        auto connection = GetConnection(subscriberInfo);
+        if (connection == nullptr) {
+            HILOGE("null connection");
+            return;
+        }
+        connection->connectionService_ = weak_from_this();
+        connection->NotifyOnDestroyWithReason(reason, subscriberInfo);
+    } else {
+        HILOGI("device list is not empty, ignore close connection for %{public}s", connectionKey.c_str());
     }
-    connection->connectionService_ = weak_from_this();
-    connection->NotifyOnDestroyWithReason(reason, subscriberInfo);
 }
 
 void ExtensionServiceConnectionService::CloseConnection(const std::shared_ptr<ExtensionSubscriberInfo> subscriberInfo)
