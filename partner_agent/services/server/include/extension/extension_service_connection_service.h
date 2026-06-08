@@ -19,6 +19,7 @@
 #include "ffrt.h"
 
 #include <mutex>
+#include <set>
 #include <refbase.h>
 #include "extension_service_common.h"
 #include "extension_service_connection.h"
@@ -31,16 +32,24 @@ public:
     void NotifyOnDeviceDiscovered(const std::shared_ptr<ExtensionSubscriberInfo> subscriberInfo,
         const PartnerDeviceAddress& deviceAddress, const NotificationType& type);
     void NotifyOnDestroyWithReason(const std::shared_ptr<ExtensionSubscriberInfo> subscriberInfo,
-        const int32_t reason);
+        const PartnerDeviceAddress& deviceAddress, const int32_t reason);
     void CloseConnection(const std::shared_ptr<ExtensionSubscriberInfo> subscriberInfo);
     void RemoveConnection(const ExtensionSubscriberInfo& subscriberInfo);
     sptr<ExtensionServiceConnection> GetConnection(
         const std::shared_ptr<ExtensionSubscriberInfo> subscriberInfo);
     int32_t Connect(const std::shared_ptr<ExtensionSubscriberInfo> subscriberInfo);
 private:
+    void AddDeviceRefCount(const std::string& bundleName, const std::string& extensionName,
+        const PartnerDeviceAddress& deviceAddress);
+    bool RemoveDeviceRefCount(const std::string& bundleName, const std::string& extensionName,
+        const PartnerDeviceAddress& deviceAddress);
+
     ffrt::recursive_mutex mapLock_;
     //map : ExtensionSubscriberInfo::Key
     std::map<std::string, sptr<ExtensionServiceConnection>> connectionMap_;
+    ffrt::recursive_mutex abilityConnectMapLock_;
+    //map : bundleName_abilityName -> deviceAddress set (用于引用计数)
+    std::map<std::string, std::set<std::string>> abilityConnectMap_;
     static std::mutex instanceMutex_;
     static std::shared_ptr<ExtensionServiceConnectionService> instance_;
 };

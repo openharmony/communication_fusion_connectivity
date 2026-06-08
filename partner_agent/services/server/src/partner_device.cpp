@@ -137,7 +137,7 @@ void PartnerDevice::Init()
     auto destroyExtension = [this](int destroyReason) {
         HILOGI("destroy extension");
         DeviceInfo info = GetDeviceInfo();
-        dependencyFuncs_.destroyExtension(info.bundleName, info.abilityName, destroyReason);
+        dependencyFuncs_.destroyExtension(info.bundleName, info.abilityName, info.deviceAddress, destroyReason);
     };
     IDeviceAgentCapability::DependencyFuncs funcs = {
         .startExtension = startExtension,
@@ -191,7 +191,7 @@ void PartnerDevice::CloseDeviceAgentCapability(int destroyReason)
         deviceAgentAbility->Close();
     }
     DeviceInfo info = GetDeviceInfo();
-    dependencyFuncs_.destroyExtension(info.bundleName, info.abilityName, destroyReason);
+    dependencyFuncs_.destroyExtension(info.bundleName, info.abilityName, info.deviceAddress, destroyReason);
 }
 
 void PartnerDevice::Close()

@@ -38,13 +38,14 @@ SYMBOL_EXPORT int32_t Connect(const std::string& bundleName, const std::string& 
     return ExtensionServiceConnectionService::GetInstance()->Connect(extensionSubscriberInfo);
 }
 
-SYMBOL_EXPORT void OnDestroyWithReason(const std::string& bundleName,
-    const std::string& extensionName, const int32_t userId, const int32_t reason)
+SYMBOL_EXPORT void OnDestroyWithReason(const std::string& bundleName, const std::string& extensionName,
+    const int32_t userId, const PartnerDeviceAddress& deviceAddress, const int32_t reason)
 {
     HILOGI("SYMBOL_EXPORT OnDestroyWithReason");
     std::shared_ptr<ExtensionSubscriberInfo> extensionSubscriberInfo =
         std::make_shared<ExtensionSubscriberInfo>(bundleName, extensionName, userId);
-    ExtensionServiceConnectionService::GetInstance()->NotifyOnDestroyWithReason(extensionSubscriberInfo, reason);
+    ExtensionServiceConnectionService::GetInstance()->NotifyOnDestroyWithReason(
+        extensionSubscriberInfo, deviceAddress, reason);
 }
 
 SYMBOL_EXPORT void OnDeviceDiscovered(const std::string& bundleName, const std::string& extensionName,

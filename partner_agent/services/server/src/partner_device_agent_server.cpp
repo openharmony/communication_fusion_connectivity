@@ -44,7 +44,8 @@ using namespace OHOS::Bluetooth;
 using CONNECT = int32_t (*)(const std::string, const std::string, const int32_t);
 using ONDEVICEDISCOVERED = void (*)(const std::string&,
     const std::string&, const int32_t, const PartnerDeviceAddress&, const NotificationType&);
-using ONDESTROYWITHREASON = void (*)(const std::string&, const std::string&, const int32_t, const int32_t);
+using ONDESTROYWITHREASON = void (*)(const std::string&, const std::string&, const int32_t,
+    const PartnerDeviceAddress&, const int32_t);
 using CHECKPARTNERAGENTEXTENSIONABILITY = bool (*)(const std::string&, const std::string&, const int32_t);
 
 namespace {
@@ -152,8 +153,9 @@ std::shared_ptr<PartnerDevice> PartnerDeviceAgentServer::CreatePartnerDeviceInst
         std::string abilityName, PartnerDeviceAddress deviceAddress, BusinessCapability businessCapability) {
         OnDeviceDiscoveredExtensionService(bundleName, abilityName, deviceAddress, businessCapability);
     };
-    auto destroyExtension = [this](std::string bundleName, std::string abilityName, int destroyReason) {
-        OnDestroyWithReasonExtensionService(bundleName, abilityName, destroyReason);
+    auto destroyExtension = [this](std::string bundleName, std::string abilityName,
+        PartnerDeviceAddress deviceAddress, int destroyReason) {
+        OnDestroyWithReasonExtensionService(bundleName, abilityName, deviceAddress, destroyReason);
     };
 
     auto updateExpiredDevice = [this]() {
@@ -462,7 +464,8 @@ int32_t PartnerDeviceAgentServer::ConnectExtensionService(const std::string &bun
 }
 
 int32_t PartnerDeviceAgentServer::OnDestroyWithReasonExtensionService(
-    const std::string &bundleName, const std::string &abilityName, int destroyReason)
+    const std::string &bundleName, const std::string &abilityName,
+    const PartnerDeviceAddress &deviceAddress, int destroyReason)
 {
     std::string path_ = PARTNER_AGENT_EXTENSION_SERVICE_MODULE_NAME;
     partnerAgentExtensionHandler_ =
@@ -478,7 +481,7 @@ int32_t PartnerDeviceAgentServer::OnDestroyWithReasonExtensionService(
         HILOGW("GetProxyFunc OnDestroyWithReason init failed.");
         return -1;
     }
-    OnDestroyWithReason(bundleName, abilityName, GetCurrentActiveUserId(), destroyReason);
+    OnDestroyWithReason(bundleName, abilityName, GetCurrentActiveUserId(), deviceAddress, destroyReason);
     HILOGW("OnDestroyWithReason end.");
     partnerAgentExtensionLoaded_.store(true);
     return 0;
