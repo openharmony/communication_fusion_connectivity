@@ -126,7 +126,7 @@ private:
     int32_t distance_;
     int32_t angle_;
     int32_t rssi_;
-    int32_t confidence_;
+    int32_t confidence_ = 0;
 };
 
 class BaseRangingAdapterCallback {
