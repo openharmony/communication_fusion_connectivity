@@ -52,6 +52,7 @@ idl_gen_interface("partner_device_agent") {
       cfi_cross_dso = true                   # Cross-SO CFI Checks
       integer_overflow = true                # Enable integer overflow detection
       ubsan = true                           # Enable some Ubsan options
+      cfi_vcall_icall_only = true            # CFI optimization, limiting the detection scope
       debug = false
   }
   # 开启hitrace，值是hitrace_meter.h文件中定义的uint64_t类型标识,需要填入常量的变量名

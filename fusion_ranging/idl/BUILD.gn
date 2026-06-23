@@ -54,6 +54,7 @@ idl_gen_interface("fusion_ranging") {
    boundary_sanitize = true
    cfi_cross_dso = true
    integer_overflow = true
+   cfi_vcall_icall_only = true
    ubsan = true
    debug = false
   }
