@@ -60,6 +60,7 @@ ohos_shared_library("fusion_ranging_manager_framework") {
     boundary_sanitize = true
     integer_overflow = true
     cfi_cross_dso = true
+    cfi_vcall_icall_only = true
     debug = false
     ubsan = true
   }

@@ -39,6 +39,7 @@ ohos_shared_library("partneragent") {
     boundary_sanitize = true  # Enable boundary san detection
     cfi_cross_dso = true  # Cross-SO CFI Checks
     integer_overflow = true  # Enable integer overflow detection
+    cfi_vcall_icall_only = true  # CFI optimization, limiting the detection scope
     ubsan = true  # Enable some Ubsan options
     debug = false
   }
