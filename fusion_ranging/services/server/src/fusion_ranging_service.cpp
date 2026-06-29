@@ -98,7 +98,7 @@ bool FusionRangingService::IsRangingSupported(RangingTypes capabilityType)
 int FusionRangingService::StartRanging(const RangingParams &params, const sptr<IRangingObserver> &observer,
                                        int32_t callerUid)
 {
-    HILOGI("StartRanging TYPE:%{public}d", params.GetCapabilityType());
+    HILOGI("StartRanging type:%{public}d", params.GetCapabilityType());
     if (!IsRangingSupported(params.GetCapabilityType())) {
         return RANGING_ERR_RANGING_SERVICE_DISABLED;
     }
