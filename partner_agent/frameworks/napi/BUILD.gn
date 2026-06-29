@@ -21,6 +21,7 @@ config("fusion_connectivity_inner_cfg") {
     "$FUSION_CONN/partner_agent/frameworks/napi/include",
     "$FUSION_CONN/partner_agent/services/common/include",
     "$FUSION_CONN/partner_agent/idl/include",
+    "$FUSION_CONN/fusion_ranging/interfaces/inner_api",
   ]
 }
 

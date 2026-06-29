@@ -193,7 +193,7 @@ void FusionRangingServer::InitializePermissionsMap()
     constexpr const char *PERMISSION_ACCESS_NEARLINK = "ohos.permission.ACCESS_NEARLINK";
     permissionsMap_ = {
         {static_cast<int>(IFusionRangingIpcCode::COMMAND_GET_RANGING_CAPABILITY),
-         FusionConnectivity::PermissionItem(FusionConnectivity::PUBLIC_API, std::set<std::string>{})},
+         FusionConnectivity::PermissionItem(FusionConnectivity::PUBLIC_API, PERMISSION_ACCESS_NEARLINK)},
         {static_cast<int>(IFusionRangingIpcCode::COMMAND_START_RANGING),
          FusionConnectivity::PermissionItem(FusionConnectivity::PUBLIC_API, PERMISSION_ACCESS_NEARLINK)},
         {static_cast<int>(IFusionRangingIpcCode::COMMAND_STOP_RANGING),
@@ -273,9 +273,12 @@ ErrCode FusionRangingServer::StartRanging(const RangingParams &params)
     FCM_CHECK_RETURN_RET(IsValidAddress(deviceId), RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS, "device invalid");
     int32_t ret = FusionRangingService::GetInstance()->StartRanging(params, observer, callerUid);
     HILOGI("StartRanging: ret=%{public}d", ret);
+    if (ret == RANGING_ERR_DEVICE_ALREADY_INITIATED) {
+        return ret;
+    }
     if (ret != 0) {
         FusionRangingService::GetInstance()->StopRanging(deviceId, callerUid);
-        return RANGING_ERR_OPERATION_FAILED;
+        return ret;
     }
     return RANGING_NO_ERROR;
 }

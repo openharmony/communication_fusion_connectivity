@@ -21,6 +21,7 @@
 
 #include <map>
 #include "napi_ha_event_utils.h"
+#include "fusion_ranging_errorcode.h"
 
 namespace OHOS {
 namespace FusionConnectivity {

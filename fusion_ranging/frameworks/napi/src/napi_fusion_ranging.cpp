@@ -115,7 +115,7 @@ napi_value GetRangingCapability(napi_env env, napi_callback_info info)
     return asyncWork->GetRet();
 }
 
-static napi_status ParseStartRangingParams(napi_env env, napi_value object, RangingParams &params)
+static napi_status ParseRangingParams(napi_env env, napi_value object, RangingParams &params)
 {
     NAPI_FCM_RETURN_IF(NapiCheckObjectPropertiesName(env, object, {"deviceId", "capabilityType"}) != napi_ok,
                        "params not equal", napi_invalid_arg);
@@ -126,7 +126,7 @@ static napi_status ParseStartRangingParams(napi_env env, napi_value object, Rang
     NAPI_FCM_RETURN_IF(!IsValidAddress(deviceId), "Invalid deviceId", napi_invalid_arg);
     NAPI_FCM_RETURN_IF(NapiParseInt32Object(env, object, "capabilityType", capabilityType) != napi_ok, "parse cap err",
                        napi_invalid_arg);
-    HILOGI("ParseStartRangingParams deviceId:%{public}s, cap:%{public}d", GET_ENCRYPT_ADDR(deviceId), capabilityType);
+    HILOGI("ParseRangingParams deviceId:%{public}s, cap:%{public}d", GET_ENCRYPT_ADDR(deviceId), capabilityType);
     params.SetDeviceId(deviceId);
     params.SetCapabilityType(static_cast<RangingTypes>(capabilityType));
     return napi_ok;
@@ -142,7 +142,7 @@ napi_value StartRanging(napi_env env, napi_callback_info info)
     HILOGI("StartRanging: cbInfoStatus=%{public}d argc=%{public}zu", cbInfoStatus, argc);
     NAPI_FCM_ASSERT_RETURN_UNDEF(env, argc == ARGS_SIZE_TWO, RANGING_ERR_INVALID_PARAM);
     RangingParams params;
-    napi_status parseStatus = ParseStartRangingParams(env, argv[PARAM0], params);
+    napi_status parseStatus = ParseRangingParams(env, argv[PARAM0], params);
     NAPI_FCM_ASSERT_RETURN_UNDEF(env, (parseStatus == napi_ok), RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS);
     auto status = NapiIsFunction(env, argv[PARAM1]);
     NAPI_FCM_ASSERT_RETURN_UNDEF(env, (status == napi_ok), RANGING_ERR_INVALID_PARAM);
@@ -170,7 +170,7 @@ napi_value StartRanging(napi_env env, napi_callback_info info)
 static napi_value StopRangingWithParams(napi_env env, napi_value napiCallback, napi_value object)
 {
     RangingParams userParams;
-    auto ret = ParseStartRangingParams(env, object, userParams);
+    auto ret = ParseRangingParams(env, object, userParams);
     NAPI_FCM_ASSERT_RETURN_UNDEF(env, (ret == napi_ok), RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS);
     int stopRet = FusionRangingManager::GetInstance()->StopRanging(userParams);
     napiCallback_->DeregisterRangingResultCallbackWithDeviceId(env, napiCallback, userParams.GetDeviceId());

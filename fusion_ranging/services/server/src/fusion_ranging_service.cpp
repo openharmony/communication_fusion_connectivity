@@ -98,6 +98,14 @@ bool FusionRangingService::IsRangingSupported(RangingTypes capabilityType)
 int FusionRangingService::StartRanging(const RangingParams &params, const sptr<IRangingObserver> &observer,
                                        int32_t callerUid)
 {
+    HILOGI("StartRanging TYPE:%{public}d", params.GetCapabilityType());
+    if (!IsRangingSupported(params.GetCapabilityType())) {
+        return RANGING_ERR_RANGING_SERVICE_DISABLED;
+    }
+
+    if (GetRangingDevice(params.GetDeviceId()) != nullptr) {
+        return RANGING_ERR_DEVICE_ALREADY_INITIATED;
+    }
     FusionConnectivity::DoInRangingThread(
         [this, params, observer, callerUid]() { HandleStartRanging(params, observer, callerUid); }, 0);
     return RANGING_NO_ERROR;
@@ -197,8 +205,10 @@ int FusionRangingService::HandleStartPassiveRanging(RangingTypes capabilityType,
             auto handleInfo = std::make_shared<PassiveRangingHandle>(callerUid, capabilityType, advHandle, observer);
             advHandles_.EnsureInsert(advHandle, handleInfo);
         }
+        return ret;
+    } else {
+        return RANGING_ERR_OPERATION_FAILED;
     }
-    return ret;
 }
 
 int FusionRangingService::StopPassiveRanging(RangingTypes capabilityType, int32_t handle, int32_t callerUid)
