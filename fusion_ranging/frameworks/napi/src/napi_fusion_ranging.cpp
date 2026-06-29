@@ -126,6 +126,9 @@ static napi_status ParseRangingParams(napi_env env, napi_value object, RangingPa
     NAPI_FCM_RETURN_IF(!IsValidAddress(deviceId), "Invalid deviceId", napi_invalid_arg);
     NAPI_FCM_RETURN_IF(NapiParseInt32Object(env, object, "capabilityType", capabilityType) != napi_ok, "parse cap err",
                        napi_invalid_arg);
+    NAPI_FCM_RETURN_IF(capabilityType < static_cast<int>(RangingTypes::NEARLINK_HADM) ||
+                           capabilityType >= static_cast<int>(RangingTypes::RANGING_TYPE_MAX),
+                       "invalid cap err", napi_invalid_arg);
     HILOGI("ParseRangingParams deviceId:%{public}s, cap:%{public}d", GET_ENCRYPT_ADDR(deviceId), capabilityType);
     params.SetDeviceId(deviceId);
     params.SetCapabilityType(static_cast<RangingTypes>(capabilityType));
@@ -159,7 +162,11 @@ napi_value StartRanging(napi_env env, napi_callback_info info)
     FusionRangingManager::GetInstance()->RegisterFusionRangingObserver(napiCallback_);
     napiCallback_->RegisterRangingResultCallback(params, napiCallback, resultCallback);
     auto ret = FusionRangingManager::GetInstance()->StartRanging(params);
-    if (ret != FCM_NO_ERROR) {
+    HILOGI("StartRanging: ret=%{public}d", ret);
+
+    if (ret == RANGING_ERR_DEVICE_ALREADY_INITIATED) {
+        NAPI_FCM_ASSERT_RETURN_UNDEF(env, false, OutputStandardErr(ret));
+    } else if (ret != RANGING_NO_ERROR) {
         napiCallback_->DeregisterRangingResultCallbackWithDeviceId(env, argv[PARAM1], params.GetDeviceId());
         FusionRangingManager::GetInstance()->DeregisterFusionRangingObserver(napiCallback_);
         NAPI_FCM_ASSERT_RETURN_UNDEF(env, false, OutputStandardErr(ret));
