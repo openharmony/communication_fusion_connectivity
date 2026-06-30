@@ -21,6 +21,7 @@
 #include <gtest/gtest.h>
 
 #include <thread>
+#include <atomic>
 #include "fusion_connectivity_errorcode.h"
 #include "fusion_ranging_server.h"
 #include "ranging_params.h"
@@ -32,6 +33,11 @@
 #include "log.h"
 #include "iremote_object.h"
 #include "fusion_ranging_types.h"
+#include "ranging_adapter_factory.h"
+#include "base_ranging_adapter.h"
+#include "fusion_ranging_service.h"
+#include "ipc_skeleton.h"
+#include "fcm_thread_util.h"
 
 using namespace OHOS;
 using namespace OHOS::FusionRanging;
@@ -45,6 +51,40 @@ public:
     MOCK_METHOD(sptr<IRemoteObject>, AsObject, (), (override));
 };
 
+class MockBaseRangingAdapter : public BaseRangingAdapter {
+public:
+    MOCK_METHOD(int32_t, Init, (), (override));
+    MOCK_METHOD(int32_t, DeInit, (), (override));
+    MOCK_METHOD(int32_t, StartRanging, (const std::string &deviceId), (override));
+    MOCK_METHOD(int32_t, StopRanging, (const std::string &deviceId), (override));
+    MOCK_METHOD(int32_t, StartPassiveRanging, (int32_t &handle), (override));
+    MOCK_METHOD(int32_t, StopPassiveRanging, (int32_t handle), (override));
+    MOCK_METHOD(int32_t, PauseRanging, (const std::string &deviceId), (override));
+    MOCK_METHOD(int32_t, ResumeRanging, (const std::string &deviceId), (override));
+    MOCK_METHOD(int32_t, SetCallback, (const std::shared_ptr<BaseRangingAdapterCallback> &callback), (override));
+};
+
+class NiceMockBaseRangingAdapter : public NiceMock<MockBaseRangingAdapter> {
+public:
+    NiceMockBaseRangingAdapter()
+    {
+        auto generateHandle = [](int32_t &handle) {
+            static int32_t counter = 0;
+            handle = ++counter;
+            return 0;
+        };
+        ON_CALL(*this, Init).WillByDefault(Return(0));
+        ON_CALL(*this, DeInit).WillByDefault(Return(0));
+        ON_CALL(*this, StartRanging(_)).WillByDefault(Return(0));
+        ON_CALL(*this, StopRanging(_)).WillByDefault(Return(0));
+        ON_CALL(*this, StartPassiveRanging(_)).WillByDefault(Invoke(generateHandle));
+        ON_CALL(*this, StopPassiveRanging(_)).WillByDefault(Return(0));
+        ON_CALL(*this, PauseRanging(_)).WillByDefault(Return(0));
+        ON_CALL(*this, ResumeRanging(_)).WillByDefault(Return(0));
+        ON_CALL(*this, SetCallback(_)).WillByDefault(Return(0));
+    }
+};
+
 class FusionRangingServerTest : public testing::Test {
 public:
     FusionRangingServerTest() = default;
@@ -55,17 +95,36 @@ public:
     void SetUp();
     void TearDown();
 
+    static std::atomic<bool> adapterRegistered_;
     sptr<FusionRangingServer> server_;
     sptr<MockIRangingObserver> mockObserver_;
     bool observerRegistered_ = false;
 };
 
-void FusionRangingServerTest::SetUpTestCase(void) {}
+std::atomic<bool> FusionRangingServerTest::adapterRegistered_{false};
+
+void FusionRangingServerTest::SetUpTestCase(void)
+{
+    if (!adapterRegistered_) {
+        auto generator = []() -> std::shared_ptr<BaseRangingAdapter> {
+            return std::make_shared<NiceMockBaseRangingAdapter>();
+        };
+        RangingAdapterFactory::Instance().RegisterRangingAdapter<NiceMockBaseRangingAdapter>(
+            RangingTypes::NEARLINK_HADM, generator);
+        RangingAdapterFactory::Instance().RegisterChecker(RangingTypes::NEARLINK_HADM, []() { return true; });
+        adapterRegistered_ = true;
+    }
+}
 
 void FusionRangingServerTest::TearDownTestCase(void) {}
 
 void FusionRangingServerTest::SetUp()
 {
+    FusionConnectivity::FcmThreadUtil::GetInstance().ClearThreadStateMap();
+    FusionConnectivity::FcmThreadUtil::GetInstance().threadStateMap_.EnsureInsert(
+        FusionConnectivity::THREAD_ID_RANGING, FusionConnectivity::FcmThreadUtil::NOT_SWITCH_THREAD);
+    FusionConnectivity::FcmThreadUtil::GetInstance().threadStateMap_.EnsureInsert(
+        FusionConnectivity::THREAD_ID_MAIN, FusionConnectivity::FcmThreadUtil::NOT_SWITCH_THREAD);
     server_ = FusionRangingServer::GetInstance();
     mockObserver_ = new MockIRangingObserver();
     observerRegistered_ = false;
@@ -111,9 +170,10 @@ HWTEST_F(FusionRangingServerTest, StartRanging_001, TestSize.Level1)
     observerRegistered_ = true;
     EXPECT_EQ(registerResult, static_cast<int32_t>(RangingErrCode::RANGING_NO_ERROR));
 
-    RangingParams params("AA:BB:CC:DD:EE:FF", RangingTypes::NEARLINK_HADM);
+    RangingParams params("11:BB:CC:DD:EE:FF", RangingTypes::NEARLINK_HADM);
     ErrCode result = server_->StartRanging(params);
     EXPECT_EQ(result, static_cast<int32_t>(RangingErrCode::RANGING_NO_ERROR));
+    server_->StopRanging(params);
 }
 
 HWTEST_F(FusionRangingServerTest, StartRanging_002, TestSize.Level2)
@@ -130,6 +190,38 @@ HWTEST_F(FusionRangingServerTest, StartRanging_003, TestSize.Level2)
     RangingParams params("", RangingTypes::NEARLINK_HADM);
     ErrCode result = server_->StartRanging(params);
     EXPECT_EQ(result, static_cast<int32_t>(RangingErrCode::RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS));
+}
+
+HWTEST_F(FusionRangingServerTest, StartRanging_004, TestSize.Level1)
+{
+    ErrCode registerResult = server_->RegisterObserver(mockObserver_);
+    observerRegistered_ = true;
+    EXPECT_EQ(registerResult, static_cast<int32_t>(RangingErrCode::RANGING_NO_ERROR));
+
+    RangingParams params("44:BB:CC:DD:EE:FF", RangingTypes::NEARLINK_HADM);
+    ErrCode result = server_->StartRanging(params);
+    EXPECT_EQ(result, static_cast<int32_t>(RangingErrCode::RANGING_NO_ERROR));
+    result = server_->StartRanging(params);
+    EXPECT_EQ(result, static_cast<int32_t>(RangingErrCode::RANGING_ERR_DEVICE_ALREADY_INITIATED));
+    FusionRangingService::GetInstance()->HandleProcessDeath(IPCSkeleton::GetCallingUid());
+}
+
+HWTEST_F(FusionRangingServerTest, StartRanging_005, TestSize.Level1)
+{
+    ErrCode registerResult = server_->RegisterObserver(mockObserver_);
+    observerRegistered_ = true;
+    EXPECT_EQ(registerResult, static_cast<int32_t>(RangingErrCode::RANGING_NO_ERROR));
+
+    RangingParams params("55:BB:CC:DD:EE:FF", RangingTypes::NEARLINK_HADM);
+    ErrCode firstResult = server_->StartRanging(params);
+    EXPECT_EQ(firstResult, static_cast<int32_t>(RangingErrCode::RANGING_NO_ERROR));
+
+    ErrCode stopResult = server_->StopRanging(params);
+    EXPECT_EQ(stopResult, static_cast<int32_t>(RangingErrCode::RANGING_NO_ERROR));
+
+    ErrCode secondResult = server_->StartRanging(params);
+    EXPECT_EQ(secondResult, static_cast<int32_t>(RangingErrCode::RANGING_NO_ERROR));
+    FusionRangingService::GetInstance()->HandleProcessDeath(IPCSkeleton::GetCallingUid());
 }
 
 HWTEST_F(FusionRangingServerTest, StopRanging_001, TestSize.Level1)
