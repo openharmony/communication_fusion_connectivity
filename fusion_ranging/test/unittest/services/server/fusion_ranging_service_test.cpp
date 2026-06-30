@@ -33,6 +33,7 @@
 #include "ranging_observer_stub.h"
 #include "iremote_object.h"
 #include "fusion_ranging_types.h"
+#include "fcm_thread_util.h"
 
 using namespace OHOS;
 using namespace OHOS::FusionRanging;
@@ -107,10 +108,21 @@ void FusionRangingServiceTest::TearDownTestCase(void) {}
 
 void FusionRangingServiceTest::SetUp()
 {
+    FusionConnectivity::FcmThreadUtil::GetInstance().ClearThreadStateMap();
+    FusionConnectivity::FcmThreadUtil::GetInstance().threadStateMap_.EnsureInsert(
+        FusionConnectivity::THREAD_ID_RANGING, FusionConnectivity::FcmThreadUtil::NOT_SWITCH_THREAD);
+    FusionConnectivity::FcmThreadUtil::GetInstance().threadStateMap_.EnsureInsert(
+        FusionConnectivity::THREAD_ID_MAIN, FusionConnectivity::FcmThreadUtil::NOT_SWITCH_THREAD);
     service_ = FusionRangingService::GetInstance();
 }
 
-void FusionRangingServiceTest::TearDown() {}
+void FusionRangingServiceTest::TearDown()
+{
+    service_->HandleProcessDeath(1000);
+    service_->HandleProcessDeath(1001);
+    service_->HandleProcessDeath(1002);
+    service_->HandleProcessDeath(1003);
+}
 
 HWTEST_F(FusionRangingServiceTest, GetInstance_001, TestSize.Level0)
 {
@@ -187,6 +199,27 @@ HWTEST_F(FusionRangingServiceTest, StartRanging_001, TestSize.Level1)
     sptr<IRangingObserver> observer;
     int32_t result = service_->StartRanging(params, observer, callerUid);
     EXPECT_EQ(result, 0);
+}
+
+HWTEST_F(FusionRangingServiceTest, StartRanging_002, TestSize.Level1)
+{
+    RangingParams params("BB:BB:CC:DD:EE:FF", RangingTypes::NEARLINK_HADM);
+    int32_t callerUid = 1001;
+    sptr<IRangingObserver> observer;
+    int32_t firstResult = service_->StartRanging(params, observer, callerUid);
+    EXPECT_EQ(firstResult, 0);
+    int32_t secondResult = service_->StartRanging(params, observer, callerUid);
+    EXPECT_EQ(secondResult, static_cast<int32_t>(RangingErrCode::RANGING_ERR_DEVICE_ALREADY_INITIATED));
+    service_->StopRanging("BB:BB:CC:DD:EE:FF", callerUid);
+}
+
+HWTEST_F(FusionRangingServiceTest, StartRanging_003, TestSize.Level1)
+{
+    RangingParams params("CC:BB:CC:DD:EE:FF", static_cast<RangingTypes>(999));
+    int32_t callerUid = 1002;
+    sptr<IRangingObserver> observer;
+    int32_t result = service_->StartRanging(params, observer, callerUid);
+    EXPECT_EQ(result, static_cast<int32_t>(RangingErrCode::RANGING_ERR_RANGING_SERVICE_DISABLED));
 }
 
 HWTEST_F(FusionRangingServiceTest, StopRanging_001, TestSize.Level1)
