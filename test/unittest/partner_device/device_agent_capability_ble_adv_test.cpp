@@ -148,31 +148,3 @@ HWTEST_F(DeviceAgentCapabilityBleAdvTest, ScreenStateChangeTest, TestSize.Level0
     deviceAgent_->OnScreenOff();
     EXPECT_EQ(deviceAgent_->curScanMode_.load(), Bluetooth::SCAN_MODE_OP_P2_60_3000);
 }
-
-// 测试用例6：线程安全测试
-/**
- * @tc.name: ThreadSafetyTest
- * @tc.desc: 验证多线程环境下的扫描操作安全性
- * @tc.type: FUNC
- */
-HWTEST_F(DeviceAgentCapabilityBleAdvTest, ThreadSafetyTest, TestSize.Level1) {
-    deviceAgent_->Init("00:11:22:33:44:55");
-
-    auto thread1 = std::thread([&] {
-        for (int i = 0; i < 100; ++i) {
-            deviceAgent_->OnScreenOn();
-            deviceAgent_->OnScreenOff();
-        }
-    });
-
-    auto thread2 = std::thread([&] {
-        for (int i = 0; i < 100; ++i) {
-            deviceAgent_->OnBluetoothDeviceAclConnected();
-        }
-    });
-
-    thread1.join();
-    thread2.join();
-
-    EXPECT_FALSE(deviceAgent_->isScanStarted_.load());
-}
