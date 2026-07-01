@@ -337,3 +337,26 @@ HWTEST_F(DeviceAgentCapabilityBleAdvTest, ConcurrentTimerOperationsShouldBeThrea
     EXPECT_GE(deviceAgent_->timeoutCount_.load(), 0);
     EXPECT_LE(deviceAgent_->timeoutCount_.load(), 5);
 }
+
+// 测试用例12：设备关闭时清理定时器
+/**
+ * @tc.name: CloseShouldCleanUpAllTimers
+ * @tc.desc: 验证Close方法正确清理所有定时器
+ * @tc.type: FUNC
+ */
+HWTEST_F(DeviceAgentCapabilityBleAdvTest, CloseShouldCleanUpAllTimers, TestSize.Level0) {
+    deviceAgent_->Init("00:11:22:33:44:55");
+    deviceAgent_->extensionKeepAliveTimeout_ = 1000;
+    Bluetooth::BleScanResult scanResult;
+
+    deviceAgent_->bluetoothScanCallback_->OnScanCallback(scanResult);
+
+    EXPECT_NE(deviceAgent_->scanTimer_, nullptr);
+
+    deviceAgent_->Close();
+
+    EXPECT_EQ(deviceAgent_->scanTimer_, nullptr);
+    EXPECT_EQ(deviceAgent_->powerInhibitTimer_, nullptr);
+    EXPECT_EQ(deviceAgent_->timeoutCount_.load(), 0);
+    EXPECT_FALSE(deviceAgent_->isScanStarted_.load());
+}
