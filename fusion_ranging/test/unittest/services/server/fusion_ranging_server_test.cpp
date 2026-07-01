@@ -136,6 +136,7 @@ void FusionRangingServerTest::TearDown()
     if (server_ != nullptr && observerRegistered_) {
         server_->DeregisterObserver(mockObserver_);
     }
+    FusionRangingService::GetInstance()->HandleProcessDeath(IPCSkeleton::GetCallingUid());
     mockObserver_ = nullptr;
 }
 
@@ -173,7 +174,6 @@ HWTEST_F(FusionRangingServerTest, StartRanging_001, TestSize.Level1)
     RangingParams params("11:BB:CC:DD:EE:FF", RangingTypes::NEARLINK_HADM);
     ErrCode result = server_->StartRanging(params);
     EXPECT_EQ(result, static_cast<int32_t>(RangingErrCode::RANGING_NO_ERROR));
-    server_->StopRanging(params);
 }
 
 HWTEST_F(FusionRangingServerTest, StartRanging_002, TestSize.Level2)
@@ -190,6 +190,8 @@ HWTEST_F(FusionRangingServerTest, StartRanging_003, TestSize.Level2)
     RangingParams params("", RangingTypes::NEARLINK_HADM);
     ErrCode result = server_->StartRanging(params);
     EXPECT_EQ(result, static_cast<int32_t>(RangingErrCode::RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS));
+    int32_t callerUid = IPCSkeleton::GetCallingUid();
+    FusionRangingService::GetInstance()->HandleProcessDeath(callerUid);
 }
 
 HWTEST_F(FusionRangingServerTest, StartRanging_004, TestSize.Level1)
@@ -203,7 +205,6 @@ HWTEST_F(FusionRangingServerTest, StartRanging_004, TestSize.Level1)
     EXPECT_EQ(result, static_cast<int32_t>(RangingErrCode::RANGING_NO_ERROR));
     result = server_->StartRanging(params);
     EXPECT_EQ(result, static_cast<int32_t>(RangingErrCode::RANGING_ERR_DEVICE_ALREADY_INITIATED));
-    FusionRangingService::GetInstance()->HandleProcessDeath(IPCSkeleton::GetCallingUid());
 }
 
 HWTEST_F(FusionRangingServerTest, StartRanging_005, TestSize.Level1)
@@ -221,7 +222,6 @@ HWTEST_F(FusionRangingServerTest, StartRanging_005, TestSize.Level1)
 
     ErrCode secondResult = server_->StartRanging(params);
     EXPECT_EQ(secondResult, static_cast<int32_t>(RangingErrCode::RANGING_NO_ERROR));
-    FusionRangingService::GetInstance()->HandleProcessDeath(IPCSkeleton::GetCallingUid());
 }
 
 HWTEST_F(FusionRangingServerTest, StopRanging_001, TestSize.Level1)
