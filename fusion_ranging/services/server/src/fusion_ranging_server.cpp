@@ -269,15 +269,14 @@ ErrCode FusionRangingServer::StartRanging(const RangingParams &params)
     auto findRet = pimpl->observers_.Find(callerUid, observer);
     FCM_CHECK_RETURN_RET(findRet && observer != nullptr, RANGING_ERR_OPERATION_FAILED, "observer not found");
 
-    std::string deviceId = params.GetDeviceId();
-    FCM_CHECK_RETURN_RET(IsValidAddress(deviceId), RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS, "device invalid");
     int32_t ret = FusionRangingService::GetInstance()->StartRanging(params, observer, callerUid);
     HILOGI("StartRanging: ret=%{public}d", ret);
     if (ret == RANGING_ERR_DEVICE_ALREADY_INITIATED) {
         return ret;
     }
     if (ret != 0) {
-        FusionRangingService::GetInstance()->StopRanging(deviceId, callerUid);
+        std::string deviceId = params.GetDeviceId();
+        FusionRangingService::GetInstance()->StopRanging(params.GetDeviceId(), callerUid);
         return ret;
     }
     return RANGING_NO_ERROR;
