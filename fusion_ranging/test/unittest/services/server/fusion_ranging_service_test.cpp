@@ -21,7 +21,6 @@
 #include <gtest/gtest.h>
 
 #include <thread>
-#include <atomic>
 #include "fusion_ranging_service.h"
 #include "ranging_params.h"
 #include "ranging_result.h"
@@ -39,10 +38,11 @@ using namespace OHOS;
 using namespace OHOS::FusionRanging;
 using namespace testing;
 using namespace testing::ext;
-constexpr int32_t RANGING_TEST_CALLER_UID_1000 = 1000;
-constexpr int32_t RANGING_TEST_CALLER_UID_1001 = 1001;
-constexpr int32_t RANGING_TEST_CALLER_UID_1002 = 1002;
-constexpr int32_t RANGING_TEST_CALLER_UID_1003 = 1003;
+
+constexpr int32_t CALLER_UID_A = 1000;
+constexpr int32_t CALLER_UID_B = 1001;
+constexpr int32_t CALLER_UID_C = 1002;
+constexpr int32_t CALLER_UID_D = 1003;
 
 class MockBaseRangingAdapter : public BaseRangingAdapter {
 public:
@@ -50,7 +50,7 @@ public:
     MOCK_METHOD(int32_t, DeInit, (), (override));
     MOCK_METHOD(int32_t, StartRanging, (const std::string &deviceId), (override));
     MOCK_METHOD(int32_t, StopRanging, (const std::string &deviceId), (override));
-    MOCK_METHOD(int32_t, StartPassiveRanging, (int32_t & handle), (override));
+    MOCK_METHOD(int32_t, StartPassiveRanging, (int32_t &handle), (override));
     MOCK_METHOD(int32_t, StopPassiveRanging, (int32_t handle), (override));
     MOCK_METHOD(int32_t, PauseRanging, (const std::string &deviceId), (override));
     MOCK_METHOD(int32_t, ResumeRanging, (const std::string &deviceId), (override));
@@ -76,6 +76,13 @@ public:
         ON_CALL(*this, ResumeRanging(_)).WillByDefault(Return(0));
         ON_CALL(*this, SetCallback(_)).WillByDefault(Return(0));
     }
+};
+
+class MockIRangingObserver : public IRangingObserver {
+public:
+    MOCK_METHOD(ErrCode, OnRangingResult, (const RangingResult &result), (override));
+    MOCK_METHOD(ErrCode, OnRangingStateChanged, (const RangingStateChangeInfo &info), (override));
+    MOCK_METHOD(sptr<IRemoteObject>, AsObject, (), (override));
 };
 
 class FusionRangingServiceTest : public testing::Test {
@@ -122,10 +129,10 @@ void FusionRangingServiceTest::SetUp()
 
 void FusionRangingServiceTest::TearDown()
 {
-    service_->HandleProcessDeath(RANGING_TEST_CALLER_UID_1000);
-    service_->HandleProcessDeath(RANGING_TEST_CALLER_UID_1001);
-    service_->HandleProcessDeath(RANGING_TEST_CALLER_UID_1002);
-    service_->HandleProcessDeath(RANGING_TEST_CALLER_UID_1003);
+    service_->HandleProcessDeath(CALLER_UID_A);
+    service_->HandleProcessDeath(CALLER_UID_B);
+    service_->HandleProcessDeath(CALLER_UID_C);
+    service_->HandleProcessDeath(CALLER_UID_D);
 }
 
 HWTEST_F(FusionRangingServiceTest, GetInstance_001, TestSize.Level0)
@@ -144,20 +151,20 @@ HWTEST_F(FusionRangingServiceTest, IsRangingSupported_001, TestSize.Level1)
 
 HWTEST_F(FusionRangingServiceTest, HandleProcessDeath_001, TestSize.Level2)
 {
-    service_->HandleProcessDeath(RANGING_TEST_CALLER_UID_1000);
+    service_->HandleProcessDeath(CALLER_UID_A);
     service_->HandleProcessDeath(2000);
     SUCCEED();
 }
 
 HWTEST_F(FusionRangingServiceTest, PauseRangingByUid_001, TestSize.Level2)
 {
-    service_->PauseRangingByUid(RANGING_TEST_CALLER_UID_1000);
+    service_->PauseRangingByUid(CALLER_UID_A);
     SUCCEED();
 }
 
 HWTEST_F(FusionRangingServiceTest, ResumeRangingByUid_001, TestSize.Level2)
 {
-    service_->ResumeRangingByUid(RANGING_TEST_CALLER_UID_1000);
+    service_->ResumeRangingByUid(CALLER_UID_A);
     SUCCEED();
 }
 
@@ -166,26 +173,28 @@ HWTEST_F(FusionRangingServiceTest, IsRangingEmpty_001, TestSize.Level2)
     EXPECT_TRUE(service_->IsRangingEmpty());
     RangingParams params("AA:BB:CC:DD:EE:FF", RangingTypes::NEARLINK_HADM);
     sptr<IRangingObserver> observer;
-    int32_t startResult = service_->HandleStartRanging(params, observer, RANGING_TEST_CALLER_UID_1000);
-    EXPECT_EQ(startResult, 0);
+    service_->HandleStartRanging(params, observer, CALLER_UID_A);
     EXPECT_FALSE(service_->IsRangingEmpty());
 }
 
 HWTEST_F(FusionRangingServiceTest, OnRangingResult_001, TestSize.Level2)
 {
+    sptr<MockIRangingObserver> mockObserver = new MockIRangingObserver();
+    EXPECT_CALL(*mockObserver, OnRangingResult(_)).Times(1);
+    RangingParams params("AA:BB:CC:DD:EE:FF", RangingTypes::NEARLINK_HADM);
+    int32_t startResult = service_->StartRanging(params, mockObserver, CALLER_UID_A);
+    EXPECT_EQ(startResult, 0);
     RangingResult result;
     result.SetDeviceId("AA:BB:CC:DD:EE:FF");
-    int32_t startResult = service_->StartRanging(RangingParams("AA:BB:CC:DD:EE:FF", RangingTypes::NEARLINK_HADM),
-                                                 nullptr, RANGING_TEST_CALLER_UID_1000);
-    EXPECT_EQ(startResult, 0);
     service_->OnRangingResult(result);
-    SUCCEED();
 }
 
 HWTEST_F(FusionRangingServiceTest, OnAdapterRangingStateChanged_001, TestSize.Level2)
 {
-    int32_t startResult = service_->StartRanging(RangingParams("AA:BB:CC:DD:EE:FF", RangingTypes::NEARLINK_HADM),
-                                                 nullptr, RANGING_TEST_CALLER_UID_1000);
+    sptr<MockIRangingObserver> mockObserver = new MockIRangingObserver();
+    EXPECT_CALL(*mockObserver, OnRangingStateChanged(_)).Times(2);
+    RangingParams params("AA:BB:CC:DD:EE:FF", RangingTypes::NEARLINK_HADM);
+    int32_t startResult = service_->StartRanging(params, mockObserver, CALLER_UID_A);
     EXPECT_EQ(startResult, 0);
     AdapterRangingStateInfo stoppedInfo(AdapterRangingType::ADAPTER_RANGING, "AA:BB:CC:DD:EE:FF", 0,
                                         RangingState::STATE_STOPPED);
@@ -193,56 +202,79 @@ HWTEST_F(FusionRangingServiceTest, OnAdapterRangingStateChanged_001, TestSize.Le
                                         RangingState::STATE_STARTED);
     service_->OnAdapterRangingStateChanged(stoppedInfo);
     service_->OnAdapterRangingStateChanged(startedInfo);
-    SUCCEED();
 }
 
 HWTEST_F(FusionRangingServiceTest, StartRanging_001, TestSize.Level1)
 {
     RangingParams params("AA:BB:CC:DD:EE:FF", RangingTypes::NEARLINK_HADM);
-    int32_t callerUid = RANGING_TEST_CALLER_UID_1000;
     sptr<IRangingObserver> observer;
-    int32_t result = service_->StartRanging(params, observer, callerUid);
+    int32_t result = service_->StartRanging(params, observer, CALLER_UID_A);
     EXPECT_EQ(result, 0);
 }
 
 HWTEST_F(FusionRangingServiceTest, StartRanging_002, TestSize.Level1)
 {
     RangingParams params("BB:BB:CC:DD:EE:FF", RangingTypes::NEARLINK_HADM);
-    int32_t callerUid = RANGING_TEST_CALLER_UID_1001;
     sptr<IRangingObserver> observer;
-    int32_t firstResult = service_->StartRanging(params, observer, callerUid);
+    int32_t firstResult = service_->StartRanging(params, observer, CALLER_UID_B);
     EXPECT_EQ(firstResult, 0);
-    int32_t secondResult = service_->StartRanging(params, observer, callerUid);
+    int32_t secondResult = service_->StartRanging(params, observer, CALLER_UID_B);
     EXPECT_EQ(secondResult, static_cast<int32_t>(RangingErrCode::RANGING_ERR_DEVICE_ALREADY_INITIATED));
-    service_->StopRanging("BB:BB:CC:DD:EE:FF", callerUid);
 }
 
 HWTEST_F(FusionRangingServiceTest, StartRanging_003, TestSize.Level1)
 {
     RangingParams params("CC:BB:CC:DD:EE:FF", static_cast<RangingTypes>(999));
-    int32_t callerUid = RANGING_TEST_CALLER_UID_1002;
     sptr<IRangingObserver> observer;
-    int32_t result = service_->StartRanging(params, observer, callerUid);
+    int32_t result = service_->StartRanging(params, observer, CALLER_UID_C);
     EXPECT_EQ(result, static_cast<int32_t>(RangingErrCode::RANGING_ERR_RANGING_SERVICE_DISABLED));
+}
+
+HWTEST_F(FusionRangingServiceTest, StartRanging_004, TestSize.Level2)
+{
+    RangingParams params("", RangingTypes::NEARLINK_HADM);
+    sptr<IRangingObserver> observer;
+    int32_t result = service_->StartRanging(params, observer, CALLER_UID_A);
+    EXPECT_EQ(result, static_cast<int32_t>(RangingErrCode::RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS));
 }
 
 HWTEST_F(FusionRangingServiceTest, StopRanging_001, TestSize.Level1)
 {
     RangingParams params("AA:BB:CC:DD:EE:FF", RangingTypes::NEARLINK_HADM);
-    int32_t callerUid = RANGING_TEST_CALLER_UID_1000;
     sptr<IRangingObserver> observer;
-    int32_t startResult = service_->StartRanging(params, observer, callerUid);
+    int32_t startResult = service_->StartRanging(params, observer, CALLER_UID_A);
     EXPECT_EQ(startResult, 0);
-    int32_t stopResult = service_->StopRanging("AA:BB:CC:DD:EE:FF", callerUid);
+    int32_t stopResult = service_->StopRanging("AA:BB:CC:DD:EE:FF", CALLER_UID_A);
     EXPECT_EQ(stopResult, 0);
+}
+
+HWTEST_F(FusionRangingServiceTest, StopRanging_002, TestSize.Level2)
+{
+    int32_t stopResult = service_->StopRanging("NOT_EXIST_DEVICE", CALLER_UID_A);
+    EXPECT_EQ(stopResult, static_cast<int32_t>(RangingErrCode::RANGING_ERR_DEVICE_NOT_INITIATED));
+}
+
+HWTEST_F(FusionRangingServiceTest, StopRanging_003, TestSize.Level2)
+{
+    RangingParams params("AA:BB:CC:DD:EE:FF", RangingTypes::NEARLINK_HADM);
+    sptr<IRangingObserver> observer;
+    int32_t startResult = service_->StartRanging(params, observer, CALLER_UID_A);
+    EXPECT_EQ(startResult, 0);
+    int32_t stopResult = service_->StopRanging("AA:BB:CC:DD:EE:FF", CALLER_UID_B);
+    EXPECT_EQ(stopResult, static_cast<int32_t>(RangingErrCode::RANGING_ERR_OPERATION_FAILED));
+}
+
+HWTEST_F(FusionRangingServiceTest, StopRanging_004, TestSize.Level2)
+{
+    int32_t stopResult = service_->StopRanging("", CALLER_UID_A);
+    EXPECT_EQ(stopResult, static_cast<int32_t>(RangingErrCode::RANGING_ERR_INVALID_PARAM));
 }
 
 HWTEST_F(FusionRangingServiceTest, StartPassiveRanging_001, TestSize.Level1)
 {
     int32_t handle = 0;
-    int32_t callerUid = RANGING_TEST_CALLER_UID_1002;
     sptr<IRangingObserver> observer;
-    int32_t result = service_->StartPassiveRanging(RangingTypes::NEARLINK_HADM, handle, observer, callerUid);
+    int32_t result = service_->StartPassiveRanging(RangingTypes::NEARLINK_HADM, handle, observer, CALLER_UID_C);
     EXPECT_EQ(result, 0);
     EXPECT_FALSE(service_->IsRangingEmpty());
 }
@@ -250,13 +282,39 @@ HWTEST_F(FusionRangingServiceTest, StartPassiveRanging_001, TestSize.Level1)
 HWTEST_F(FusionRangingServiceTest, StopPassiveRanging_001, TestSize.Level1)
 {
     int32_t handle = 0;
-    int32_t callerUid = RANGING_TEST_CALLER_UID_1003;
     sptr<IRangingObserver> observer;
-    int32_t startResult = service_->StartPassiveRanging(RangingTypes::NEARLINK_HADM, handle, observer, callerUid);
+    int32_t startResult = service_->StartPassiveRanging(RangingTypes::NEARLINK_HADM, handle, observer, CALLER_UID_D);
     ASSERT_EQ(startResult, 0);
     ASSERT_NE(handle, 0);
-    int32_t result = service_->StopPassiveRanging(RangingTypes::NEARLINK_HADM, handle, callerUid);
+    int32_t result = service_->StopPassiveRanging(RangingTypes::NEARLINK_HADM, handle, CALLER_UID_D);
     EXPECT_EQ(result, 0);
+}
+
+HWTEST_F(FusionRangingServiceTest, HandleStartRanging_001, TestSize.Level2)
+{
+    sptr<MockIRangingObserver> mockObserver = new MockIRangingObserver();
+    EXPECT_CALL(*mockObserver, OnRangingStateChanged(_)).Times(0);
+    RangingParams params("DD:BB:CC:DD:EE:FF", RangingTypes::NEARLINK_HADM);
+    service_->HandleStartRanging(params, mockObserver, CALLER_UID_A);
+    EXPECT_NE(service_->GetRangingDevice("DD:BB:CC:DD:EE:FF"), nullptr);
+}
+
+HWTEST_F(FusionRangingServiceTest, HandleStartRanging_002, TestSize.Level2)
+{
+    sptr<MockIRangingObserver> mockObserver = new MockIRangingObserver();
+    EXPECT_CALL(*mockObserver, OnRangingStateChanged(_)).Times(0);
+    RangingParams params("DD:BB:CC:DD:EE:FF", RangingTypes::NEARLINK_HADM);
+    service_->HandleStartRanging(params, mockObserver, CALLER_UID_A);
+    service_->HandleStartRanging(params, mockObserver, CALLER_UID_A);
+    EXPECT_NE(service_->GetRangingDevice("DD:BB:CC:DD:EE:FF"), nullptr);
+}
+
+HWTEST_F(FusionRangingServiceTest, OnRangingResult_NoDevice_001, TestSize.Level3)
+{
+    RangingResult result;
+    result.SetDeviceId("NOT_EXIST_DEVICE");
+    service_->OnRangingResult(result);
+    SUCCEED();
 }
 
 HWTEST_F(FusionRangingServiceTest, OnAdapterRangingStateChangedMultiThread_001, TestSize.Level3)
