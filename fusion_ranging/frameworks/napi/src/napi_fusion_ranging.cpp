@@ -188,7 +188,7 @@ static napi_value StopRangingWithParams(napi_env env, napi_value napiCallback, n
     if (napiCallback_->IsRangingResultCallbackEmpty()) {
         FusionRangingManager::GetInstance()->DeregisterFusionRangingObserver(napiCallback_);
     }
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, stopRet == FCM_NO_ERROR, OutputStandardErr(stopRet));
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, stopRet == RANGING_NO_ERROR, OutputStandardErr(stopRet));
     return NapiGetUndefined(env);
 }
 
@@ -209,7 +209,7 @@ napi_value StopRanging(napi_env env, napi_callback_info info)
     }
 
     auto rangParams = napiCallback_->GetRangParamsByNapiCallback(env, argv[PARAM0]);
-    int stopRet = FCM_NO_ERROR;
+    int stopRet = RANGING_NO_ERROR;
     for (auto it = rangParams.begin(); it != rangParams.end(); ++it) {
         stopRet = FusionRangingManager::GetInstance()->StopRanging(*it);
         napiCallback_->DeregisterRangingResultCallbackWithDeviceId(env, argv[PARAM0], it->GetDeviceId());
@@ -220,7 +220,7 @@ napi_value StopRanging(napi_env env, napi_callback_info info)
     if (napiCallback_->IsRangingResultCallbackEmpty()) {
         FusionRangingManager::GetInstance()->DeregisterFusionRangingObserver(napiCallback_);
     }
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, stopRet == FCM_NO_ERROR, OutputStandardErr(stopRet));
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, stopRet == RANGING_NO_ERROR, OutputStandardErr(stopRet));
     return NapiGetUndefined(env);
 }
 
@@ -268,7 +268,7 @@ napi_value StopPassiveRanging(napi_env env, napi_callback_info info)
     HILOGI("StopPassiveRanging: capabilityType=%{public}d handle=%{public}d", capabilityType, handle);
     int stopRet =
         FusionRangingManager::GetInstance()->StopPassiveRanging(static_cast<RangingTypes>(capabilityType), handle);
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, stopRet == FCM_NO_ERROR, OutputStandardErr(stopRet));
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, stopRet == RANGING_NO_ERROR, OutputStandardErr(stopRet));
     return NapiGetUndefined(env);
 }
 
