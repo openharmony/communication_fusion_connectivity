@@ -275,7 +275,6 @@ ErrCode FusionRangingServer::StartRanging(const RangingParams &params)
         return ret;
     }
     if (ret != 0) {
-        std::string deviceId = params.GetDeviceId();
         FusionRangingService::GetInstance()->StopRanging(params.GetDeviceId(), callerUid);
         return ret;
     }
