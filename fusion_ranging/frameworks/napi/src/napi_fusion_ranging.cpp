@@ -29,15 +29,64 @@
 #include "napi_fusion_ranging_callback.h"
 #include "napi_fusion_ranging_utils.h"
 #include "log_utils.h"
-#include <memory>
-#include <atomic>
-#include <map>
 
 namespace OHOS {
 namespace FusionRanging {
 using namespace FusionConnectivity;
 namespace {
 std::shared_ptr<NapiFusionRangingObserver> napiCallback_ = std::make_shared<NapiFusionRangingObserver>();
+
+static bool IsAllowedErrCode(int32_t ret, const int32_t *allowedCodes, size_t count)
+{
+    for (size_t i = 0; i < count; ++i) {
+        if (allowedCodes[i] == ret) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static int32_t StandardizeErrCode(int32_t ret, const int32_t *allowedCodes, size_t count,
+                                  int32_t fallback = RANGING_ERR_OPERATION_FAILED)
+{
+    if (IsAllowedErrCode(ret, allowedCodes, count)) {
+        return ret;
+    }
+    HILOGW("Unexpected errCode %{public}d, fallback to %{public}d", ret, fallback);
+    return fallback;
+}
+
+#define DECLARE_ALLOWED_ERR_CODES(name, ...) constexpr int32_t name[] = {__VA_ARGS__}
+
+DECLARE_ALLOWED_ERR_CODES(ERR_CODES_GET_RANGING_CAPABILITY, RANGING_NO_ERROR, RANGING_ERR_PERMISSION_FAILED,
+                          RANGING_ERR_INVALID_PARAM, RANGING_ERR_API_NOT_SUPPORT, RANGING_ERR_RANGING_SERVICE_DISABLED);
+
+DECLARE_ALLOWED_ERR_CODES(ERR_CODES_START_RANGING, RANGING_NO_ERROR, RANGING_ERR_PERMISSION_FAILED,
+                          RANGING_ERR_INVALID_PARAM, RANGING_ERR_API_NOT_SUPPORT, RANGING_ERR_DEVICE_ALREADY_INITIATED,
+                          RANGING_ERR_RANGING_TYPE_NOT_SUPPORT, RANGING_ERR_RANGING_SERVICE_DISABLED,
+                          RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS, RANGING_ERR_OPERATION_FAILED);
+
+DECLARE_ALLOWED_ERR_CODES(ERR_CODES_STOP_RANGING, RANGING_NO_ERROR, RANGING_ERR_PERMISSION_FAILED,
+                          RANGING_ERR_INVALID_PARAM, RANGING_ERR_API_NOT_SUPPORT, RANGING_ERR_DEVICE_NOT_INITIATED,
+                          RANGING_ERR_RANGING_TYPE_NOT_SUPPORT, RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS,
+                          RANGING_ERR_OPERATION_FAILED);
+
+DECLARE_ALLOWED_ERR_CODES(ERR_CODES_START_PASSIVE_RANGING, RANGING_NO_ERROR, RANGING_ERR_PERMISSION_FAILED,
+                          RANGING_ERR_INVALID_PARAM, RANGING_ERR_API_NOT_SUPPORT, RANGING_ERR_RANGING_TYPE_NOT_SUPPORT,
+                          RANGING_ERR_RANGING_SERVICE_DISABLED, RANGING_ERR_OPERATION_FAILED);
+
+DECLARE_ALLOWED_ERR_CODES(ERR_CODES_STOP_PASSIVE_RANGING, RANGING_NO_ERROR, RANGING_ERR_PERMISSION_FAILED,
+                          RANGING_ERR_INVALID_PARAM, RANGING_ERR_API_NOT_SUPPORT, RANGING_ERR_RANGING_TYPE_NOT_SUPPORT,
+                          RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS, RANGING_ERR_OPERATION_FAILED);
+
+#define OUTPUT_ERR(ret, codes, ...) \
+    StandardizeErrCode((ret), (codes), sizeof((codes)) / sizeof((codes)[0]), ##__VA_ARGS__)
+
+static bool IsCapabilityTypeValid(int32_t capabilityType)
+{
+    return capabilityType >= static_cast<int32_t>(RangingTypes::NEARLINK_HADM) &&
+           capabilityType < static_cast<int32_t>(RangingTypes::RANGING_TYPE_MAX);
+}
 
 static napi_value GenerateRangingCapabilitySupported(napi_env env, const RangingCapabilitySupported &cap)
 {
@@ -48,22 +97,6 @@ static napi_value GenerateRangingCapabilitySupported(napi_env env, const Ranging
     NAPI_FCM_RETURN_IF(nearlinkHadm == nullptr, "Create Napi nearlinkHadm err", result);
     napi_set_named_property(env, result, "nearlinkHadm", nearlinkHadm);
     return result;
-}
-
-static int32_t OutputStandardErr(int32_t ret)
-{
-    if ((ret >= RANGING_NO_ERROR && ret <= RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS) ||
-        (ret == RANGING_ERR_OPERATION_FAILED)) {
-        return ret;
-    } else {
-        return RANGING_ERR_OPERATION_FAILED;
-    }
-}
-
-static bool IsCapabilityTypeValid(int32_t capabilityType)
-{
-    return capabilityType >= static_cast<int32_t>(RangingTypes::NEARLINK_HADM) &&
-           capabilityType < static_cast<int32_t>(RangingTypes::RANGING_TYPE_MAX);
 }
 }  // anonymous namespace
 
@@ -111,12 +144,13 @@ napi_value GetRangingCapability(napi_env env, napi_callback_info info)
     auto asyncWorkFunc = [env]() -> NapiAsyncWorkRet {
         RangingCapabilitySupported cap;
         int ret = FusionRangingManager::GetInstance()->GetRangingCapability(cap);
+        ret = OUTPUT_ERR(ret, ERR_CODES_GET_RANGING_CAPABILITY, RANGING_ERR_RANGING_SERVICE_DISABLED);
         auto nativeObj = std::make_shared<NapiNativeRangingCapabilityData>(cap);
         return NapiAsyncWorkRet{ret, nativeObj};
     };
 
     auto asyncWork = NapiAsyncWorkFactory::CreateAsyncWork(env, info, asyncWorkFunc, ASYNC_WORK_NO_NEED_CALLBACK);
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, asyncWork, RANGING_ERR_OPERATION_FAILED);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, asyncWork, RANGING_ERR_INVALID_PARAM);
     asyncWork->Run();
     return asyncWork->GetRet();
 }
@@ -124,15 +158,15 @@ napi_value GetRangingCapability(napi_env env, napi_callback_info info)
 static int ParseRangingParams(napi_env env, napi_value object, RangingParams &params)
 {
     NAPI_FCM_RETURN_IF(NapiCheckObjectPropertiesName(env, object, {"deviceId", "capabilityType"}) != napi_ok,
-                       "params not equal", RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS);
+                       "params not equal", RANGING_ERR_INVALID_PARAM);
     std::string deviceId = "";
     int32_t capabilityType = 0;
     NAPI_FCM_RETURN_IF(NapiParseStringObject(env, object, "deviceId", deviceId) != napi_ok, "parse device id err",
-                       RANGING_ERR_OPERATION_FAILED);
-    NAPI_FCM_RETURN_IF(!IsValidAddress(deviceId), "Invalid deviceId", RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS);
+                       RANGING_ERR_INVALID_PARAM);
+    NAPI_FCM_RETURN_IF(!IsValidAddress(deviceId), "Invalid deviceId", RANGING_ERR_INVALID_PARAM);
     NAPI_FCM_RETURN_IF(NapiParseInt32Object(env, object, "capabilityType", capabilityType) != napi_ok, "parse cap err",
-                       RANGING_ERR_OPERATION_FAILED);
-    NAPI_FCM_RETURN_IF(!IsCapabilityTypeValid(capabilityType), "invalid cap err", RANGING_ERR_RANGING_TYPE_NOT_SUPPORT);
+                       RANGING_ERR_INVALID_PARAM);
+    NAPI_FCM_RETURN_IF(!IsCapabilityTypeValid(capabilityType), "invalid cap err", RANGING_ERR_INVALID_PARAM);
     HILOGI("ParseRangingParams deviceId:%{public}s, cap:%{public}d", GET_ENCRYPT_ADDR(deviceId), capabilityType);
     params.SetDeviceId(deviceId);
     params.SetCapabilityType(static_cast<RangingTypes>(capabilityType));
@@ -169,11 +203,11 @@ napi_value StartRanging(napi_env env, napi_callback_info info)
     HILOGI("StartRanging: ret=%{public}d", ret);
 
     if (ret == RANGING_ERR_DEVICE_ALREADY_INITIATED) {
-        NAPI_FCM_ASSERT_RETURN_UNDEF(env, false, OutputStandardErr(ret));
+        NAPI_FCM_ASSERT_RETURN_UNDEF(env, false, ret);
     } else if (ret != RANGING_NO_ERROR) {
         napiCallback_->DeregisterRangingResultCallbackWithDeviceId(env, argv[PARAM1], params.GetDeviceId());
         FusionRangingManager::GetInstance()->DeregisterFusionRangingObserver(napiCallback_);
-        NAPI_FCM_ASSERT_RETURN_UNDEF(env, false, OutputStandardErr(ret));
+        NAPI_FCM_ASSERT_RETURN_UNDEF(env, false, OUTPUT_ERR(ret, ERR_CODES_START_RANGING));
     }
     return NapiGetUndefined(env);
 }
@@ -188,7 +222,7 @@ static napi_value StopRangingWithParams(napi_env env, napi_value napiCallback, n
     if (napiCallback_->IsRangingResultCallbackEmpty()) {
         FusionRangingManager::GetInstance()->DeregisterFusionRangingObserver(napiCallback_);
     }
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, stopRet == RANGING_NO_ERROR, OutputStandardErr(stopRet));
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, stopRet == RANGING_NO_ERROR, OUTPUT_ERR(stopRet, ERR_CODES_STOP_RANGING));
     return NapiGetUndefined(env);
 }
 
@@ -196,8 +230,6 @@ napi_value StopRanging(napi_env env, napi_callback_info info)
 {
     size_t argc = ARGS_SIZE_TWO;
     napi_value argv[ARGS_SIZE_TWO] = {nullptr};
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, (napiCallback_ != nullptr), RANGING_ERR_OPERATION_FAILED);
-
     napi_status cbInfoStatus = napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
     HILOGI("StopRanging: cbInfoStatus=%{public}d argc=%{public}zu", cbInfoStatus, argc);
     NAPI_FCM_ASSERT_RETURN_UNDEF(env, cbInfoStatus == napi_ok, RANGING_ERR_INVALID_PARAM);
@@ -209,6 +241,7 @@ napi_value StopRanging(napi_env env, napi_callback_info info)
     }
 
     auto rangParams = napiCallback_->GetRangParamsByNapiCallback(env, argv[PARAM0]);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, !rangParams.empty(), RANGING_ERR_INVALID_PARAM);
     int stopRet = RANGING_NO_ERROR;
     for (auto it = rangParams.begin(); it != rangParams.end(); ++it) {
         stopRet = FusionRangingManager::GetInstance()->StopRanging(*it);
@@ -220,7 +253,7 @@ napi_value StopRanging(napi_env env, napi_callback_info info)
     if (napiCallback_->IsRangingResultCallbackEmpty()) {
         FusionRangingManager::GetInstance()->DeregisterFusionRangingObserver(napiCallback_);
     }
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, stopRet == RANGING_NO_ERROR, OutputStandardErr(stopRet));
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, stopRet == RANGING_NO_ERROR, OUTPUT_ERR(stopRet, ERR_CODES_STOP_RANGING));
     return NapiGetUndefined(env);
 }
 
@@ -234,12 +267,13 @@ napi_value StartPassiveRanging(napi_env env, napi_callback_info info)
     NAPI_FCM_ASSERT_RETURN_UNDEF(env, argc == ARGS_SIZE_ONE, RANGING_ERR_INVALID_PARAM);
     int32_t capabilityType = 0;
     NAPI_FCM_ASSERT_RETURN_UNDEF(env, ParseInt32(env, capabilityType, argv[PARAM0]), RANGING_ERR_INVALID_PARAM);
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, IsCapabilityTypeValid(capabilityType), RANGING_ERR_RANGING_TYPE_NOT_SUPPORT);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, IsCapabilityTypeValid(capabilityType), RANGING_ERR_INVALID_PARAM);
 
     auto asyncWorkFunc = [env, capabilityType]() -> NapiAsyncWorkRet {
         int handle = -1; /* -1 default as invaild handle */
         auto ret =
             FusionRangingManager::GetInstance()->StartPassiveRanging(static_cast<RangingTypes>(capabilityType), handle);
+        ret = OUTPUT_ERR(ret, ERR_CODES_START_PASSIVE_RANGING);
         auto nativeObj = std::make_shared<NapiNativeInt>(handle);
         return NapiAsyncWorkRet{ret, nativeObj};
     };
@@ -260,15 +294,15 @@ napi_value StopPassiveRanging(napi_env env, napi_callback_info info)
     NAPI_FCM_ASSERT_RETURN_UNDEF(env, cbInfoStatus == napi_ok && argc == ARGS_SIZE_TWO, RANGING_ERR_INVALID_PARAM);
     int handle = -1; /* default -1 as invalid handle. */
     NAPI_FCM_ASSERT_RETURN_UNDEF(env, ParseInt32(env, handle, argv[PARAM0]), RANGING_ERR_INVALID_PARAM);
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, handle >= 0, RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, handle >= 0, RANGING_ERR_INVALID_PARAM);
 
     int capabilityType = 0;
     NAPI_FCM_ASSERT_RETURN_UNDEF(env, ParseInt32(env, capabilityType, argv[PARAM1]), RANGING_ERR_INVALID_PARAM);
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, IsCapabilityTypeValid(capabilityType), RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, IsCapabilityTypeValid(capabilityType), RANGING_ERR_INVALID_PARAM);
     HILOGI("StopPassiveRanging: capabilityType=%{public}d handle=%{public}d", capabilityType, handle);
     int stopRet =
         FusionRangingManager::GetInstance()->StopPassiveRanging(static_cast<RangingTypes>(capabilityType), handle);
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, stopRet == RANGING_NO_ERROR, OutputStandardErr(stopRet));
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, stopRet == RANGING_NO_ERROR, OUTPUT_ERR(stopRet, ERR_CODES_STOP_PASSIVE_RANGING));
     return NapiGetUndefined(env);
 }
 
