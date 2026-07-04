@@ -103,7 +103,7 @@ int FusionRangingService::StartRanging(const RangingParams &params, const sptr<I
     HILOGI("StartRanging device:%{public}s, type:%{public}d", GET_ENCRYPT_ADDR(params.GetDeviceId()),
            params.GetCapabilityType());
     if (!IsValidAddress(params.GetDeviceId())) {
-        return RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS;
+        return RANGING_ERR_INVALID_PARAM;
     }
 
     if (!IsRangingSupported(params.GetCapabilityType())) {
@@ -168,7 +168,7 @@ int FusionRangingService::StopRanging(const std::string &deviceId, int32_t calle
 {
     if (!IsValidAddress(deviceId)) {
         HILOGE("StopRanging invalid deviceId");
-        return RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS;
+        return RANGING_ERR_INVALID_PARAM;
     }
     auto info = GetRangingDevice(deviceId);
     FCM_CHECK_RETURN_RET(info != nullptr, RANGING_ERR_DEVICE_NOT_INITIATED, "not found device:%{public}s",
