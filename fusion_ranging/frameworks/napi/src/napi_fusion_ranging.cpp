@@ -241,7 +241,6 @@ napi_value StopRanging(napi_env env, napi_callback_info info)
     }
 
     auto rangParams = napiCallback_->GetRangParamsByNapiCallback(env, argv[PARAM0]);
-    NAPI_FCM_ASSERT_RETURN_UNDEF(env, !rangParams.empty(), RANGING_ERR_INVALID_PARAM);
     int stopRet = RANGING_NO_ERROR;
     for (auto it = rangParams.begin(); it != rangParams.end(); ++it) {
         stopRet = FusionRangingManager::GetInstance()->StopRanging(*it);
