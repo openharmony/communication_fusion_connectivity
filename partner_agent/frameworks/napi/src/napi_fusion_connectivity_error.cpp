@@ -21,6 +21,7 @@
 
 #include <map>
 #include "napi_ha_event_utils.h"
+#include "fusion_ranging_errorcode.h"
 
 namespace OHOS {
 namespace FusionConnectivity {
@@ -34,6 +35,11 @@ static std::map<int32_t, std::string> napiErrMsgMap = {
     { FCM_ERR_APPLICATION_NOT_SUPPORT, "The application is not support PartnerDeviceExtensionAbility"},
     { FCM_ERR_DEVICE_NOT_PAIRED, "The device is not paired"},
     { FCM_ERR_DEVICE_ALREADY_BOUNDED, "The device is already bound"},
+    { FusionRanging::RANGING_ERR_DEVICE_NOT_INITIATED, "Device not initiated."},
+    { FusionRanging::RANGING_ERR_DEVICE_ALREADY_INITIATED, "Device already initiated."},
+    { FusionRanging::RANGING_ERR_RANGING_TYPE_NOT_SUPPORT, "Ranging type not support."},
+    { FusionRanging::RANGING_ERR_RANGING_SERVICE_DISABLED, "Ranging service disabled"},
+    { FusionRanging::RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS, "Parameters not meet specifications."},
     { FCM_ERR_INTERNAL_ERROR, "Operation failed" },
 };
 

@@ -26,6 +26,7 @@
 #include "ranging_adapter_factory.h"
 #include "fusion_ranging_errorcode.h"
 #include "fcm_thread_util.h"
+#include "common_utils.h"
 #include "log_utils.h"
 
 namespace {
@@ -43,6 +44,7 @@ std::once_flag g_rangingAdapterFlag;
 namespace OHOS {
 namespace FusionRanging {
 constexpr int32_t START_PASSIVE_RANGING_PROMISE_TIMEOUT_MS = 500;
+constexpr int32_t INVALID_PASSIVE_RANGING_HANDLE = -1;
 
 class FusionRangingAdapterCallback : public BaseRangingAdapterCallback {
 public:
@@ -98,27 +100,48 @@ bool FusionRangingService::IsRangingSupported(RangingTypes capabilityType)
 int FusionRangingService::StartRanging(const RangingParams &params, const sptr<IRangingObserver> &observer,
                                        int32_t callerUid)
 {
+    HILOGI("StartRanging device:%{public}s, type:%{public}d", GET_ENCRYPT_ADDR(params.GetDeviceId()),
+           params.GetCapabilityType());
+    if (!IsValidAddress(params.GetDeviceId())) {
+        return RANGING_ERR_INVALID_PARAM;
+    }
+
+    if (!IsRangingSupported(params.GetCapabilityType())) {
+        return RANGING_ERR_RANGING_SERVICE_DISABLED;
+    }
+
+    if (GetRangingDevice(params.GetDeviceId()) != nullptr) {
+        return RANGING_ERR_DEVICE_ALREADY_INITIATED;
+    }
     FusionConnectivity::DoInRangingThread(
         [this, params, observer, callerUid]() { HandleStartRanging(params, observer, callerUid); }, 0);
     return RANGING_NO_ERROR;
 }
 
-int FusionRangingService::HandleStartRanging(const RangingParams &params, const sptr<IRangingObserver> &observer,
-                                             int32_t callerUid)
+void FusionRangingService::HandleStartRanging(const RangingParams &params, const sptr<IRangingObserver> &observer,
+                                              int32_t callerUid)
 {
-    HILOGI("HandleStartRanging in main thread");
-    FCM_CHECK_RETURN_RET(!params.GetDeviceId().empty(), RANGING_ERR_INVALID_PARAM, "empty device:%{public}s",
-                         GET_ENCRYPT_ADDR(params.GetDeviceId()));
+    auto ret = ProcessStartRanging(params, observer, callerUid);
+    if (ret == RANGING_NO_ERROR) {
+        return;
+    }
+    FCM_CHECK_RETURN(observer != nullptr, "observer nullptr device:%{public}s", GET_ENCRYPT_ADDR(params.GetDeviceId()));
+    RangingStateChangeInfo stateInfo(params.GetDeviceId(), INVALID_PASSIVE_RANGING_HANDLE, RangingState::STATE_STOPPED,
+                                     RangingStoppedCause::INTERNAL_ERROR);
+    observer->OnRangingStateChanged(stateInfo);
+}
+
+int FusionRangingService::ProcessStartRanging(const RangingParams &params, const sptr<IRangingObserver> &observer,
+                                              int32_t callerUid)
+{
     auto deviceInfo = GetRangingDevice(params.GetDeviceId());
-    FCM_CHECK_RETURN_RET(deviceInfo == nullptr, RANGING_ERR_DEVICE_ALREADY_INITIATED, "already exist device:%{public}s",
+    FCM_CHECK_RETURN_RET(deviceInfo == nullptr, RANGING_NO_ERROR, "already exist device:%{public}s",
                          GET_ENCRYPT_ADDR(params.GetDeviceId()));
 
     const bool isSupport = RangingAdapterFactory::Instance().IsRangingAdapterSupported(params.GetCapabilityType());
-    HILOGI("HandleStartRanging type:%{public}d, isSupport:%{public}d", params.GetCapabilityType(), isSupport);
     FCM_CHECK_RETURN_RET(isSupport, RANGING_ERR_OPERATION_FAILED, "Faild capability type:%{public}d",
                          params.GetCapabilityType());
     auto ret = CreateRangingAdapter(params.GetCapabilityType());
-    HILOGI("HandleStartRanging CreateRangingAdapter ret:%{public}d", ret);
     FCM_CHECK_RETURN_RET(ret == RANGING_NO_ERROR, RANGING_ERR_OPERATION_FAILED, "Fail create ret:%{public}d", ret);
 
     auto rangingCallback = std::make_shared<FusionRangingAdapterCallback>();
@@ -127,7 +150,7 @@ int FusionRangingService::HandleStartRanging(const RangingParams &params, const 
 
     adapter->SetCallback(rangingCallback);
     ret = adapter->StartRanging(params.GetDeviceId());
-    HILOGI("HandleStartRanging StartRanging ret:%{public}d", ret);
+    HILOGI("ProcessStartRanging ret:%{public}d", ret);
     if (ret != 0) {
         HILOGE("Adapter start ranging failed for device: %{public}s, ret: %{public}d",
                GET_ENCRYPT_ADDR(params.GetDeviceId()), ret);
@@ -136,15 +159,17 @@ int FusionRangingService::HandleStartRanging(const RangingParams &params, const 
     }
     auto info = std::make_shared<RangingDeviceInfo>(callerUid, params, observer, RangingState::STATE_STARTED);
     devicesInfo_.EnsureInsert(params.GetDeviceId(), info);
-    HILOGI("HandleStartRanging for device: %{public}s, capabilityType: %{public}d",
-           GET_ENCRYPT_ADDR(params.GetDeviceId()), static_cast<int>(params.GetCapabilityType()));
+    HILOGI("ProcessStartRanging device:%{public}s, capabilityType:%{public}d", GET_ENCRYPT_ADDR(params.GetDeviceId()),
+           static_cast<int>(params.GetCapabilityType()));
     return RANGING_NO_ERROR;
 }
 
 int FusionRangingService::StopRanging(const std::string &deviceId, int32_t callerUid)
 {
-    FCM_CHECK_RETURN_RET(!deviceId.empty(), RANGING_ERR_INVALID_PARAM, "invalid device:%{public}s",
-                         GET_ENCRYPT_ADDR(deviceId));
+    if (!IsValidAddress(deviceId)) {
+        HILOGE("StopRanging invalid deviceId");
+        return RANGING_ERR_INVALID_PARAM;
+    }
     auto info = GetRangingDevice(deviceId);
     FCM_CHECK_RETURN_RET(info != nullptr, RANGING_ERR_DEVICE_NOT_INITIATED, "not found device:%{public}s",
                          GET_ENCRYPT_ADDR(deviceId));
@@ -197,8 +222,10 @@ int FusionRangingService::HandleStartPassiveRanging(RangingTypes capabilityType,
             auto handleInfo = std::make_shared<PassiveRangingHandle>(callerUid, capabilityType, advHandle, observer);
             advHandles_.EnsureInsert(advHandle, handleInfo);
         }
+        return ret;
+    } else {
+        return RANGING_ERR_OPERATION_FAILED;
     }
-    return ret;
 }
 
 int FusionRangingService::StopPassiveRanging(RangingTypes capabilityType, int32_t handle, int32_t callerUid)

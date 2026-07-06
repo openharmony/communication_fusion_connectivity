@@ -216,7 +216,7 @@ int FusionRangingManager::StartRanging(const RangingParams &params)
     }
     if (!IsValidAddress(params.GetDeviceId())) {
         HILOGE("param not valid");
-        return RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS;
+        return RANGING_ERR_INVALID_PARAM;
     }
     auto proxy = GetRemoteProxy();
     FCM_CHECK_RETURN_RET(proxy != nullptr, RANGING_ERR_RANGING_SERVICE_DISABLED, "proxy null");
@@ -233,7 +233,7 @@ int FusionRangingManager::StopRanging(const RangingParams &params)
 
     if (!IsValidAddress(params.GetDeviceId())) {
         HILOGE("param not valid");
-        return RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS;
+        return RANGING_ERR_INVALID_PARAM;
     }
     auto proxy = GetRemoteProxy();
     FCM_CHECK_RETURN_RET(proxy != nullptr, RANGING_ERR_RANGING_SERVICE_DISABLED, "proxy null");
@@ -259,7 +259,7 @@ int FusionRangingManager::StopPassiveRanging(RangingTypes capabilityType, int32_
     if (!IsRangingSupported()) {
         return static_cast<int32_t>(RangingErrCode::RANGING_ERR_API_NOT_SUPPORT);
     }
-    FCM_CHECK_RETURN_RET(handle >= 0, RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS, "invalid handle");
+    FCM_CHECK_RETURN_RET(handle >= 0, RANGING_ERR_INVALID_PARAM, "invalid handle");
     auto proxy = GetRemoteProxy();
     FCM_CHECK_RETURN_RET(proxy != nullptr, RANGING_ERR_RANGING_SERVICE_DISABLED, "proxy null");
     int ret = proxy->StopPassiveRanging(static_cast<int>(capabilityType), handle);
