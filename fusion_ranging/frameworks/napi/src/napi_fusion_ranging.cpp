@@ -308,20 +308,24 @@ napi_value StopPassiveRanging(napi_env env, napi_callback_info info)
 
 napi_value OnRangingStateChange(napi_env env, napi_callback_info info)
 {
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, FusionRangingManager::GetInstance()->IsRangingSupported(),
+                                 RANGING_ERR_API_NOT_SUPPORT);
     if (napiCallback_ != nullptr) {
         auto status =
             napiCallback_->eventSubscribe_.RegisterWithName(env, info, STR_FUSION_RANGING_CALLBACK_STATE_CHANGE);
-        NAPI_FCM_ASSERT_RETURN_UNDEF(env, status == napi_ok, RANGING_ERR_OPERATION_FAILED);
+        NAPI_FCM_ASSERT_RETURN_UNDEF(env, status == napi_ok, RANGING_ERR_INVALID_PARAM);
     }
     return NapiGetUndefined(env);
 }
 
 napi_value OffRangingStateChange(napi_env env, napi_callback_info info)
 {
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, FusionRangingManager::GetInstance()->IsRangingSupported(),
+                                 RANGING_ERR_API_NOT_SUPPORT);
     if (napiCallback_) {
         auto status =
             napiCallback_->eventSubscribe_.DeregisterWithName(env, info, STR_FUSION_RANGING_CALLBACK_STATE_CHANGE);
-        NAPI_FCM_ASSERT_RETURN_UNDEF(env, status == napi_ok, RANGING_ERR_OPERATION_FAILED);
+        NAPI_FCM_ASSERT_RETURN_UNDEF(env, status == napi_ok, RANGING_ERR_INVALID_PARAM);
     }
     return NapiGetUndefined(env);
 }
