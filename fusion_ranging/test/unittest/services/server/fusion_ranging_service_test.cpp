@@ -248,7 +248,7 @@ HWTEST_F(FusionRangingServiceTest, StartRanging_004, TestSize.Level2)
     RangingParams params("", RangingTypes::NEARLINK_HADM);
     sptr<IRangingObserver> observer;
     int32_t result = service_->StartRanging(params, observer, CALLER_UID_A);
-    EXPECT_EQ(result, static_cast<int32_t>(RangingErrCode::RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS));
+    EXPECT_EQ(result, static_cast<int32_t>(RangingErrCode::RANGING_ERR_INVALID_PARAM));
 }
 
 HWTEST_F(FusionRangingServiceTest, StopRanging_001, TestSize.Level1)
@@ -264,7 +264,7 @@ HWTEST_F(FusionRangingServiceTest, StopRanging_001, TestSize.Level1)
 HWTEST_F(FusionRangingServiceTest, StopRanging_002, TestSize.Level2)
 {
     int32_t stopResult = service_->StopRanging("", CALLER_UID_A);
-    EXPECT_EQ(stopResult, static_cast<int32_t>(RangingErrCode::RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS));
+    EXPECT_EQ(stopResult, static_cast<int32_t>(RangingErrCode::RANGING_ERR_INVALID_PARAM));
     stopResult = service_->StopRanging("AA:BB:CC:DD:EE:FF", CALLER_UID_A);
     EXPECT_EQ(stopResult, static_cast<int32_t>(RangingErrCode::RANGING_ERR_DEVICE_NOT_INITIATED));
     RangingParams params("AA:BB:CC:DD:EE:FF", RangingTypes::NEARLINK_HADM);
