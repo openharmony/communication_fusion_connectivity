@@ -189,7 +189,7 @@ HWTEST_F(FusionRangingServerTest, StartRanging_003, TestSize.Level2)
     observerRegistered_ = true;
     RangingParams params("", RangingTypes::NEARLINK_HADM);
     ErrCode result = server_->StartRanging(params);
-    EXPECT_EQ(result, static_cast<int32_t>(RangingErrCode::RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS));
+    EXPECT_EQ(result, static_cast<int32_t>(RangingErrCode::RANGING_ERR_INVALID_PARAM));
     int32_t callerUid = IPCSkeleton::GetCallingUid();
     FusionRangingService::GetInstance()->HandleProcessDeath(callerUid);
 }
@@ -228,14 +228,14 @@ HWTEST_F(FusionRangingServerTest, StopRanging_001, TestSize.Level1)
 {
     RangingParams params("", RangingTypes::NEARLINK_HADM);
     ErrCode result = server_->StopRanging(params);
-    EXPECT_EQ(result, static_cast<int32_t>(RangingErrCode::RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS));
+    EXPECT_EQ(result, static_cast<int32_t>(RangingErrCode::RANGING_ERR_INVALID_PARAM));
 }
 
 HWTEST_F(FusionRangingServerTest, StopRanging_002, TestSize.Level1)
 {
     RangingParams params("   ", RangingTypes::NEARLINK_HADM);
     ErrCode result = server_->StopRanging(params);
-    EXPECT_EQ(result, static_cast<int32_t>(RangingErrCode::RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS));
+    EXPECT_EQ(result, static_cast<int32_t>(RangingErrCode::RANGING_ERR_INVALID_PARAM));
 }
 
 HWTEST_F(FusionRangingServerTest, StartPassiveRanging_001, TestSize.Level1)
@@ -252,7 +252,7 @@ HWTEST_F(FusionRangingServerTest, StartPassiveRanging_001, TestSize.Level1)
 HWTEST_F(FusionRangingServerTest, StopPassiveRanging_001, TestSize.Level1)
 {
     ErrCode stopResult = server_->StopPassiveRanging(static_cast<int32_t>(RangingTypes::NEARLINK_HADM), -1);
-    EXPECT_EQ(stopResult, static_cast<int32_t>(RangingErrCode::RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS));
+    EXPECT_EQ(stopResult, static_cast<int32_t>(RangingErrCode::RANGING_ERR_INVALID_PARAM));
     server_->StopPassiveRanging(static_cast<int32_t>(RangingTypes::NEARLINK_HADM), 0);
 }
 
