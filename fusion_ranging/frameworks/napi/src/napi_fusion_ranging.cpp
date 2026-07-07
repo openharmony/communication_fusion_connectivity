@@ -97,8 +97,6 @@ napi_value GetRangingCapability(napi_env env, napi_callback_info info)
     std::vector<int32_t> validErrCodes = { RANGING_ERR_PERMISSION_FAILED, RANGING_ERR_INVALID_PARAM,
                                           RANGING_ERR_API_NOT_SUPPORT, RANGING_ERR_RANGING_SERVICE_DISABLED };
     NAPI_FCM_CONTEXT(env, "ranging.getRangingCapability", validErrCodes);
-    napi_value ret = nullptr;
-    napi_create_object(env, &ret);
     NAPI_FCM_ASSERT_RETURN_UNDEF(env, CheckEmptyParams(env, info) == napi_ok, RANGING_ERR_INVALID_PARAM);
     auto asyncWorkFunc = [env]() -> NapiAsyncWorkRet {
         RangingCapabilitySupported cap;
