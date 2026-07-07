@@ -284,7 +284,8 @@ ErrCode FusionRangingServer::StartRanging(const RangingParams &params)
 ErrCode FusionRangingServer::StopRanging(const RangingParams &params)
 {
     HILOGI("StopRanging server, deviceId=%{public}s", GET_ENCRYPT_ADDR(params.GetDeviceId()));
-    FCM_CHECK_RETURN_RET(IsValidAddress(params.GetDeviceId()), RANGING_ERR_INVALID_PARAM, "device invalid");
+    FCM_CHECK_RETURN_RET(IsValidAddress(params.GetDeviceId()), RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS,
+                         "device invalid");
     int32_t ret = FusionRangingService::GetInstance()->StopRanging(params.GetDeviceId(), IPCSkeleton::GetCallingUid());
     HILOGI("StopRanging: ret=%{public}d", ret);
     FusionConnectivity::DoInRangingThread([this]() { CheckAndUnloadIfIdle(); },
@@ -307,7 +308,7 @@ ErrCode FusionRangingServer::StartPassiveRanging(int32_t capabilityType, int32_t
 
 ErrCode FusionRangingServer::StopPassiveRanging(int32_t capabilityType, int32_t handle)
 {
-    FCM_CHECK_RETURN_RET(handle >= 0, RANGING_ERR_INVALID_PARAM, "handle invalid");
+    FCM_CHECK_RETURN_RET(handle >= 0, RANGING_ERR_PARAM_NOT_MEET_SPECIFICATIONS, "handle invalid");
     int32_t ret = FusionRangingService::GetInstance()->StopPassiveRanging(static_cast<RangingTypes>(capabilityType),
                                                                           handle, IPCSkeleton::GetCallingUid());
     HILOGI("StopPassiveRanging ret=%{public}d", ret);
