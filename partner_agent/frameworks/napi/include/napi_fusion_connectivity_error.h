@@ -61,30 +61,6 @@ struct ErrInfo {
     std::string errMsg;
 };
 
-// verify error code
-#define NAPI_FCM_ASSERT_RETURN_VERIFY(env, cond, errCode, retObj)                      \
-    do {                                                                               \
-        std::vector<int32_t> validErrCodes = apiContext.validErrCodes;                 \
-        if (!(cond)) {                                                                 \
-            FusionConnectivity::HandleSyncErrAdapter((env), (errCode), validErrCodes); \
-            return (retObj);                                                           \
-        }                                                                              \
-    } while (0)
-
-#define NAPI_FCM_ASSERT_ERR_RETURN_VERIFY(env, cond, errCode)         \
-    do {                                                              \
-        napi_value res = nullptr;                                     \
-        napi_get_undefined((env), &res);                              \
-        NAPI_FCM_ASSERT_RETURN_VERIFY((env), (cond), (errCode), res); \
-    } while (0)
-
-#define NAPI_FCM_ASSERT_RETURN_FALSE_VERIFY(env, cond, errCode)       \
-    do {                                                              \
-        napi_value res = nullptr;                                     \
-        napi_get_boolean((env), false, &res);                         \
-        NAPI_FCM_ASSERT_RETURN_VERIFY((env), (cond), (errCode), res); \
-    } while (0)
-
 // verify error code with num
 #define NAPI_FCM_ASSERT_NUM_RETURN_VERIFY(env, cond, errCode, retObj)                     \
     do {                                                                                  \
@@ -102,13 +78,6 @@ struct ErrInfo {
         NAPI_FCM_ASSERT_NUM_RETURN_VERIFY((env), (cond), (errCode), res); \
     } while (0)
 
-#define NAPI_FCM_ASSERT_NUM_RETURN_FALSE_VERIFY(env, cond, errCode)       \
-    do {                                                                  \
-        napi_value res = nullptr;                                         \
-        napi_get_boolean((env), false, &res);                             \
-        NAPI_FCM_ASSERT_NUM_RETURN_VERIFY((env), (cond), (errCode), res); \
-    } while (0)
-
 struct ApiContext {
     std::shared_ptr<OHOS::FusionConnectivity::NapiHaEventUtils> haUtils = nullptr;
     std::vector<int32_t> validErrCodes{};
@@ -119,14 +88,6 @@ struct ApiContext {
 ApiContext apiContext = ApiContext{                    \
     std::make_shared<NapiHaEventUtils>(env, apiName),  \
     validErrCodes                                      \
-}
-#endif
-
-#ifndef NAPI_FCM_CONTEXT_WITHOUT_HA
-#define NAPI_FCM_CONTEXT_WITHOUT_HA(env, validErrCodes) \
-ApiContext apiContext = ApiContext{                     \
-    nullptr,                                            \
-    validErrCodes                                       \
 }
 #endif
 
