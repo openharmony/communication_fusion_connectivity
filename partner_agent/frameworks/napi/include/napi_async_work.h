@@ -13,107 +13,104 @@
  * limitations under the License.
  */
 
-#ifndef NAPI_ASYNC_CALLBACK_H
-#define NAPI_ASYNC_CALLBACK_H
+#ifndef NAPI_ASYNC_WORK_H
+#define NAPI_ASYNC_WORK_H
 
-#include <map>
 #include <memory>
 #include <mutex>
-#include <string>
-#include "napi/native_api.h"
+#include <map>
 #include "napi_native_object.h"
-#include "napi_async_work.h"
+#include "napi_ha_event_utils.h"
 
 namespace OHOS {
 namespace FusionConnectivity {
-class NapiCallback;
-class NapiPromise;
+namespace {
+    constexpr bool ASYNC_WORK_NEED_CALLBACK = true;
+    constexpr bool ASYNC_WORK_NO_NEED_CALLBACK = false;
+}
+struct NapiAsyncCallback;
+enum NapiAsyncType : int {
+    ASYNC_START_DEVICE_DISCOVERY,
+    ASYNC_STOP_DEVICE_DISCOVERY,
+};
 
-struct NapiAsyncCallback {
-    enum class Type {
-        CALLBACK = 1,
-        PROMISE,
+struct NapiAsyncWorkRet {
+    NapiAsyncWorkRet(int errCode) : errCode(errCode) {}
+    NapiAsyncWorkRet(int errCode, std::shared_ptr<NapiNativeObject> object)
+        : errCode(errCode), object(std::move(object)) {}
+
+    int errCode = -1;
+    std::shared_ptr<NapiNativeObject> object = nullptr;
+};
+
+class NapiAsyncWork : public std::enable_shared_from_this<NapiAsyncWork> {
+public:
+    NapiAsyncWork(napi_env env, std::function<NapiAsyncWorkRet(void)> func,
+        std::shared_ptr<NapiAsyncCallback> asyncCallback, bool needCallback = false,
+        std::shared_ptr<NapiHaEventUtils> haUtils = nullptr)
+        : env_(env), func_(func), napiAsyncCallback_(asyncCallback), needCallback_(needCallback), haUtils_(haUtils) {}
+    NapiAsyncWork(napi_env env, std::function<NapiAsyncWorkRet(void)> func,
+        std::shared_ptr<NapiAsyncCallback> asyncCallback, bool needCallback = false,
+        ApiContext apiContext = ApiContext{nullptr, {}})
+        : env_(env), func_(func), napiAsyncCallback_(asyncCallback), needCallback_(needCallback),
+        haUtils_(apiContext.haUtils), validErrCodes_(apiContext.validErrCodes) {}
+    ~NapiAsyncWork() = default;
+
+    void Run(void);
+    void CallFunction(int errorCode, std::shared_ptr<NapiNativeObject> object);
+    napi_value GetRet(void);
+    std::shared_ptr<NapiHaEventUtils> GetHaUtilsPtr(void) const;
+
+    struct Info {
+        void Execute(void);
+        void Complete(void);
+
+        int errCode = -1;
+        bool needCallback = false;
+        napi_async_work asyncWork;
+        std::shared_ptr<NapiNativeObject> object;
+        std::shared_ptr<NapiAsyncWork> napiAsyncWork = nullptr;
     };
 
-    void CallFunction(int errCode, const std::shared_ptr<NapiNativeObject> &object, const std::string &errMsg = "");
-    napi_value GetRet(void);
-
-    Type type;
-    napi_env env;
-    std::shared_ptr<NapiCallback> callback = nullptr;
-    std::shared_ptr<NapiPromise> promise = nullptr;
-};
-
-class NapiCallback {
-public:
-    // napi_value 'callback' shall be type of napi_founction, check it use NapiIsFunction().
-    NapiCallback(napi_env env, napi_value callback);
-    ~NapiCallback();
-
-    void CallFunction(const std::shared_ptr<NapiNativeObject> &object);
-    void CallFunction(int errCode, const std::shared_ptr<NapiNativeObject> &object, const std::string &errMsg = "");
-    napi_env GetNapiEnv(void);
-    bool Equal(napi_env env, napi_value &callback) const;
-    std::string ToLogString(void) const;
-    void SetNapiEnvValidity(bool isValid)
-    {
-        isValid_ = isValid;
-    }
-    bool IsValidNapiEnv(void) const
-    {
-        return isValid_;
-    }
-
 private:
-    NapiCallback(const NapiCallback &) = delete;
-    NapiCallback &operator=(const NapiCallback &) = delete;
-    NapiCallback(NapiCallback &&) = delete;
-    NapiCallback &operator=(NapiCallback &&) noexcept = delete;
+    friend class NapiAsyncWorkMap;
+
+    void TimeoutCallback(void);
 
     napi_env env_;
-    napi_ref callbackRef_;
-    int id_;
-    /*************************** env_cleanup_hook ********************************/
-    bool isValid_ = true;
-    /*************************** env_cleanup_hook ********************************/
+    uint32_t timerId_ = 0;  // Is used to reference a timer.
+    std::function<NapiAsyncWorkRet(void)> func_;
+    std::shared_ptr<NapiAsyncCallback> napiAsyncCallback_ = nullptr;
+    std::atomic_bool needCallback_ = false; // Indicates whether an asynchronous work needs to wait for callback.
+    std::atomic_bool triggered_ = false; // Indicates whether the asynchronous callback is called.
+    std::shared_ptr<NapiHaEventUtils> haUtils_ = nullptr;
+    std::vector<int32_t> validErrCodes_ {}; // Indicates valid error codes.
 };
 
-class NapiPromise {
+class NapiAsyncWorkFactory {
 public:
-    explicit NapiPromise(napi_env env);
-    ~NapiPromise();
+    static std::shared_ptr<NapiAsyncWork> CreateAsyncWork(napi_env env, napi_callback_info info,
+        std::function<NapiAsyncWorkRet(void)> asyncWork, bool needCallback = ASYNC_WORK_NO_NEED_CALLBACK,
+        std::shared_ptr<NapiHaEventUtils> haUtils = nullptr);
+    static std::shared_ptr<NapiAsyncWork> CreateAsyncWork(napi_env env, napi_callback_info info,
+        std::function<NapiAsyncWorkRet(void)> asyncWork, bool needCallback,
+        ApiContext apiContext);
+};
 
-    void ResolveOrReject(int errCode, const std::shared_ptr<NapiNativeObject> &object, const std::string &errMsg = "");
-    void Resolve(napi_value resolution);
-    void Reject(napi_value rejection);
-    napi_value GetPromise(void) const;
-    void SetNapiEnvValidity(bool isValid)
-    {
-        isValid_ = isValid;
-    }
-    bool IsValidNapiEnv(void) const
-    {
-        return isValid_;
-    }
+class NapiAsyncWorkMap {
+public:
+    bool TryPush(NapiAsyncType type, std::shared_ptr<NapiAsyncWork> asyncWork);
+    void Erase(NapiAsyncType type);
+    std::shared_ptr<NapiAsyncWork> Get(NapiAsyncType type);
 
 private:
-    napi_env env_;
-    napi_value promise_;
-    napi_deferred deferred_;
-    bool isResolvedOrRejected_ = false;
-    bool isValid_ = true;
+    mutable std::mutex mutex_ {};
+    std::map<int, std::shared_ptr<NapiAsyncWork>> map_ {};
 };
 
-class NapiHandleScope {
-public:
-    explicit NapiHandleScope(napi_env env);
-    ~NapiHandleScope();
-
-private:
-    napi_env env_;
-    napi_handle_scope scope_;
-};
+void AsyncWorkCallFunction(NapiAsyncWorkMap &map, NapiAsyncType type, std::shared_ptr<NapiNativeObject> nativeObject,
+    int status);
 
 }  // namespace FusionConnectivity
 }  // namespace OHOS
-#endif  // NAPI_ASYNC_CALLBACK_H
+#endif // NAPI_ASYNC_WORK_H
