@@ -77,6 +77,8 @@ ohos_shared_library("partner_agent_extension") {
     "ipc:ipc_core",
     "ipc:ipc_napi",
     "napi:ace_napi",
+    "libuv:uv",
+    "node:node_header_notice",
   ]
 
   defines = [
@@ -127,6 +129,8 @@ ohos_shared_library("partner_agent_extension_module") {
     "ipc:ipc_core",
     "ipc:ipc_napi",
     "napi:ace_napi",
+    "libuv:uv",
+    "node:node_header_notice",
   ]
 
   relative_install_dir = "extensionability"

@@ -52,6 +52,7 @@
                 "libuv",
                 "ets_frontend",
                 "napi",
+                "node",
                 "access_token",
                 "ability_base",
                 "ability_runtime",

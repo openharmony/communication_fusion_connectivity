@@ -74,6 +74,8 @@ ohos_shared_library("partneragentextensionability_napi") {
     "ipc:ipc_core",
     "ipc:ipc_napi",
     "napi:ace_napi",
+    "libuv:uv",
+    "node:node_header_notice",
   ]
 
   relative_install_dir = "module/fusionconnectivity"
