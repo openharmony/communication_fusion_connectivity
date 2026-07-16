@@ -19,16 +19,17 @@
 #endif
 
 #include "taihe_fusion_ranging_observer.h"
-#include "taihe_fusion_ranging_utils.h"
+#include "taihe_fusion_connectivity_utils.h"
 #include "log_utils.h"
 
 namespace OHOS {
 namespace FusionRanging {
+using namespace FusionConnectivity;
 
 TaiheFusionRangingObserver::~TaiheFusionRangingObserver()
 {
     std::lock_guard<std::mutex> lock(lock_);
-    if (isAttach_) {
+    if (isAttach_ && vm_ != nullptr) {
         vm_->DetachCurrentThread();
         isAttach_ = false;
     }
@@ -61,7 +62,7 @@ void TaiheFusionRangingObserver::OnRangingStateChanged(const RangingStateChangeI
         return;
     }
 
-    std::shared_lock<std::shared_mutex> guard(eventSubscribe_.lock_);
+    std::unique_lock<std::shared_mutex> guard(eventSubscribe_.lock_);
     ::ohos::FusionConnectivity::ranging::RangingStateChangeInfo stateInfo = {
         .state = ::ohos::FusionConnectivity::ranging::RangingState::from_value(static_cast<int32_t>(info.GetState())),
         .cause = ::ohos::FusionConnectivity::ranging::RangingStoppedCause::from_value(
