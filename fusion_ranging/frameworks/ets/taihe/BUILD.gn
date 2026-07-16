@@ -17,6 +17,7 @@ import("//build/ohos/taihe_idl/taihe.gni")
 
 SUBSYSTEM_DIR = "//foundation/communication/fusion_connectivity"
 FUSION_RANGING_ROOT = "$SUBSYSTEM_DIR/fusion_ranging"
+PARTNER_AGENT_ROOT = "$SUBSYSTEM_DIR/partner_agent"
 
 copy_taihe_idl("fusion_ranging_taihe") {
   sources = [
@@ -40,21 +41,24 @@ taihe_shared_library("FusionConnectivityRanging_taihe_native") {
   part_name = "fusion_connectivity"
   subsystem_name = "communication"
   sources = get_target_outputs(":run_taihe")
+  shlib_type = "ani"
   include_dirs = [
     "idl",
     "include",
+    "common",
     "$FUSION_RANGING_ROOT/frameworks/inner/include",
     "$FUSION_RANGING_ROOT/frameworks/inner/ipc/parcel",
     "$FUSION_RANGING_ROOT/interfaces/inner_api",
     "$FUSION_RANGING_ROOT/idl/include",
     "$FUSION_RANGING_ROOT/services/common/include",
+    "$PARTNER_AGENT_ROOT/interfaces/inner_api",
   ]
   sources += [
     "src/ani_constructor.cpp",
     "src/taihe_fusion_ranging_impl.cpp",
     "src/taihe_fusion_ranging_observer.cpp",
-    "src/taihe_fusion_ranging_error.cpp",
-    "src/taihe_fusion_ranging_utils.cpp",
+    "common/taihe_fusion_connectivity_error.cpp",
+    "common/taihe_fusion_connectivity_utils.cpp",
   ]
   deps = [
     ":run_taihe",
