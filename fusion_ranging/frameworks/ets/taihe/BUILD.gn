@@ -1,0 +1,107 @@
+# Copyright (C) 2026 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/config/components/ets_frontend/ets2abc_config.gni")
+import("//build/ohos.gni")
+import("//build/ohos/taihe_idl/taihe.gni")
+
+SUBSYSTEM_DIR = "//foundation/communication/fusion_connectivity"
+FUSION_RANGING_ROOT = "$SUBSYSTEM_DIR/fusion_ranging"
+
+copy_taihe_idl("fusion_ranging_taihe") {
+  sources = [
+    "idl/ohos.FusionConnectivity.ranging.taihe",
+  ]
+}
+
+taihe_generated_file_path = "$taihe_file_path/out/communication/fusion_connectivity/fusion_ranging"
+
+ohos_taihe("run_taihe") {
+  taihe_generated_file_path = "${taihe_generated_file_path}"
+  deps = [ ":fusion_ranging_taihe" ]
+  outputs = [
+    "$taihe_generated_file_path/src/ohos.FusionConnectivity.ranging.ani.cpp",
+    "$taihe_generated_file_path/src/ohos.FusionConnectivity.ranging.abi.c",
+  ]
+}
+
+taihe_shared_library("FusionConnectivityRanging_taihe_native") {
+  taihe_generated_file_path = "${taihe_generated_file_path}"
+  part_name = "fusion_connectivity"
+  subsystem_name = "communication"
+  sources = get_target_outputs(":run_taihe")
+  include_dirs = [
+    "idl",
+    "include",
+    "$FUSION_RANGING_ROOT/frameworks/inner/include",
+    "$FUSION_RANGING_ROOT/frameworks/inner/ipc/parcel",
+    "$FUSION_RANGING_ROOT/interfaces/inner_api",
+    "$FUSION_RANGING_ROOT/idl/include",
+    "$FUSION_RANGING_ROOT/services/common/include",
+  ]
+  sources += [
+    "src/ani_constructor.cpp",
+    "src/taihe_fusion_ranging_impl.cpp",
+    "src/taihe_fusion_ranging_observer.cpp",
+    "src/taihe_fusion_ranging_error.cpp",
+    "src/taihe_fusion_ranging_utils.cpp",
+  ]
+  deps = [
+    ":run_taihe",
+    "$FUSION_RANGING_ROOT/idl:libfusion_ranging_stub",
+    "$FUSION_RANGING_ROOT/frameworks/inner:fusion_ranging_manager_framework",
+    "$FUSION_RANGING_ROOT/services/common:fusion_ranging_common",
+  ]
+  external_deps = [
+    "bundle_framework:appexecfwk_base",
+    "bundle_framework:appexecfwk_core",
+    "c_utils:utils",
+    "eventhandler:libeventhandler",
+    "hiappevent:hiappevent_innerapi",
+    "hilog:libhilog",
+    "ipc:ipc_single",
+    "runtime_core:ani_helpers",
+    "samgr:samgr_proxy",
+  ]
+  sanitize = {
+    cfi = true
+    boundary_sanitize = true
+    cfi_cross_dso = true
+    integer_overflow = true
+    ubsan = true
+    debug = false
+  }
+}
+
+generate_static_abc("fusionConnectivityRanging_abc") {
+  base_url = "${taihe_generated_file_path}"
+  files = [ "${taihe_generated_file_path}/@ohos.FusionConnectivity.ranging.ets" ]
+  is_boot_abc = "True"
+  device_dst_file = "/system/framework/fusionConnectivityRanging_abc.abc"
+  dependencies = [ ":run_taihe" ]
+}
+
+ohos_prebuilt_etc("fusionConnectivityRanging_etc") {
+  source = "$target_out_dir/fusionConnectivityRanging_abc.abc"
+  module_install_dir = "framework"
+  part_name = "fusion_connectivity"
+  subsystem_name = "communication"
+  deps = [ ":fusionConnectivityRanging_abc" ]
+}
+
+group("fusionRanging_taihe") {
+  deps = [
+    ":fusionConnectivityRanging_etc",
+    ":FusionConnectivityRanging_taihe_native"
+  ]
+}

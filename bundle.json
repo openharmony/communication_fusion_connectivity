@@ -63,7 +63,9 @@
                 "preferences",
                 "os_account",
                 "distributed_notification_service",
-                "hiappevent"
+                "hiappevent",
+                "runtime_core",
+                "taihe_ffi_gen"
               ],
               "third_party": [
               ]
@@ -77,7 +79,8 @@
                     "//foundation/communication/fusion_connectivity/partner_agent/frameworks/napi:partneragent",
                     "//foundation/communication/fusion_connectivity/partner_agent/frameworks/napi/src/extension:napi_packages",
                     "//foundation/communication/fusion_connectivity/fusion_ranging/frameworks/inner:fusion_ranging_manager_framework",
-                    "//foundation/communication/fusion_connectivity/fusion_ranging/frameworks/napi:ranging"
+                    "//foundation/communication/fusion_connectivity/fusion_ranging/frameworks/napi:ranging",
+                    "//foundation/communication/fusion_connectivity/fusion_ranging/frameworks/ets/taihe:fusionRanging_taihe"
                 ],
                 "service_group": [
                     "//foundation/communication/fusion_connectivity/partner_agent/sa_profile:partner_device_agent_sa_profile",

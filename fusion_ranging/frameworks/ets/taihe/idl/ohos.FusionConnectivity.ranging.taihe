@@ -1,0 +1,94 @@
+/*
+ * Copyright (C) 2026 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of, use, or distribute this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+@!namespace("@ohos.FusionConnectivity.ranging", "ranging")
+
+@!sts_inject_into_module("import { BusinessError, AsyncCallback } from '@ohos.base';")
+@!sts_inject("""
+static { loadLibraryWithPermissionCheck("FusionConnectivityRanging_taihe_native.z", "@ohos.FusionConnectivity.ranging") }
+""")
+
+struct RangingParams {
+    deviceId: String;
+    capabilityType: RangingTypes;
+}
+
+struct RangingResult {
+    deviceId: String;
+    distance: RangingMeasurement;
+    angle: RangingMeasurement;
+    rssi: i32;
+}
+
+struct RangingMeasurement {
+    value: i32;
+    confidence: RangingConfidence;
+}
+
+struct RangingCapabilitySupported {
+    nearlinkHadm: bool;
+}
+
+struct RangingStateChangeInfo {
+    state: RangingState;
+    cause: RangingStoppedCause;
+    deviceId: Optional<String>;
+    handle: Optional<i32>;
+}
+
+enum RangingTypes: i32 {
+    NEARLINK_HADM = 1
+}
+
+enum RangingState: i32 {
+    RANGING_STOPPED = 0,
+    RANGING_STARTED = 1
+}
+
+enum RangingStoppedCause: i32 {
+    NO_ERROR = 0,
+    INTERNAL_ERROR = 1,
+    BUSINESS_CONFLICT = 2,
+    BACKGROUND_PAUSED = 3
+}
+
+enum RangingConfidence: i32 {
+    HIGH = 0,
+    MEDIUM = 1,
+    LOW = 2
+}
+
+@rename("isRangingSupported")
+function IsRangingSupported(): bool;
+
+@promise function GetRangingCapability(): RangingCapabilitySupported;
+
+@rename("startRanging")
+function StartRanging(params: RangingParams, callback: (info: RangingResult) => void): void;
+
+@rename("stopRanging")
+function StopRanging(callback: (info: RangingResult) => void, params: Optional<RangingParams>): void;
+
+@promise function StartPassiveRanging(capabilityType: RangingTypes): i32;
+
+@rename("stopPassiveRanging")
+function StopPassiveRanging(handle: i32, capabilityType: RangingTypes): void;
+
+@rename("onRangingStateChange")
+function OnRangingStateChange(callback: (info: RangingStateChangeInfo) => void): void;
+
+@rename("offRangingStateChange")
+function OffRangingStateChange(callback: Optional<(data: RangingStateChangeInfo) => void>): void;
