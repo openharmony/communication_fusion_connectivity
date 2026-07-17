@@ -18,10 +18,7 @@
 #define LOG_TAG "TaiheFusionRangingImpl"
 #endif
 
-#include <map>
-#include <memory>
 #include <mutex>
-
 #include "taihe_fusion_ranging_observer.h"
 #include "taihe_fusion_connectivity_error.h"
 #include "taihe_fusion_connectivity_utils.h"
@@ -36,7 +33,7 @@ namespace FusionRanging {
 using namespace FusionConnectivity;
 
 std::shared_ptr<TaiheFusionRangingObserver> observer_ = nullptr;
-std::shared_mutex lock_{};
+std::mutex lock_{};
 
 static bool IsCapabilityTypeValid(int32_t capabilityType)
 {
@@ -44,13 +41,18 @@ static bool IsCapabilityTypeValid(int32_t capabilityType)
            capabilityType < static_cast<int32_t>(RangingTypes::RANGING_TYPE_MAX);
 }
 
-void TaiheInitFusionRangingObserver(ani_vm *vm)
+ani_status TaiheInitFusionRangingObserver(ani_vm *vm)
 {
-    std::unique_lock<std::shared_mutex> guard(lock_);
+    if (vm == nullptr) {
+        HILOGE("vm is nullptr in TaiheInitFusionRangingObserver");
+        return ANI_ERROR;
+    }
+    std::lock_guard<std::mutex> guard(lock_);
     if (observer_ != nullptr) {
-        return;
+        return ANI_OK;
     }
     observer_ = std::make_shared<TaiheFusionRangingObserver>(vm);
+    return ANI_OK;
 }
 
 bool IsRangingSupported()
@@ -62,14 +64,12 @@ bool IsRangingSupported()
 
 ohos::FusionConnectivity::ranging::RangingCapabilitySupported GetRangingCapability()
 {
-    HILOGI("enter");
     std::vector<int32_t> validErrCodes = { RANGING_ERR_PERMISSION_FAILED, RANGING_ERR_INVALID_PARAM,
                                           RANGING_ERR_API_NOT_SUPPORT, RANGING_ERR_RANGING_SERVICE_DISABLED };
     TAIHE_FC_CONTEXT_WITHOUT_HA(validErrCodes);
     RangingCapabilitySupported cap;
     int32_t capabilityRet = FusionRangingManager::GetInstance()->GetRangingCapability(cap);
-    HILOGI("GetRangingCapability from fwk, capabilityRet: %{public}d, nearlinkHadm: %{public}d", capabilityRet,
-           cap.GetNearlinkHadm());
+    HILOGI("capabilityRet:%{public}d, nearlinkHadm:%{public}d", capabilityRet, cap.GetNearlinkHadm());
     ohos::FusionConnectivity::ranging::RangingCapabilitySupported resCap{};
     TAIHE_FC_ASSERT_RETURN_VERIFY((capabilityRet == RANGING_NO_ERROR), capabilityRet, resCap);
     resCap.nearlinkHadm = cap.GetNearlinkHadm();
@@ -93,7 +93,8 @@ void StartRanging(
     RangingParams param(params.deviceId.c_str(), static_cast<RangingTypes>(params.capabilityType.get_value()));
     auto ret = FusionRangingManager::GetInstance()->StartRanging(param);
     TAIHE_FC_ASSERT_RETURN_VOID_VERIFY((ret == RANGING_NO_ERROR), ret);
-    std::unique_lock<std::shared_mutex> guard(lock_);
+
+    std::lock_guard<std::mutex> guard(lock_);
     TAIHE_FC_ASSERT_RETURN_VOID(observer_, RANGING_ERR_OPERATION_FAILED);
     FusionRangingManager::GetInstance()->RegisterFusionRangingObserver(observer_);
     observer_->RegisterRangingResultCallback(param, resultCb);
@@ -103,7 +104,7 @@ void StopRanging(
     ::taihe::callback_view<void(::ohos::FusionConnectivity::ranging::RangingResult const &result)> callback,
     ::taihe::optional_view<::ohos::FusionConnectivity::ranging::RangingParams> params)
 {
-    std::unique_lock<std::shared_mutex> guard(lock_);
+    std::lock_guard<std::mutex> guard(lock_);
     TAIHE_FC_ASSERT_RETURN_VOID(observer_, RANGING_ERR_OPERATION_FAILED);
     std::vector<int32_t> validErrCodes = { RANGING_ERR_PERMISSION_FAILED, RANGING_ERR_INVALID_PARAM,
         RANGING_ERR_API_NOT_SUPPORT, RANGING_ERR_DEVICE_NOT_INITIATED, RANGING_ERR_RANGING_TYPE_NOT_SUPPORT,
@@ -139,20 +140,23 @@ int32_t StartPassiveRanging(int32_t capabilityType)
 {
     int32_t handle = -1;  // -1 as invalid ranging handle.
     HILOGI("enter capabilityType:%{public}d", capabilityType);
-    {
-        std::unique_lock<std::shared_mutex> guard(lock_);
-        TAIHE_FC_ASSERT_RETURN(observer_, RANGING_ERR_OPERATION_FAILED, handle);
-    }
     std::vector<int32_t> validErrCodes = { RANGING_ERR_PERMISSION_FAILED, RANGING_ERR_INVALID_PARAM,
         RANGING_ERR_API_NOT_SUPPORT, RANGING_ERR_RANGING_TYPE_NOT_SUPPORT, RANGING_ERR_RANGING_SERVICE_DISABLED,
         RANGING_ERR_OPERATION_FAILED };
     TAIHE_FC_CONTEXT_WITHOUT_HA(validErrCodes);
     TAIHE_FC_ASSERT_RETURN(IsCapabilityTypeValid(capabilityType), RANGING_ERR_RANGING_TYPE_NOT_SUPPORT, handle);
+
+    std::shared_ptr<TaiheFusionRangingObserver> observer;
+    {
+        std::lock_guard<std::mutex> guard(lock_);
+        observer = observer_;
+    }
+    TAIHE_FC_ASSERT_RETURN(observer != nullptr, RANGING_ERR_OPERATION_FAILED, handle);
+
     auto ret =
         FusionRangingManager::GetInstance()->StartPassiveRanging(static_cast<RangingTypes>(capabilityType), handle);
     TAIHE_FC_ASSERT_RETURN_VERIFY((ret == RANGING_NO_ERROR), ret, handle);
-    std::unique_lock<std::shared_mutex> guard(lock_);
-    FusionRangingManager::GetInstance()->RegisterFusionRangingObserver(observer_);
+    FusionRangingManager::GetInstance()->RegisterFusionRangingObserver(observer);
     return handle;
 }
 
@@ -169,7 +173,7 @@ void StopPassiveRanging(int32_t handle, int32_t capabilityType)
     auto ret =
         FusionRangingManager::GetInstance()->StopPassiveRanging(static_cast<RangingTypes>(capabilityType), handle);
     TAIHE_FC_ASSERT_RETURN_VOID_VERIFY((ret == RANGING_NO_ERROR), ret);
-    std::unique_lock<std::shared_mutex> guard(lock_);
+    std::lock_guard<std::mutex> guard(lock_);
     TAIHE_FC_ASSERT_RETURN_VOID(observer_, RANGING_ERR_OPERATION_FAILED);
     if (observer_->IsRangingResultCallbackEmpty()) {
         FusionRangingManager::GetInstance()->DeregisterFusionRangingObserver(observer_);
@@ -179,9 +183,8 @@ void StopPassiveRanging(int32_t handle, int32_t capabilityType)
 void OnRangingStateChange(
     ::taihe::callback_view<void(::ohos::FusionConnectivity::ranging::RangingStateChangeInfo const &info)> callback)
 {
-    TAIHE_FC_ASSERT_RETURN_VOID(FusionRangingManager::GetInstance()->IsRangingSupported(),
-                                RANGING_ERR_API_NOT_SUPPORT);
-    std::unique_lock<std::shared_mutex> guard(lock_);
+    TAIHE_FC_ASSERT_RETURN_VOID(FusionRangingManager::GetInstance()->IsRangingSupported(), RANGING_ERR_API_NOT_SUPPORT);
+    std::lock_guard<std::mutex> guard(lock_);
     TAIHE_FC_ASSERT_RETURN_VOID(observer_, RANGING_ERR_OPERATION_FAILED);
     if (observer_) {
         observer_->eventSubscribe_.RegisterEvent(callback);
@@ -193,9 +196,8 @@ void OffRangingStateChange(
         ::taihe::callback<void(::ohos::FusionConnectivity::ranging::RangingStateChangeInfo const &info)>>
         callback)
 {
-    TAIHE_FC_ASSERT_RETURN_VOID(FusionRangingManager::GetInstance()->IsRangingSupported(),
-                                RANGING_ERR_API_NOT_SUPPORT);
-    std::unique_lock<std::shared_mutex> guard(lock_);
+    TAIHE_FC_ASSERT_RETURN_VOID(FusionRangingManager::GetInstance()->IsRangingSupported(), RANGING_ERR_API_NOT_SUPPORT);
+    std::lock_guard<std::mutex> guard(lock_);
     TAIHE_FC_ASSERT_RETURN_VOID(observer_, RANGING_ERR_OPERATION_FAILED);
     if (observer_) {
         observer_->eventSubscribe_.DeregisterEvent(callback);

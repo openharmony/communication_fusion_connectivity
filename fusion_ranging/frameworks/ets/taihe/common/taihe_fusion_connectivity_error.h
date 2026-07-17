@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef TAIHE_FUSION_CONNECTIVITY_ERROR_H_
-#define TAIHE_FUSION_CONNECTIVITY_ERROR_H_
+#ifndef TAIHE_FUSION_CONNECTIVITY_ERROR_H
+#define TAIHE_FUSION_CONNECTIVITY_ERROR_H
 
 #include <cstdint>
 #include <string>
@@ -111,4 +111,4 @@ struct TaihePromiseAndCallback {
 };
 }  // namespace FusionConnectivity
 }  // namespace OHOS
-#endif  // TAIHE_FUSION_CONNECTIVITY_ERROR_H_
+#endif  // TAIHE_FUSION_CONNECTIVITY_ERROR_H

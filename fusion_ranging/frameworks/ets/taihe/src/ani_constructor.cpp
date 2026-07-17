@@ -32,6 +32,9 @@ ANI_EXPORT ani_status ANI_Constructor(ani_vm *vm, uint32_t *result)
         return ANI_ERROR;
     }
     *result = ANI_VERSION_1;
-    OHOS::FusionRanging::TaiheInitFusionRangingObserver(vm);
+    if (ANI_OK != OHOS::FusionRanging::TaiheInitFusionRangingObserver(vm)) {
+        HILOGE("Error from TaiheInitFusionRangingObserver");
+        return ANI_ERROR;
+    }
     return ANI_OK;
 }

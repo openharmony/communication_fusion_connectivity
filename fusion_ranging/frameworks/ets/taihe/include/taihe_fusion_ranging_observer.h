@@ -17,7 +17,6 @@
 #ifndef TAIHE_FUSION_RANGING_OBSERVER_H
 #define TAIHE_FUSION_RANGING_OBSERVER_H
 
-#include <shared_mutex>
 #include <vector>
 #include "taihe/runtime.hpp"
 #include "taihe_event_module.h"
@@ -48,7 +47,7 @@ struct TaiheRangingResultCallback {
 class TaiheFusionRangingObserver : public FusionRangingObserver {
 public:
     TaiheFusionRangingObserver(ani_vm *vm) : vm_(vm){};
-    ~TaiheFusionRangingObserver();
+    ~TaiheFusionRangingObserver() override;
 
     void OnRangingStateChanged(const RangingStateChangeInfo &statechange) override;
     void OnRangingResult(const RangingResult &rangingResult) override;
@@ -75,9 +74,9 @@ private:
     ani_vm *vm_{};
     std::mutex lock_{};
     ani_env *env_{};
-    bool isAttach_{};
+    bool isAttached_{};
 };
-void TaiheInitFusionRangingObserver(ani_vm *vm);
+ani_status TaiheInitFusionRangingObserver(ani_vm *vm);
 }  // namespace FusionRanging
 }  // namespace OHOS
 #endif /* TAIHE_FUSION_RANGING_OBSERVER_H */

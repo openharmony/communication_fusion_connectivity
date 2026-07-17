@@ -29,9 +29,9 @@ using namespace FusionConnectivity;
 TaiheFusionRangingObserver::~TaiheFusionRangingObserver()
 {
     std::lock_guard<std::mutex> lock(lock_);
-    if (isAttach_ && vm_ != nullptr) {
+    if (isAttached_ && vm_ != nullptr) {
         vm_->DetachCurrentThread();
-        isAttach_ = false;
+        isAttached_ = false;
     }
 }
 
@@ -46,7 +46,7 @@ ani_env *TaiheFusionRangingObserver::GetEnv()
         return env_;
     }
 
-    env_ = GetCurrentEnv(vm_, isAttach_);
+    env_ = GetCurrentEnv(vm_, isAttached_);
     if (env_ == nullptr) {
         HILOGE("GetCurrentEnv failed in TaiheFusionRangingObserver");
         return nullptr;
@@ -62,7 +62,7 @@ void TaiheFusionRangingObserver::OnRangingStateChanged(const RangingStateChangeI
         return;
     }
 
-    std::unique_lock<std::shared_mutex> guard(eventSubscribe_.lock_);
+    std::lock_guard<std::mutex> guard(eventSubscribe_.lock_);
     ::ohos::FusionConnectivity::ranging::RangingStateChangeInfo stateInfo = {
         .state = ::ohos::FusionConnectivity::ranging::RangingState::from_value(static_cast<int32_t>(info.GetState())),
         .cause = ::ohos::FusionConnectivity::ranging::RangingStoppedCause::from_value(
@@ -117,6 +117,10 @@ void TaiheFusionRangingObserver::RegisterRangingResultCallback(
     const ::taihe::optional<::taihe::callback<void(::ohos::FusionConnectivity::ranging::RangingResult const &result)>>
         &callback)
 {
+    if (!callback) {
+        HILOGW("RegisterRangingResultCallback callback is nullopt");
+        return;
+    }
     auto value = std::make_shared<TaiheRangingResultCallback>(params, callback);
     resultCallback_.EnsureInsert(params.GetDeviceId(), value);
 }

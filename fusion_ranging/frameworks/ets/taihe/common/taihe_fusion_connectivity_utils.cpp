@@ -2,7 +2,8 @@
  * Copyright (C) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * You may obtain a copy of, use or distribute this file except in compliance with
+ * the License. You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -25,6 +26,14 @@
 
 namespace OHOS {
 namespace FusionConnectivity {
+
+namespace {
+std::mutex &GetAttachMutex()
+{
+    static std::mutex mutex;
+    return mutex;
+}
+}  // namespace
 
 void TaiheCreateLocalScope(ani_env *env)
 {
@@ -51,14 +60,17 @@ ani_env *GetCurrentEnv(ani_vm *vm, bool &isAttach)
     }
     ani_env *threadEnv;
     if (ANI_OK != vm->GetEnv(ANI_VERSION_1, &threadEnv)) {
-        HILOGE("GetEnv failed, AttachCurrentThread");
-        ani_options aniArgs{0, nullptr};
-        ani_status status = vm->AttachCurrentThread(&aniArgs, ANI_VERSION_1, &threadEnv);
-        if (status != ANI_OK) {
-            HILOGE("GetCurrentEnv failed, status(%{public}d)", status);
-            return nullptr;
+        std::lock_guard<std::mutex> lock(GetAttachMutex());
+        if (ANI_OK != vm->GetEnv(ANI_VERSION_1, &threadEnv)) {
+            HILOGI("GetEnv failed, AttachCurrentThread");
+            ani_options aniArgs{0, nullptr};
+            ani_status status = vm->AttachCurrentThread(&aniArgs, ANI_VERSION_1, &threadEnv);
+            if (status != ANI_OK) {
+                HILOGE("GetCurrentEnv failed, status(%{public}d)", status);
+                return nullptr;
+            }
+            isAttach = true;
         }
-        isAttach = true;
     }
     return threadEnv;
 }
