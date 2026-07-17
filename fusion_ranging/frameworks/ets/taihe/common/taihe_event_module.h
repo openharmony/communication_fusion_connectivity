@@ -17,7 +17,7 @@
 #ifndef TAIHE_EVENT_MODULE_H
 #define TAIHE_EVENT_MODULE_H
 
-#include <shared_mutex>
+#include <mutex>
 #include <vector>
 
 #include "stdexcept"
@@ -34,13 +34,13 @@ public:
     void DeregisterEvent(::taihe::optional_view<::taihe::callback<T>> callback);
 
     std::vector<::taihe::optional<::taihe::callback<T>>> callbackVec_;
-    std::shared_mutex lock_;
+    std::mutex lock_;
 };
 
 template <typename T>
 void EventModule<T>::RegisterEvent(::taihe::callback_view<T> callback)
 {
-    std::unique_lock<std::shared_mutex> guard(lock_);
+    std::lock_guard<std::mutex> guard(lock_);
     auto eventCb = ::taihe::optional<::taihe::callback<T>>{std::in_place_t{}, callback};
     if (std::find(callbackVec_.begin(), callbackVec_.end(), eventCb) != callbackVec_.end()) {
         return;
@@ -51,7 +51,7 @@ void EventModule<T>::RegisterEvent(::taihe::callback_view<T> callback)
 template <typename T>
 void EventModule<T>::DeregisterEvent(::taihe::optional_view<::taihe::callback<T>> callback)
 {
-    std::unique_lock<std::shared_mutex> guard(lock_);
+    std::lock_guard<std::mutex> guard(lock_);
     if (callback.has_value()) {
         callbackVec_.erase(
             std::remove_if(callbackVec_.begin(), callbackVec_.end(),
