@@ -19,9 +19,7 @@
 #endif
 
 #include <map>
-
 #include "taihe_fusion_connectivity_error.h"
-
 #include "taihe/runtime.hpp"
 
 namespace OHOS {
