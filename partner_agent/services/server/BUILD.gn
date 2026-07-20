@@ -24,6 +24,7 @@ partner_device_agent_deps = [
 ]
 
 partner_device_agent_external_deps = [
+  "ability_base:want",
   "safwk:system_ability_fwk",
   "samgr:samgr_proxy",
   "c_utils:utils",
