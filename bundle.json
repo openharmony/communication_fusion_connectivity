@@ -64,6 +64,7 @@
                 "os_account",
                 "distributed_notification_service",
                 "hiappevent",
+                "selinux_adapter",
                 "runtime_core",
                 "taihe_ffi_gen"
               ],
