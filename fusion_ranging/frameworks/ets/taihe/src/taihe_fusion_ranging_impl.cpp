@@ -57,7 +57,6 @@ ani_status TaiheInitFusionRangingObserver(ani_vm *vm)
 
 bool IsRangingSupported()
 {
-    HILOGI("IsRangingSupported enter");
     auto isSupported = FusionRangingManager::GetInstance()->IsRangingSupported();
     return isSupported;
 }
@@ -139,7 +138,6 @@ void StopRanging(
 int32_t StartPassiveRanging(int32_t capabilityType)
 {
     int32_t handle = -1;  // -1 as invalid ranging handle.
-    HILOGI("enter capabilityType:%{public}d", capabilityType);
     std::vector<int32_t> validErrCodes = { RANGING_ERR_PERMISSION_FAILED, RANGING_ERR_INVALID_PARAM,
         RANGING_ERR_API_NOT_SUPPORT, RANGING_ERR_RANGING_TYPE_NOT_SUPPORT, RANGING_ERR_RANGING_SERVICE_DISABLED,
         RANGING_ERR_OPERATION_FAILED };
