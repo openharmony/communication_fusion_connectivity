@@ -130,6 +130,7 @@ void TaiheFusionRangingObserver::DeregisterRangingResultCallbackWithDeviceId(
         &callback,
     const std::string &deviceId)
 {
+    std::lock_guard<std::mutex> lock(lock_);
     std::shared_ptr<TaiheRangingResultCallback> value = nullptr;
     auto ret = resultCallback_.Find(deviceId, value);
     if (ret && value != nullptr && value->callback_ == callback) {
