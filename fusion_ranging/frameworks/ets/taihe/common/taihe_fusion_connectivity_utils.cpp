@@ -58,20 +58,24 @@ ani_env *GetCurrentEnv(ani_vm *vm, bool &isAttach)
         HILOGE("null vm");
         return nullptr;
     }
-    ani_env *threadEnv;
-    if (ANI_OK != vm->GetEnv(ANI_VERSION_1, &threadEnv)) {
-        std::lock_guard<std::mutex> lock(GetAttachMutex());
-        if (ANI_OK != vm->GetEnv(ANI_VERSION_1, &threadEnv)) {
-            HILOGI("GetEnv failed, AttachCurrentThread");
-            ani_options aniArgs{0, nullptr};
-            ani_status status = vm->AttachCurrentThread(&aniArgs, ANI_VERSION_1, &threadEnv);
-            if (status != ANI_OK) {
-                HILOGE("GetCurrentEnv failed, status(%{public}d)", status);
-                return nullptr;
-            }
-            isAttach = true;
-        }
+    ani_env *threadEnv = nullptr;
+    if (ANI_OK == vm->GetEnv(ANI_VERSION_1, &threadEnv)) {
+        isAttach = false;
+        return threadEnv;
     }
+    std::lock_guard<std::mutex> lock(GetAttachMutex());
+    if (ANI_OK == vm->GetEnv(ANI_VERSION_1, &threadEnv)) {
+        isAttach = false;
+        return threadEnv;
+    }
+    HILOGI("GetEnv failed, AttachCurrentThread");
+    ani_options aniArgs{0, nullptr};
+    ani_status status = vm->AttachCurrentThread(&aniArgs, ANI_VERSION_1, &threadEnv);
+    if (status != ANI_OK) {
+        HILOGE("GetCurrentEnv failed, status(%{public}d)", status);
+        return nullptr;
+    }
+    isAttach = true;
     return threadEnv;
 }
 }  // namespace FusionConnectivity
