@@ -68,7 +68,6 @@ ani_env *GetCurrentEnv(ani_vm *vm, bool &isAttach)
         isAttach = false;
         return threadEnv;
     }
-    HILOGI("GetEnv failed, AttachCurrentThread");
     ani_options aniArgs{0, nullptr};
     ani_status status = vm->AttachCurrentThread(&aniArgs, ANI_VERSION_1, &threadEnv);
     if (status != ANI_OK) {
