@@ -77,6 +77,14 @@ taihe_shared_library("FusionConnectivityRanging_taihe_native") {
     "runtime_core:ani_helpers",
     "samgr:samgr_proxy",
   ]
+  configs = [
+    ":fusion_ranging_taihe_config",
+  ]
+  ldflags = [
+    "-flto",
+    "-Wl,--as-needed",
+    "-Wl,--gc-sections",
+  ]
   sanitize = {
     cfi = true
     boundary_sanitize = true
@@ -85,6 +93,20 @@ taihe_shared_library("FusionConnectivityRanging_taihe_native") {
     ubsan = true
     debug = false
   }
+}
+
+config("fusion_ranging_taihe_config") {
+  cflags_cc = [
+    "-Oz",
+    "-fno-rtti",
+    "-fno-exceptions",
+    "-fdata-sections",
+    "-ffunction-sections",
+    "-fno-unwind-tables",
+    "-fno-asynchronous-unwind-tables",
+    "-fno-merge-all-constants",
+    "-flto",
+  ]
 }
 
 generate_static_abc("fusionConnectivityRanging_abc") {
