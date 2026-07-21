@@ -71,24 +71,18 @@ enum RangingConfidence: i32 {
     LOW = 2
 }
 
-@rename("isRangingSupported")
 function IsRangingSupported(): bool;
 
 @promise function GetRangingCapability(): RangingCapabilitySupported;
 
-@rename("startRanging")
 function StartRanging(params: RangingParams, callback: (info: RangingResult) => void): void;
 
-@rename("stopRanging")
 function StopRanging(callback: (info: RangingResult) => void, params: Optional<RangingParams>): void;
 
 @promise function StartPassiveRanging(capabilityType: RangingTypes): i32;
 
-@rename("stopPassiveRanging")
 function StopPassiveRanging(handle: i32, capabilityType: RangingTypes): void;
 
-@rename("onRangingStateChange")
 function OnRangingStateChange(callback: (info: RangingStateChangeInfo) => void): void;
 
-@rename("offRangingStateChange")
 function OffRangingStateChange(callback: Optional<(data: RangingStateChangeInfo) => void>): void;
