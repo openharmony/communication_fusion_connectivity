@@ -45,11 +45,15 @@ config("fusion_ranging_manager_framework_config") {
     "$FUSION_RANGING/services/common/include",
   ]
 
-  cflags = [
+  cflags_cc = [
     "-ffunction-sections",
+    "-fdata-sections",
     "-fno-asynchronous-unwind-tables",
     "-fno-unwind-tables",
-    "-Os",
+    "-Oz",
+    "-fno-rtti",
+    "-fno-exceptions",
+    "-flto",
   ]
 }
 
@@ -80,6 +84,12 @@ ohos_shared_library("fusion_ranging_manager_framework") {
 
   configs = [
     ":fusion_ranging_manager_framework_config"
+  ]
+
+  ldflags = [
+    "-flto",
+    "-Wl,--as-needed",
+    "-Wl,--gc-sections",
   ]
 
   if (defined(global_parts_info) &&

@@ -64,8 +64,12 @@ config("fusion_ranging_server_config") {
     "-ffunction-sections",
     "-fno-unwind-tables",
     "-fno-asynchronous-unwind-tables",
-    "-Os",
+    "-Oz",
     "-fvisibility=hidden",
+    "-fno-rtti",
+    "-fno-exceptions",
+    "-fno-merge-all-constants",
+    "-flto",
   ]
 }
 
@@ -84,6 +88,12 @@ ohos_shared_library("fusion_ranging_server") {
 
   configs = [
     ":fusion_ranging_server_config"
+  ]
+
+  ldflags = [
+    "-flto",
+    "-Wl,--as-needed",
+    "-Wl,--gc-sections",
   ]
 
   defines = [

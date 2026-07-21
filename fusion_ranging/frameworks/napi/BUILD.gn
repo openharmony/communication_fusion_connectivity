@@ -71,15 +71,31 @@ ohos_shared_library("ranging") {
     "hiappevent:hiappevent_innerapi",
   ]
 
-  cflags = [
-    "-Wno-unused-parameter",
-    "-ffunction-sections",
-    "-fno-asynchronous-unwind-tables",
-    "-fno-unwind-tables",
-    "-Os",
+  configs = [
+    ":fusion_ranging_napi_config",
+  ]
+
+  ldflags = [
+    "-flto",
+    "-Wl,--as-needed",
+    "-Wl,--gc-sections",
   ]
 
   relative_install_dir = "module/fusionconnectivity"
   part_name = "fusion_connectivity"
   subsystem_name = "communication"
+}
+
+config("fusion_ranging_napi_config") {
+  cflags_cc = [
+    "-Wno-unused-parameter",
+    "-ffunction-sections",
+    "-fdata-sections",
+    "-fno-asynchronous-unwind-tables",
+    "-fno-unwind-tables",
+    "-Oz",
+    "-fno-rtti",
+    "-fno-exceptions",
+    "-flto",
+  ]
 }
