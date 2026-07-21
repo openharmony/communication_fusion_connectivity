@@ -22,6 +22,16 @@ config("fusion_ranging_adapter_config") {
     "$FUSION_RANGING/interfaces/inner_api",
     "$FUSION_RANGING/idl/include",
   ]
+  cflags_cc = [
+    "-ffunction-sections",
+    "-fdata-sections",
+    "-fno-asynchronous-unwind-tables",
+    "-fno-unwind-tables",
+    "-Oz",
+    "-fno-rtti",
+    "-fno-exceptions",
+    "-flto",
+  ]
 }
 
 ohos_shared_library("fusion_ranging_adapter") {
@@ -51,15 +61,12 @@ ohos_shared_library("fusion_ranging_adapter") {
   deps = []
   external_deps = []
 
-  cflags = [
-    "-Wno-unused-parameter",
-    "-ffunction-sections",
-    "-fno-asynchronous-unwind-tables",
-    "-fno-unwind-tables",
-    "-Os",
+  ldflags = [
+    "-flto",
+    "-Wl,--as-needed",
+    "-Wl,--gc-sections",
   ]
 
   part_name = "fusion_connectivity"
   subsystem_name = "communication"
 }
-

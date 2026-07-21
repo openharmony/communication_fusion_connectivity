@@ -25,6 +25,15 @@ config("fusion_ranging_common_config") {
   defines = [
     "LOG_DOMAIN = 0xD000100",
   ]
+  cflags_cc = [
+    "-ffunction-sections",
+    "-fdata-sections",
+    "-fno-asynchronous-unwind-tables",
+    "-fno-unwind-tables",
+    "-Oz",
+    "-fno-rtti",
+    "-fno-exceptions",
+  ]
 }
 
 ohos_static_library("fusion_ranging_common") {
