@@ -75,6 +75,7 @@ ohos_shared_library("partneragent") {
     "hilog:libhilog",
     "libuv:uv",
     "napi:ace_napi",
+    "node:node_header_notice",
     "hiappevent:hiappevent_innerapi",
   ]
 

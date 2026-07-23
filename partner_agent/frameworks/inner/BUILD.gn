@@ -139,7 +139,9 @@ ohos_source_set("partner_agent_extension_common") {
     "eventhandler:libeventhandler", 
     "hilog:libhilog", 
     "ipc:ipc_napi", 
-    "napi:ace_napi", 
+    "napi:ace_napi",
+    "libuv:uv",
+    "node:node_header_notice",
   ] 
 
   subsystem_name = "communication" 
