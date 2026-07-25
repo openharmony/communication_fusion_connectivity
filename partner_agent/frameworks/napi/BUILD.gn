@@ -45,6 +45,17 @@ ohos_shared_library("partneragent") {
     debug = false
   }
 
+  cflags_cc = [
+    "-Os",
+    "-fno-rtti",
+    "-fno-exceptions",
+    "-fdata-sections",
+    "-ffunction-sections",
+    "-fno-unwind-tables",
+    "-fno-asynchronous-unwind-tables",
+    "-flto",
+  ]
+
   defines = [
     "LOG_DOMAIN = 0xD000100",
   ]
