@@ -1,10 +1,5 @@
 {
   global:
-  *Try*;
-  *Connect*;
-  *Destroy*;
-  *OnDeviceDiscovered*;
-  *CheckPartnerAgentExtensionAbility*;
   local:
     *;
 };

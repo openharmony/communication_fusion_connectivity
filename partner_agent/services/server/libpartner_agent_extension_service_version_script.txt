@@ -1,0 +1,9 @@
+{
+  global:
+    Connect;
+    OnDestroyWithReason;
+    OnDeviceDiscovered;
+    CheckPartnerAgentExtensionAbility;
+  local:
+    *;
+};
