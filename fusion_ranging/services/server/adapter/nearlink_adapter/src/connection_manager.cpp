@@ -37,6 +37,8 @@ using namespace OHOS::FusionConnectivity;
 namespace {
 constexpr int32_t CONNECTION_TIMEOUT_TASK_DELAY_MS = 10000;
 constexpr int32_t CONN_MGR_POINTER_NULL = -1;
+static constexpr const char *RANGING_SERVICE_UUID = "00090000-0001-0005-0000-000000000000";
+static constexpr const char *RANGING_PROPERTY_UUID = "00090000-0001-0005-0001-000000000000";
 }  // anonymous namespace
 
 class SsapClientCallbackImpl : public Nearlink::SsapClientCallback {

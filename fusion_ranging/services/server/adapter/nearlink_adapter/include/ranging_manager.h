@@ -32,9 +32,6 @@ class NearlinkConnectionCallback;
 constexpr int32_t SLE_RANGING_STOPPED = 0;
 constexpr int32_t SLE_RANGING_STARTED = 1;
 
-constexpr const char *RANGING_SERVICE_UUID = "00090000-0001-0005-0000-000000000000";
-constexpr const char *RANGING_PROPERTY_UUID = "00090000-0001-0005-0001-000000000000";
-
 enum class RangingAdapterState : int32_t { IDLE, CONNECTING, CONNECTED, RANGING };
 
 class RangingDevice {

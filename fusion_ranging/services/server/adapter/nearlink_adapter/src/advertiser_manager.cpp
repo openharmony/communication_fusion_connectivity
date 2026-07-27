@@ -37,6 +37,8 @@ using namespace FusionConnectivity;
 namespace {
 constexpr int32_t WAIT_ADVERTISE_TIMEOUT_MS = 300;
 constexpr int32_t INVALID_ADV_HANDLE = -1; /* default -1 as invalid handle */
+static constexpr const char *RANGING_SERVICE_UUID = "00090000-0001-0005-0000-000000000000";
+static constexpr const char *RANGING_PROPERTY_UUID = "00090000-0001-0005-0001-000000000000";
 }  // anonymous namespace
 
 class SsapServerCallbackImpl : public Nearlink::SsapServerCallback {
