@@ -16,5 +16,6 @@ group("unit_test") {
   deps = [
     "server:unit_test",
     "ranging_adapter:unit_test",
+    "nearlink_adapter:nearlink_adapter_unit_test",
   ]
 }
