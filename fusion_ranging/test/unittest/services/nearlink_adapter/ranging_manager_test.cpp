@@ -727,6 +727,13 @@ HWTEST_F(RangingManagerTest, OnConnectionStateChange_WithEncryptedState_ShouldNo
 
     manager->OnConnectionStateChange(deviceId, static_cast<int32_t>(SleConnState::SLE_CONNECTION_STATE_ENCRYPTED));
 
+    std::shared_ptr<RangingDevice> dev = nullptr;
+    manager->rangingDev_.Find(deviceId, dev);
+    EXPECT_NE(dev, nullptr);
+    if (dev != nullptr) {
+        EXPECT_EQ(dev->GetRangingState(), RangingAdapterState::CONNECTED);
+    }
+
     manager->rangingDev_.Erase(deviceId);
 }
 

@@ -27,8 +27,6 @@ class ConnectionManager {
 public:
     static ConnectionManager *GetInstance();
 
-    ConnectionManager();
-
     int Connect(const std::string &deviceId);
     int Disconnect(const std::string &deviceId);
     int StartPair(const std::string &deviceId);
@@ -40,6 +38,7 @@ public:
     void OnSsapServiceDiscovery(const std::string &deviceId, int status, const Nearlink::UUID &uuid);
 
 private:
+    ConnectionManager();
     ~ConnectionManager();
     int ConnectWithSsap(const std::string &deviceId);
     void StartConnectTimeout(const std::string &deviceId);

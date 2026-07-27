@@ -243,6 +243,11 @@ int AdvertiserManager::StartPassiveRanging(int32_t &advHandle)
     auto ret = StartAdvertisingInternal(advHandle);
     FCM_CHECK_RETURN_RET(ret == RANGING_NO_ERROR, RANGING_ERR_OPERATION_FAILED, "adv internal err");
     ret = StartSsapServerInternal(advHandle);
+    if (ret != RANGING_NO_ERROR) {
+        HILOGE("StartSsapServerInternal err, stop advertising, ret:%{public}d", static_cast<int>(ret));
+        StopAdvertising(advHandle);
+        return RANGING_ERR_OPERATION_FAILED;
+    }
     std::unique_lock<std::mutex> advertisingLock(pimpl->advertisingLock_);
     auto isNotify =
         pimpl->startAdvertising_.wait_for(advertisingLock, std::chrono::milliseconds(WAIT_ADVERTISE_TIMEOUT_MS),
@@ -252,7 +257,7 @@ int AdvertiserManager::StartPassiveRanging(int32_t &advHandle)
         StopPassiveRanging(advHandle);
         return RANGING_ERR_OPERATION_FAILED;
     }
-    return ret;
+    return RANGING_NO_ERROR;
 }
 
 int AdvertiserManager::StopPassiveRanging(int32_t advHandle)
@@ -271,7 +276,10 @@ void AdvertiserManager::OnAdvStateChanged(int advHandle, int state)
 {
     HILOGI("OnAdvStateChanged advHandle:%{public}d, state:%{public}d", advHandle, state);
     if (state == ADV_STATE_STARTED) {
-        pimpl->advHandle_ = advHandle;
+        {
+            std::lock_guard<std::mutex> lock(pimpl->advertisingLock_);
+            pimpl->advHandle_ = advHandle;
+        }
         pimpl->startAdvertising_.notify_one();
     }
 }

@@ -179,12 +179,15 @@ HWTEST_F(NearlinkRangingAdapterTest, SetCallback_WithValidAndNullCallback_Should
 {
     adapter_->Init();
 
-    int ret = adapter_->SetCallback(nullptr);
+    auto callback = std::make_shared<MockRangingAdapterCallback>();
+    int ret = adapter_->SetCallback(callback);
     EXPECT_EQ(ret, RANGING_NO_ERROR);
 
-    auto callback = std::make_shared<MockRangingAdapterCallback>();
-    ret = adapter_->SetCallback(callback);
+    ret = adapter_->SetCallback(nullptr);
     EXPECT_EQ(ret, RANGING_NO_ERROR);
+
+    auto manager = RangingManager::GetInstance();
+    EXPECT_EQ(manager->adapterCallback_, callback);
 }
 
 /*

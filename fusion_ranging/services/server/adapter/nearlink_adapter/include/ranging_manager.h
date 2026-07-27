@@ -64,7 +64,6 @@ private:
 class RangingManager {
 public:
     static RangingManager *GetInstance();
-    RangingManager();
 
     int Init();
     int DeInit();
@@ -83,6 +82,7 @@ public:
                                           int32_t cause = 0);
 
 private:
+    RangingManager();
     ~RangingManager();
     int StartRangingWithConnection(const std::string &deviceId);
     int StartSleRanging(const std::string &deviceId);

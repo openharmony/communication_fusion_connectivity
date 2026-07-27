@@ -25,7 +25,6 @@ namespace FusionRanging {
 class AdvertiserManager {
 public:
     static AdvertiserManager *GetInstance();
-    AdvertiserManager();
 
     int StartPassiveRanging(int32_t &advHandle);
     int StopPassiveRanging(int32_t handle);
@@ -34,6 +33,7 @@ public:
     void OnAdvStateChanged(int advHandle, int state);
 
 private:
+    AdvertiserManager();
     ~AdvertiserManager();
     bool IsPassiveRangingActive();
     int StopAdvertising(int32_t advHandle);

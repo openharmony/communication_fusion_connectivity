@@ -266,10 +266,13 @@ int ConnectionManager::Disconnect(const std::string &deviceId)
 
 int ConnectionManager::StartPair(const std::string &deviceId)
 {
-    int pairState = false;
+    int pairState = static_cast<int>(SlePairState::SLE_PAIR_NONE);
     NearlinkRemoteDevice remoteDevice(deviceId, static_cast<int>(NlTransportType::NL_TRANSPORT_SLE));
     NlErrCode ret = remoteDevice.GetPairState(pairState);
     HILOGI("IsAcbEncrypted ret:%{public}d, pairState:%{public}d", static_cast<int>(ret), pairState);
+    if (ret != NlErrCode::NL_NO_ERROR) {
+        return static_cast<int>(ret);
+    }
     if (pairState != static_cast<int>(SlePairState::SLE_PAIR_PAIRED)) {
         HILOGI("ACB not encrypted, start Pair");
         ret = remoteDevice.StartPair();

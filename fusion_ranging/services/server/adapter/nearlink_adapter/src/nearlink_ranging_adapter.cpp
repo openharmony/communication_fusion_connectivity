@@ -20,6 +20,7 @@
 #include "nearlink_ranging_adapter.h"
 #include "ranging_manager.h"
 #include "ranging_adapter_factory.h"
+#include "fusion_ranging_errorcode.h"
 #include "log_utils.h"
 
 namespace OHOS {
@@ -54,7 +55,10 @@ NearlinkRangingAdapter::NearlinkRangingAdapter() {}
 
 NearlinkRangingAdapter::~NearlinkRangingAdapter()
 {
-    DeInit();
+    int ret = DeInit();
+    if (ret != RANGING_NO_ERROR) {
+        HILOGE("NearlinkRangingAdapter DeInit failed, ret:%{public}d", ret);
+    }
 }
 
 int NearlinkRangingAdapter::Init()

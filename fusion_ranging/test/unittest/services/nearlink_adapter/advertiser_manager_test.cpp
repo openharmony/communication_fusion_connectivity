@@ -295,10 +295,10 @@ HWTEST_F(AdvertiserManagerTest, OnSsapConnectionStateUpdate_WithUnknownHandleAnd
     std::string deviceId = "11:22:33:44:55:66";
 
     manager->OnSsapConnectionStateUpdate(deviceId, 999, 0, 0);
-    SUCCEED();
+    EXPECT_EQ(manager->pimpl->advInfos_.Size(), 0u);
 
     manager->OnSsapConnectionStateUpdate(deviceId, 0, 0, 0);
-    SUCCEED();
+    EXPECT_EQ(manager->pimpl->advInfos_.Size(), 0u);
 }
 
 /*
