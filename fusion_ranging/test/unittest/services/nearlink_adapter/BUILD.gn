@@ -38,25 +38,25 @@ config("nearlink_adapter_unittest_config") {
   ]
 }
 
-nearlink_adapter_common_sources = [
-  "$FUSION_RANGING/services/server/adapter/nearlink_adapter/src/ranging_manager.cpp",
-  "$FUSION_RANGING/services/server/adapter/nearlink_adapter/src/nearlink_ranging_callback.cpp",
-  "$FUSION_RANGING/services/server/adapter/nearlink_adapter/src/nearlink_connection_callback.cpp",
-  "$FUSION_RANGING/../partner_agent/services/common/src/fcm_thread_util.cpp",
-]
+if (defined(global_parts_info) &&
+    defined(global_parts_info.communication_nearlink_service)) {
+  nearlink_adapter_common_sources = [
+    "$FUSION_RANGING/services/server/adapter/nearlink_adapter/src/ranging_manager.cpp",
+    "$FUSION_RANGING/services/server/adapter/nearlink_adapter/src/nearlink_ranging_callback.cpp",
+    "$FUSION_RANGING/services/server/adapter/nearlink_adapter/src/nearlink_connection_callback.cpp",
+    "$FUSION_RANGING/../partner_agent/services/common/src/fcm_thread_util.cpp",
+  ]
 
-nearlink_adapter_test_external_deps = [
-  "c_utils:utils",
-  "hilog:libhilog",
-  "ffrt:libffrt",
-  "googletest:gmock_main",
-  "googletest:gtest_main",
-  "nearlink_service:nearlink_framework",
-]
+  nearlink_adapter_test_external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+    "ffrt:libffrt",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+    "nearlink_service:nearlink_framework",
+  ]
 
-ohos_unittest("advertiser_manager_test") {
-  if (defined(global_parts_info) &&
-      defined(global_parts_info.communication_nearlink_service)) {
+  ohos_unittest("advertiser_manager_test") {
     module_out_path = module_output_path
 
     sources = [
@@ -73,11 +73,8 @@ ohos_unittest("advertiser_manager_test") {
 
     external_deps = nearlink_adapter_test_external_deps
   }
-}
 
-ohos_unittest("ranging_manager_test") {
-  if (defined(global_parts_info) &&
-      defined(global_parts_info.communication_nearlink_service)) {
+  ohos_unittest("ranging_manager_test") {
     module_out_path = module_output_path
 
     sources = [
@@ -96,11 +93,8 @@ ohos_unittest("ranging_manager_test") {
 
     external_deps = nearlink_adapter_test_external_deps
   }
-}
 
-ohos_unittest("connection_manager_test") {
-  if (defined(global_parts_info) &&
-      defined(global_parts_info.communication_nearlink_service)) {
+  ohos_unittest("connection_manager_test") {
     module_out_path = module_output_path
 
     sources = [
@@ -117,11 +111,8 @@ ohos_unittest("connection_manager_test") {
 
     external_deps = nearlink_adapter_test_external_deps
   }
-}
 
-ohos_unittest("nearlink_ranging_adapter_test") {
-  if (defined(global_parts_info) &&
-      defined(global_parts_info.communication_nearlink_service)) {
+  ohos_unittest("nearlink_ranging_adapter_test") {
     module_out_path = module_output_path
 
     sources = [
@@ -145,10 +136,13 @@ ohos_unittest("nearlink_ranging_adapter_test") {
 group("nearlink_adapter_unit_test") {
   testonly = true
 
-  deps = [
-    ":advertiser_manager_test",
-    ":ranging_manager_test",
-    ":connection_manager_test",
-    ":nearlink_ranging_adapter_test",
-  ]
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_nearlink_service)) {
+    deps = [
+      ":advertiser_manager_test",
+      ":ranging_manager_test",
+      ":connection_manager_test",
+      ":nearlink_ranging_adapter_test",
+    ]
+  }
 }
