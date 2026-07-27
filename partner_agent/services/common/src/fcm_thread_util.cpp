@@ -209,12 +209,15 @@ void FcmThreadUtil::PostTask(int threadId, const ThreadUtilFunc &func, uint64_t 
         GetThreadName(threadId).c_str());
 
     std::shared_ptr<impl::TaskQueue> taskQueue = nullptr;
-    if (pimpl->taskQueueMap_.GetValue(threadId, taskQueue) && taskQueue != nullptr) {
-        taskQueue->PostTask(func, delayTime, name);
-        return;
+    {
+        std::lock_guard<ffrt::mutex> lock(mutex_);
+        if (pimpl->taskQueueMap_.GetValue(threadId, taskQueue) && taskQueue != nullptr) {
+            taskQueue->PostTask(func, delayTime, name);
+            return;
+        }
+        // If the thread not found, create it.
+        taskQueue = pimpl->CreateTaskQueue(threadId);
     }
-    // If the thread not found, create it.
-    taskQueue = pimpl->CreateTaskQueue(threadId);
     // Execute the first task.
     if (taskQueue) {
         taskQueue->PostTask(func, delayTime, name);
