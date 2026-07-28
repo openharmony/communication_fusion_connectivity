@@ -19,6 +19,7 @@
 #include <functional>
 #include "fcm_safe_map.h" // SafeMap
 #include <mutex>
+#include "ffrt_inner.h"
 
 namespace OHOS {
 namespace FusionConnectivity {
@@ -60,6 +61,7 @@ private:
     };
     // threadId <-> thread state
     FcmSafeMap<int, ThreadState> threadStateMap_ {};
+    ffrt::mutex mutex_{};
 
     FcmThreadUtil();
     ~FcmThreadUtil();
