@@ -246,6 +246,7 @@ napi_value StartPassiveRanging(napi_env env, napi_callback_info info)
     };
 
     auto asyncWork = CREATE_ASYNC_WORK_WITH_CONTEXT(env, info, asyncWorkFunc, ASYNC_WORK_NO_NEED_CALLBACK);
+    NAPI_FCM_ASSERT_RETURN_UNDEF(env, asyncWork, RANGING_ERR_OPERATION_FAILED);
     asyncWork->Run();
     FusionRangingManager::GetInstance()->RegisterFusionRangingObserver(napiCallback_);
     return asyncWork->GetRet();
