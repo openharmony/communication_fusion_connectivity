@@ -97,6 +97,7 @@ config("fusion_ranging_napi_config") {
     "-Oz",
     "-fno-rtti",
     "-fno-exceptions",
+    "-fno-merge-all-constants",
     "-flto",
   ]
 }

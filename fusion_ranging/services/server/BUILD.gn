@@ -56,6 +56,7 @@ config("fusion_ranging_server_config") {
     "$FUSION_RANGING/../partner_agent/frameworks/inner/include",
     "$FUSION_RANGING/../partner_agent/interfaces/inner_api",
     "$FUSION_RANGING/../partner_agent/services/common/include",
+    "$FUSION_RANGING/services/server/adapter/nearlink_adapter/include",
   ]
 
   cflags_cc = [
@@ -108,15 +109,14 @@ ohos_shared_library("fusion_ranging_server") {
 
   if (defined(global_parts_info) &&
       defined(global_parts_info.communication_nearlink_service)) {
-    if (target_cpu == "arm64" || is_emulator) {
-      nearlink_ranging_adapter_path = "\"/system/lib64\""
-    } else {
-      nearlink_ranging_adapter_path = "\"/system/lib\""
-    }
-
-    defines += [
-      "SUPPORT_NEARLINK_RANGING",
-      "NEARLINK_RANGING_ADAPTER_PATH=${nearlink_ranging_adapter_path}",
+    external_deps += [ "nearlink_service:nearlink_framework", ]
+    sources += [
+      "adapter/nearlink_adapter/src/nearlink_ranging_adapter.cpp",
+      "adapter/nearlink_adapter/src/ranging_manager.cpp",
+      "adapter/nearlink_adapter/src/connection_manager.cpp",
+      "adapter/nearlink_adapter/src/advertiser_manager.cpp",
+      "adapter/nearlink_adapter/src/nearlink_ranging_callback.cpp",
+      "adapter/nearlink_adapter/src/nearlink_connection_callback.cpp",
     ]
   }
 

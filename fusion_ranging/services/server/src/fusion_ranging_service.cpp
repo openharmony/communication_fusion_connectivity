@@ -19,8 +19,6 @@
 
 #include "fusion_ranging_service.h"
 #include <functional>
-#include <dlfcn.h>
-#include <climits>
 #include <mutex>
 #include <chrono>
 #include "ranging_adapter_factory.h"
@@ -28,18 +26,6 @@
 #include "fcm_thread_util.h"
 #include "common_utils.h"
 #include "log_utils.h"
-
-namespace {
-#ifdef SUPPORT_NEARLINK_RANGING
-const std::string REFERENCE_LIB_PATH = std::string(NEARLINK_RANGING_ADAPTER_PATH);
-const std::string FILESEPARATOR = "/";
-const std::string REFERENCE_LIB_NAME = "libnearlink_ranging_adapter_ext.z.so";
-const std::string RANGING_ADAPTER_EXT_LIB = REFERENCE_LIB_PATH + FILESEPARATOR + REFERENCE_LIB_NAME;
-void *g_rangingAdapterHandle = nullptr;
-std::mutex g_rangingAdapterMutex;
-std::once_flag g_rangingAdapterFlag;
-#endif
-}
 
 namespace OHOS {
 namespace FusionRanging {
@@ -291,43 +277,9 @@ int FusionRangingService::CreateRangingAdapter(RangingTypes capabilityType)
     return RANGING_NO_ERROR;
 }
 
-void FusionRangingService::InitConfiguration()
-{
-#ifdef SUPPORT_NEARLINK_RANGING
-    std::call_once(g_rangingAdapterFlag, [&]() {
-        std::lock_guard<std::mutex> lock(g_rangingAdapterMutex);
-        if (g_rangingAdapterHandle == nullptr) {
-            char canonicalPath[PATH_MAX] = {0};
-            if (realpath(RANGING_ADAPTER_EXT_LIB.c_str(), canonicalPath) == nullptr) {
-                HILOGE("Failed to normalize path: %{public}s", RANGING_ADAPTER_EXT_LIB.c_str());
-                return;
-            }
-            if (strncmp(canonicalPath, REFERENCE_LIB_PATH.c_str(), REFERENCE_LIB_PATH.length()) != 0) {
-                HILOGE("Invalid lib path after normalization: %{public}s", canonicalPath);
-                return;
-            }
-            g_rangingAdapterHandle = dlopen(canonicalPath, RTLD_NOW);
-            if (g_rangingAdapterHandle == nullptr) {
-                HILOGE("Failed to load ranging adapter ext lib: %{public}s", dlerror());
-                return;
-            }
-            HILOGI("Ranging adapter ext lib loaded successfully");
-        }
-    });
-#endif
-}
+void FusionRangingService::InitConfiguration() {}
 
-void FusionRangingService::DeInitConfiguration()
-{
-#ifdef SUPPORT_NEARLINK_RANGING
-    std::lock_guard<std::mutex> lock(g_rangingAdapterMutex);
-    if (g_rangingAdapterHandle != nullptr) {
-        dlclose(g_rangingAdapterHandle);
-        g_rangingAdapterHandle = nullptr;
-        HILOGI("Ranging adapter ext lib unloaded successfully");
-    }
-#endif
-}
+void FusionRangingService::DeInitConfiguration() {}
 
 std::shared_ptr<BaseRangingAdapter> FusionRangingService::GetAdapter(RangingTypes capabilityType)
 {

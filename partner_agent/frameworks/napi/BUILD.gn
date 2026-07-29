@@ -46,14 +46,21 @@ ohos_shared_library("partneragent") {
   }
 
   cflags_cc = [
-    "-Os",
+    "-Oz",
     "-fno-rtti",
     "-fno-exceptions",
     "-fdata-sections",
     "-ffunction-sections",
     "-fno-unwind-tables",
     "-fno-asynchronous-unwind-tables",
+    "-fno-merge-all-constants",
     "-flto",
+  ]
+
+  ldflags = [
+    "-flto",
+    "-Wl,--as-needed",
+    "-Wl,--gc-sections",
   ]
 
   defines = [
