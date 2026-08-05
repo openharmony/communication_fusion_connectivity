@@ -41,7 +41,8 @@ RangingParams *RangingParams::Unmarshalling(Parcel &parcel)
     if (!parcel.ReadInt32(capabilityType)) {
         return nullptr;
     }
-    if (capabilityType < static_cast<int32_t>(RangingTypes::NEARLINK_HADM)) {
+    if (capabilityType < static_cast<int32_t>(RangingTypes::NEARLINK_HADM) ||
+        capabilityType >= static_cast<int32_t>(RangingTypes::RANGING_TYPE_MAX)) {
         return nullptr;
     }
     auto *params = new (std::nothrow) RangingParams(deviceId, static_cast<RangingTypes>(capabilityType));

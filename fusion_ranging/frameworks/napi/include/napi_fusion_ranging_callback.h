@@ -61,6 +61,6 @@ public:
 private:
     SafeMap<std::string, std::shared_ptr<NapiRangingResultCallback>> rangingResultCallback_{};
 };
-}  // namespace Bluetooth
+}  // namespace FusionRanging
 }  // namespace OHOS
 #endif /* NAPI_FUSION_RANGING_CALLBACK_H */

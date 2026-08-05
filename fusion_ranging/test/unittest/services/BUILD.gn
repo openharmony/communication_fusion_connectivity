@@ -17,4 +17,9 @@ group("unit_test") {
     "server:unit_test",
     "ranging_adapter:unit_test",
   ]
+
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_nearlink_service)) {
+    deps += [ "nearlink_adapter:nearlink_adapter_unit_test", ]
+  }
 }

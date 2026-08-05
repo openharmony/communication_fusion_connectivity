@@ -84,7 +84,8 @@ private:
     void InitConfiguration();
     void DeInitConfiguration();
     int CreateRangingAdapter(RangingTypes capabilityType);
-    int HandleStartRanging(const RangingParams &params, const sptr<IRangingObserver> &observer, int32_t callerUid);
+    void HandleStartRanging(const RangingParams &params, const sptr<IRangingObserver> &observer, int32_t callerUid);
+    int ProcessStartRanging(const RangingParams &params, const sptr<IRangingObserver> &observer, int32_t callerUid);
     int HandleStartPassiveRanging(RangingTypes capabilityType, int32_t &advHandle,
                                   const sptr<IRangingObserver> &observer, int32_t callerUid);
     int PauseRanging(const std::string &deviceId);

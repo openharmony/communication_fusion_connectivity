@@ -23,7 +23,8 @@
 
 namespace OHOS {
 namespace FusionConnectivity {
-void NapiAsyncCallback::CallFunction(int errCode, const std::shared_ptr<NapiNativeObject> &object)
+void NapiAsyncCallback::CallFunction(int errCode, const std::shared_ptr<NapiNativeObject> &object,
+    const std::string &errMsg)
 {
     if (callback == nullptr && promise == nullptr) {
         HILOGE("callback & promise is nullptr");
@@ -35,11 +36,11 @@ void NapiAsyncCallback::CallFunction(int errCode, const std::shared_ptr<NapiNati
     }
 
     if (callback) {
-        callback->CallFunction(errCode, object);
+        callback->CallFunction(errCode, object, errMsg);
         return;
     }
     if (promise) {
-        promise->ResolveOrReject(errCode, object);
+        promise->ResolveOrReject(errCode, object, errMsg);
     }
 }
 
@@ -132,8 +133,9 @@ void NapiCallback::CallFunction(const std::shared_ptr<NapiNativeObject> &object)
     NapiCallFunction(env_, callbackRef_, &val, ARGS_SIZE_ONE);
 }
 
-static napi_value GetCallbackErrorValue(napi_env env, int errCode)
+static napi_value GetCallbackErrorValue(napi_env env, int errCode, const std::string &errMsg)
 {
+    HILOGE("errCode: %{public}d", errCode);
     napi_value result = NapiGetNull(env);
     napi_value eCode = NapiGetNull(env);
     if (errCode == FCM_NO_ERROR) {
@@ -143,14 +145,14 @@ static napi_value GetCallbackErrorValue(napi_env env, int errCode)
     NAPI_CALL(env, napi_create_object(env, &result));
     NAPI_CALL(env, napi_set_named_property(env, result, "code", eCode));
 
-    std::string errMsg = GetNapiErrMsg(env, errCode);
+    std::string messageStr = errMsg.empty() ? GetNapiErrMsg(env, errCode) : errMsg;
     napi_value message = nullptr;
-    napi_create_string_utf8(env, errMsg.c_str(), NAPI_AUTO_LENGTH, &message);
+    napi_create_string_utf8(env, messageStr.c_str(), NAPI_AUTO_LENGTH, &message);
     napi_set_named_property(env, result, "message", message);
     return result;
 }
 
-void NapiCallback::CallFunction(int errCode, const std::shared_ptr<NapiNativeObject> &object)
+void NapiCallback::CallFunction(int errCode, const std::shared_ptr<NapiNativeObject> &object, const std::string &errMsg)
 {
     if (!IsValidNapiEnv()) {
         HILOGW("napi env is exit");
@@ -162,7 +164,7 @@ void NapiCallback::CallFunction(int errCode, const std::shared_ptr<NapiNativeObj
     }
 
     NapiHandleScope scope(env_);
-    napi_value code = GetCallbackErrorValue(env_, errCode);
+    napi_value code = GetCallbackErrorValue(env_, errCode, errMsg);
     napi_value val = object->ToNapiValue(env_);
     napi_value argv[ARGS_SIZE_TWO] = {code, val};
     NapiCallFunction(env_, callbackRef_, argv, ARGS_SIZE_TWO);
@@ -225,7 +227,8 @@ NapiPromise::~NapiPromise()
     napi_remove_env_cleanup_hook(env_, NapiPromiseEnvCleanupHook, this);
 }
 
-void NapiPromise::ResolveOrReject(int errCode, const std::shared_ptr<NapiNativeObject> &object)
+void NapiPromise::ResolveOrReject(int errCode, const std::shared_ptr<NapiNativeObject> &object,
+    const std::string &errMsg)
 {
     if (!IsValidNapiEnv()) {
         HILOGW("napi env is exit");
@@ -247,7 +250,7 @@ void NapiPromise::ResolveOrReject(int errCode, const std::shared_ptr<NapiNativeO
         napi_value val = object->ToNapiValue(env_);
         Resolve(val);
     } else {
-        napi_value code = GetCallbackErrorValue(env_, errCode);
+        napi_value code = GetCallbackErrorValue(env_, errCode, errMsg);
         Reject(code);
     }
     isResolvedOrRejected_ = true;

@@ -91,6 +91,7 @@ taihe_shared_library("FusionConnectivityRanging_taihe_native") {
     cfi_cross_dso = true
     integer_overflow = true
     ubsan = true
+    cfi_vcall_icall_only = true
     debug = false
   }
 }
