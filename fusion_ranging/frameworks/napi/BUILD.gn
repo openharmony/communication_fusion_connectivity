@@ -68,7 +68,6 @@ ohos_shared_library("ranging") {
     "c_utils:utils",
     "libuv:uv",
     "napi:ace_napi",
-    "node:node_header_notice",
     "hiappevent:hiappevent_innerapi",
   ]
 
