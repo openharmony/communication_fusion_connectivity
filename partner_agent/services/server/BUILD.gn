@@ -87,12 +87,22 @@ ohos_shared_library("partner_device_agent_server") {
   }
 
   cflags_cc = [
+    "-Oz",
+    "-fno-rtti",
+    "-fno-exceptions",
     "-fdata-sections",
     "-ffunction-sections",
     "-fno-unwind-tables",
     "-fno-asynchronous-unwind-tables",
-    "-Os",
+    "-fno-merge-all-constants",
+    "-flto",
     "-fvisibility=hidden",
+  ]
+
+  ldflags = [
+    "-flto",
+    "-Wl,--as-needed",
+    "-Wl,--gc-sections",
   ]
 
   configs = [
@@ -126,18 +136,29 @@ ohos_shared_library("libpartner_agent_extension_service") {
   }
   branch_protector_ret = "pac_ret"
 
-  version_script = "libpartner_device_agent_server_version_script.txt"
-  cflags = [
+  version_script = "libpartner_agent_extension_service_version_script.txt"
+  cflags_cc = [
+    "-Oz",
+    "-fno-rtti",
+    "-fno-exceptions",
+    "-fdata-sections",
+    "-ffunction-sections",
+    "-fno-unwind-tables",
+    "-fno-asynchronous-unwind-tables",
+    "-fno-merge-all-constants",
+    "-flto",
     "-fno-math-errno",
     "-fno-unroll-loops",
-    "-fmerge-all-constants",
     "-fno-ident",
-    "-Oz",
-    "-flto",
-    "-ffunction-sections",
-    "-fdata-sections",
+    "-fvisibility=hidden",
     "-DFUSION_CONNECTIVITY_SETTINGS_BUNDLE_NAME=\"${fusion_connectivity_settings_bundle_name}\"",
-    "-DFUSION_CONNECTIVITY_SETTINGS_MAIN_ABILITY=\"${fusion_connectivity_settings_main_ability}\"" ,
+    "-DFUSION_CONNECTIVITY_SETTINGS_MAIN_ABILITY=\"${fusion_connectivity_settings_main_ability}\"",
+  ]
+
+  ldflags = [
+    "-flto",
+    "-Wl,--as-needed",
+    "-Wl,--gc-sections",
   ]
 
   sources = [

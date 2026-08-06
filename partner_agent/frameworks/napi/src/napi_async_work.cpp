@@ -24,6 +24,7 @@
 #include "napi_timer.h"
 #include "napi_parser_utils.h"
 #include "napi_ha_event_utils.h"
+#include "napi_fusion_connectivity_error.h"
 
 namespace OHOS {
 namespace FusionConnectivity {
@@ -39,6 +40,27 @@ std::shared_ptr<NapiAsyncWork> NapiAsyncWorkFactory::CreateAsyncWork(napi_env en
     // add custom deleter for destructing in JS thread.
     std::shared_ptr<NapiAsyncWork> napiAsyncWork(
         new NapiAsyncWork(env, asyncWork, asyncCallback, needCallback, haUtils),
+        [env](NapiAsyncWork *ptr) {
+            DoInJsMainThread(env, [ptr]() {
+                if (ptr) {
+                    delete ptr;
+                }
+            });
+        });
+    return napiAsyncWork;
+}
+
+std::shared_ptr<NapiAsyncWork> NapiAsyncWorkFactory::CreateAsyncWork(napi_env env, napi_callback_info info,
+    std::function<NapiAsyncWorkRet(void)> asyncWork, bool needCallback, ApiContext apiContext)
+{
+    auto asyncCallback = NapiParseAsyncCallback(env, info);
+    if (!asyncCallback) {
+        HILOGE("asyncCallback is nullptr!");
+        return nullptr;
+    }
+    // add custom deleter for destructing in JS thread.
+    std::shared_ptr<NapiAsyncWork> napiAsyncWork(
+        new NapiAsyncWork(env, asyncWork, asyncCallback, needCallback, apiContext),
         [env](NapiAsyncWork *ptr) {
             DoInJsMainThread(env, [ptr]() {
                 if (ptr) {
@@ -70,10 +92,6 @@ void NapiAsyncWork::Info::Complete(void)
         return;
     }
 
-    if (napiAsyncWork->haUtils_) {
-        napiAsyncWork->haUtils_->WriteErrCode(errCode);
-    }
-
     // need wait callback
     if (needCallback && (errCode == FCM_NO_ERROR)) {
         if (napiAsyncWork->triggered_) {
@@ -101,7 +119,19 @@ void NapiAsyncWork::Info::Complete(void)
 
     if (napiAsyncWork->napiAsyncCallback_) {
         napiAsyncWork->triggered_ = true;
-        napiAsyncWork->napiAsyncCallback_->CallFunction(errCode, object);
+        auto haUtils = napiAsyncWork->GetHaUtilsPtr();
+        if (haUtils) {
+            haUtils->WriteErrCode(errCode);
+        }
+        std::vector<int32_t> validErrCodes = napiAsyncWork->validErrCodes_;
+        std::string errMsg;
+        if (!validErrCodes.empty()) {
+            validErrCodes.emplace_back(FCM_NO_ERROR); // FCM_NO_ERROR is valid error code
+            auto result = ProcessErrCode(errCode, validErrCodes);
+            errCode = result.errCode;
+            errMsg = result.errMsg;
+        }
+        napiAsyncWork->napiAsyncCallback_->CallFunction(errCode, object, errMsg);
     }
 }
 
@@ -159,6 +189,9 @@ void NapiAsyncWork::CallFunction(int errCode, std::shared_ptr<NapiNativeObject> 
 {
     if (!needCallback_.load()) {
         HILOGE("Unsupported in no needCallback mode");
+        if (haUtils_) {
+            haUtils_->WriteErrCode(FCM_ERR_INTERNAL_ERROR);
+        }
         return;
     }
 
@@ -172,9 +205,20 @@ void NapiAsyncWork::CallFunction(int errCode, std::shared_ptr<NapiNativeObject> 
     NapiTimer::GetInstance()->Unregister(timerId_);
 
     triggered_ = true;
-    auto func = [errCode, nativeObj, asyncWorkPtr = shared_from_this()]() {
+    auto func = [errCode, nativeObj, asyncWorkPtr = shared_from_this(), this]() {
         if (asyncWorkPtr && asyncWorkPtr->napiAsyncCallback_) {
-            asyncWorkPtr->napiAsyncCallback_->CallFunction(errCode, nativeObj);
+            auto haUtils = asyncWorkPtr->GetHaUtilsPtr();
+            if (haUtils) {
+                haUtils->WriteErrCode(errCode);
+            }
+            std::vector<int32_t> validErrCodes = validErrCodes_;
+            if (!validErrCodes.empty()) {
+                validErrCodes.emplace_back(FCM_NO_ERROR); // FCM_NO_ERROR is valid error code
+                auto result = ProcessErrCode(errCode, validErrCodes);
+                asyncWorkPtr->napiAsyncCallback_->CallFunction(result.errCode, nativeObj, result.errMsg);
+            } else {
+                asyncWorkPtr->napiAsyncCallback_->CallFunction(errCode, nativeObj);
+            }
         }
     };
     DoInJsMainThread(env_, std::move(func));

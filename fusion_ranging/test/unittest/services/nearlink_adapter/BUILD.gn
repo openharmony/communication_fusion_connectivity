@@ -1,0 +1,148 @@
+# Copyright (C) 2026 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/test.gni")
+import("//build/ohos_var.gni")
+
+module_output_path = "fusion_connectivity/fusion_ranging"
+FUSION_RANGING = "//foundation/communication/fusion_connectivity/fusion_ranging"
+
+config("nearlink_adapter_unittest_config") {
+  include_dirs = [
+    "${target_gen_dir}",
+    "$FUSION_RANGING/services/server/adapter/nearlink_adapter/include",
+    "$FUSION_RANGING/services/server/adapter/nearlink_adapter/src",
+    "$FUSION_RANGING/services/ranging_adapter/include",
+    "$FUSION_RANGING/interfaces/inner_api",
+    "$FUSION_RANGING/idl/include",
+    "$FUSION_RANGING/services/common/include",
+    "$FUSION_RANGING/../partner_agent/frameworks/inner/include",
+    "$FUSION_RANGING/../partner_agent/interfaces/inner_api",
+    "$FUSION_RANGING/../partner_agent/services/common/include",
+  ]
+
+  defines = [
+    "LOG_DOMAIN = 0xD000100",
+    "private = public",
+    "protected = public",
+  ]
+}
+
+if (defined(global_parts_info) &&
+    defined(global_parts_info.communication_nearlink_service)) {
+  nearlink_adapter_common_sources = [
+    "$FUSION_RANGING/services/server/adapter/nearlink_adapter/src/ranging_manager.cpp",
+    "$FUSION_RANGING/services/server/adapter/nearlink_adapter/src/nearlink_ranging_callback.cpp",
+    "$FUSION_RANGING/services/server/adapter/nearlink_adapter/src/nearlink_connection_callback.cpp",
+    "$FUSION_RANGING/../partner_agent/services/common/src/fcm_thread_util.cpp",
+  ]
+
+  nearlink_adapter_test_external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+    "ffrt:libffrt",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+    "nearlink_service:nearlink_framework",
+  ]
+
+  ohos_unittest("advertiser_manager_test") {
+    module_out_path = module_output_path
+
+    sources = [
+      "advertiser_manager_test.cpp",
+      "$FUSION_RANGING/services/server/adapter/nearlink_adapter/src/connection_manager.cpp",
+    ] + nearlink_adapter_common_sources
+
+    configs = [ ":nearlink_adapter_unittest_config" ]
+
+    deps = [
+      "$FUSION_RANGING/services/ranging_adapter:fusion_ranging_adapter",
+      "$FUSION_RANGING/services/common:fusion_ranging_common",
+    ]
+
+    external_deps = nearlink_adapter_test_external_deps
+  }
+
+  ohos_unittest("ranging_manager_test") {
+    module_out_path = module_output_path
+
+    sources = [
+      "ranging_manager_test.cpp",
+      "$FUSION_RANGING/services/server/adapter/nearlink_adapter/src/advertiser_manager.cpp",
+      "$FUSION_RANGING/services/server/adapter/nearlink_adapter/src/connection_manager.cpp",
+      "$FUSION_RANGING/services/server/adapter/nearlink_adapter/src/nearlink_ranging_adapter.cpp",
+    ] + nearlink_adapter_common_sources
+
+    configs = [ ":nearlink_adapter_unittest_config" ]
+
+    deps = [
+      "$FUSION_RANGING/services/ranging_adapter:fusion_ranging_adapter",
+      "$FUSION_RANGING/services/common:fusion_ranging_common",
+    ]
+
+    external_deps = nearlink_adapter_test_external_deps
+  }
+
+  ohos_unittest("connection_manager_test") {
+    module_out_path = module_output_path
+
+    sources = [
+      "connection_manager_test.cpp",
+      "$FUSION_RANGING/services/server/adapter/nearlink_adapter/src/advertiser_manager.cpp",
+    ] + nearlink_adapter_common_sources
+
+    configs = [ ":nearlink_adapter_unittest_config" ]
+
+    deps = [
+      "$FUSION_RANGING/services/ranging_adapter:fusion_ranging_adapter",
+      "$FUSION_RANGING/services/common:fusion_ranging_common",
+    ]
+
+    external_deps = nearlink_adapter_test_external_deps
+  }
+
+  ohos_unittest("nearlink_ranging_adapter_test") {
+    module_out_path = module_output_path
+
+    sources = [
+      "nearlink_ranging_adapter_test.cpp",
+      "$FUSION_RANGING/services/server/adapter/nearlink_adapter/src/nearlink_ranging_adapter.cpp",
+      "$FUSION_RANGING/services/server/adapter/nearlink_adapter/src/advertiser_manager.cpp",
+      "$FUSION_RANGING/services/server/adapter/nearlink_adapter/src/connection_manager.cpp",
+    ] + nearlink_adapter_common_sources
+
+    configs = [ ":nearlink_adapter_unittest_config" ]
+
+    deps = [
+      "$FUSION_RANGING/services/ranging_adapter:fusion_ranging_adapter",
+      "$FUSION_RANGING/services/common:fusion_ranging_common",
+    ]
+
+    external_deps = nearlink_adapter_test_external_deps
+  }
+}
+
+group("nearlink_adapter_unit_test") {
+  testonly = true
+
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.communication_nearlink_service)) {
+    deps = [
+      ":advertiser_manager_test",
+      ":ranging_manager_test",
+      ":connection_manager_test",
+      ":nearlink_ranging_adapter_test",
+    ]
+  }
+}
