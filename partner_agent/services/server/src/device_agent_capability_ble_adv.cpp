@@ -90,8 +90,10 @@ void DeviceAgentCapabilityBleAdv::Close()
 
 void DeviceAgentCapabilityBleAdv::StartBleScan()
 {
+    HILOGI("StartBleScan with curScanMode");
     std::lock_guard<std::mutex> lock(bleScanMutex_);
     if (!bleCentralManager_) {
+        HILOGE("bleCentralManager is nullptr");
         return;
     }
     bleCentralManager_->StopScan();
@@ -106,6 +108,7 @@ void DeviceAgentCapabilityBleAdv::StartBleScan()
 
 void DeviceAgentCapabilityBleAdv::StopBleScan()
 {
+    HILOGI("DeviceAgentCapabilityBleAdv StopBleScan");
     std::lock_guard<std::mutex> lock(bleScanMutex_);
     if (bleCentralManager_) {
         bleCentralManager_->StopScan();
@@ -115,6 +118,7 @@ void DeviceAgentCapabilityBleAdv::StopBleScan()
 
 void DeviceAgentCapabilityBleAdv::OnBluetoothDeviceAclConnected()
 {
+    HILOGI("StopBleScan at ble aclConnect");
     StopBleScan();
 
     isAclConnected_ = true;  // 解决 OnScanCallback 和 AclConnected 的多线程冲突
@@ -129,6 +133,7 @@ void DeviceAgentCapabilityBleAdv::OnBluetoothDeviceAclConnected()
 
 void DeviceAgentCapabilityBleAdv::OnBluetoothDeviceAclDisconnected()
 {
+    HILOGI("StartBleScan at ble aclDisConnect");
     StartBleScan();
 }
 
@@ -137,6 +142,7 @@ void DeviceAgentCapabilityBleAdv::OnScreenOn()
     curScanMode_ = SCAN_MODE_OP_P10_60_600;
     if (isScanStarted_.load()) {
         // 更改参数，重启BLE扫描
+        HILOGI("StartBleScan at SCAN_MODE_OP_P10_60_600");
         StartBleScan();
     }
 }
@@ -146,6 +152,7 @@ void DeviceAgentCapabilityBleAdv::OnScreenOff()
     curScanMode_ = SCAN_MODE_OP_P2_60_3000;
     if (isScanStarted_.load()) {
         // 更改参数，重启BLE扫描
+        HILOGI("StartBleScan at SCAN_MODE_OP_P2_60_3000");
         StartBleScan();
     }
 }
