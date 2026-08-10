@@ -22,6 +22,8 @@ namespace OHOS {
 namespace FusionConnectivity {
 
 static const int32_t INVALID_NOTIFICATION_ID = 0;
+static constexpr int32_t ERR_OK = 0;
+
 enum class NotificationType {
     INVALID_TYPE = 0,
     TELEPHONY_CONTROL_ONLY = 1,

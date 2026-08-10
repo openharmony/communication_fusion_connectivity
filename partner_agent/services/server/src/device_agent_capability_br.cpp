@@ -47,9 +47,11 @@ void DeviceAgentCapabilityBr::Close()
 void DeviceAgentCapabilityBr::OnBluetoothDeviceAclConnected()
 {
     if (!isInit_.load()) {
+        HILOGE("partner agent is not init");
         return;
     }
 
+    HILOGI("DeviceAgentCapabilityBr OnBluetoothDeviceAclConnected");
     funcs_.startExtension();
 
     // ACL连接成功，停止该设备的连接超时定时器
@@ -60,9 +62,10 @@ void DeviceAgentCapabilityBr::OnBluetoothDeviceAclConnected()
 void DeviceAgentCapabilityBr::OnBluetoothDeviceAclDisconnected()
 {
     if (!isInit_.load()) {
+        HILOGE("partner agent is not init");
         return;
     }
-
+    HILOGI("DeviceAgentCapabilityBr OnBluetoothDeviceAclDisconnected");
     // ACL断连3分钟后，销毁Extension，并重启开启BLE扫描
     auto func = [ptr = weak_from_this()]() {
         auto capabilitySptr = ptr.lock();

@@ -76,14 +76,7 @@ void ExtensionServiceConnection::NotifyOnDeviceDiscovered(const PartnerDeviceAdd
             HILOGI("Cache OnDeviceDiscovered state_ is %{public}d", sThis->state_);
             if (sThis->state_ == ExtensionServiceConnectionState::CREATED ||
                 sThis->state_ == ExtensionServiceConnectionState::DISCONNECTED) {
-                HILOGI("Connect ability");
-                sThis->state_ = ExtensionServiceConnectionState::CONNECTING;
-                AAFwk::Want want;
-                want.SetElementName(sThis->subscriberInfo_.bundleName, sThis->subscriberInfo_.extensionName);
-                int32_t result = AAFwk::AbilityManagerClient::GetInstance()->ConnectAbility(want,
-                    sThis, sThis->subscriberInfo_.userId);
-                //ability failed, target ability not extension service   result:2097170    less param 2097152
-                HILOGE("ConnectAbility result:%{public}d", result);
+                sThis->state_ = sThis->ConnectAbility(sThis);
             }
             return;
         }
@@ -97,6 +90,25 @@ void ExtensionServiceConnection::NotifyOnDeviceDiscovered(const PartnerDeviceAdd
         }
     });
 }
+
+ExtensionServiceConnectionState ExtensionServiceConnection::ConnectAbility(
+    sptr<ExtensionServiceConnection> extensionServiceConnection)
+{
+    HILOGI("Connect ability");
+    AAFwk::Want want;
+    want.SetElementName(extensionServiceConnection->subscriberInfo_.bundleName,
+        extensionServiceConnection->subscriberInfo_.extensionName);
+    int32_t result = AAFwk::AbilityManagerClient::GetInstance()->ConnectAbility(want,
+        extensionServiceConnection, extensionServiceConnection->subscriberInfo_.userId);
+    HILOGI("ConnectAbility result:%{public}d", result);
+    //ability failed, target ability not extension service   result:2097170    less param 2097152
+    ExtensionServiceConnectionState connectState = extensionServiceConnection->state_;
+    if (result == ERR_OK) {
+        connectState = ExtensionServiceConnectionState::CONNECTING;
+    }
+    return connectState;
+}
+
 
 void ExtensionServiceConnection::NotifyOnDestroyWithReason(const int32_t reason,
     const std::shared_ptr<ExtensionSubscriberInfo> subscriberInfo)
@@ -118,14 +130,7 @@ void ExtensionServiceConnection::NotifyOnDestroyWithReason(const int32_t reason,
             HILOGI("Cache NotifyOnDestroyWithReason state_ is %{public}d", sThis->state_);
             if (sThis->state_ == ExtensionServiceConnectionState::CREATED||
                 sThis->state_ == ExtensionServiceConnectionState::DISCONNECTED) {
-                HILOGI("Connect ability");
-                sThis->state_ = ExtensionServiceConnectionState::CONNECTING;
-                AAFwk::Want want;
-                want.SetElementName(sThis->subscriberInfo_.bundleName, sThis->subscriberInfo_.extensionName);
-                int32_t result = AAFwk::AbilityManagerClient::GetInstance()->ConnectAbility(want, sThis,
-                    sThis->subscriberInfo_.userId);
-                //ability failed, target ability not extension service   result:2097170    less param 2097152
-                HILOGE("ConnectAbility result:%{public}d", result);
+                sThis->state_ = sThis->ConnectAbility(sThis);
             }
             return;
         }
@@ -155,6 +160,7 @@ void ExtensionServiceConnection::SetNotificationType(const NotificationType& not
 void ExtensionServiceConnection::OnAbilityConnectDone(
     const AppExecFwk::ElementName &element, const sptr<IRemoteObject> &remoteObject, int resultCode)
 {
+    HILOGI("OnAbilityConnectDone %{public}s", subscriberInfo_.GetKey().c_str());
     std::lock_guard<ffrt::recursive_mutex> lock(mutex_);
     state_ = ExtensionServiceConnectionState::CONNECTED;
     int32_t notificationId = 0;
@@ -186,7 +192,7 @@ void ExtensionServiceConnection::OnAbilityConnectDone(
 
 void ExtensionServiceConnection::OnAbilityDisconnectDone(const AppExecFwk::ElementName &element, int resultCode)
 {
-    HILOGD("OnAbilityDisconnectDone %{public}s", subscriberInfo_.GetKey().c_str());
+    HILOGI("OnAbilityDisconnectDone %{public}s", subscriberInfo_.GetKey().c_str());
     std::lock_guard<ffrt::recursive_mutex> lock(mutex_);
     state_ = ExtensionServiceConnectionState::DISCONNECTED;
     ExtensionServiceConnectionNotifier::GetInstance().CancelNotification(notificationId_.load());

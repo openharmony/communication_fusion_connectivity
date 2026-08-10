@@ -226,6 +226,7 @@ void PartnerDevice::OnBluetoothDeviceAclStateChange(const OHOS::EventFwk::Common
     HILOGI("%{public}s acl state change, isConnect: %{public}d", GetEncryptAddr(addr).c_str(), isConnect);
     DeviceInfo deviceInfo = GetDeviceInfo();
     if (deviceInfo.realDeviceAddress.GetAddress() != addr) {
+        HILOGE("address not correct.");
         return;
     }
 
