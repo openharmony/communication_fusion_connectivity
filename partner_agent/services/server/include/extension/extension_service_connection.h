@@ -67,6 +67,7 @@ private:
     void OnRemoteDied(const wptr<IRemoteObject> &remote);
     static void AppendMessage(std::string& message, ErrCode callResult, int32_t retResult);
     void SetNotificationId(int32_t notificationId);
+    ExtensionServiceConnectionState ConnectAbility(sptr<ExtensionServiceConnection> extensionServiceConnection);
 
     enum class NotifyType {
         OnDeviceDiscovered,
