@@ -20,6 +20,7 @@
 #include "device_agent_capability_ble_adv.h"
 #include "log_util.h"
 #include "partner_device.h"
+#include "bluetooth_remote_device.h"
 
 namespace OHOS {
 namespace FusionConnectivity {
@@ -64,6 +65,17 @@ void DeviceAgentCapabilityBleAdv::Init(const std::string &addr)
         bluetoothScanCallback_ = std::make_shared<BluetoothScanCallback>(weak_from_this());
         bleCentralManager_ = std::make_unique<BleCentralManager>(bluetoothScanCallback_);
     }
+
+    // 设备已处于ACL连接状态时不下发扫描：
+    // 此时不会再有新的ACL_CONNECTED事件，若扫描到设备会启动3分钟定时器
+    // 却等不到连接事件，导致Extension被误销毁；extension的拉起由BR能力Init兜底
+    BluetoothRemoteDevice device(addr);
+    if (device.IsAclConnected()) {
+        isAclConnected_.store(true);
+        HILOGI("device is already acl connected, skip ble scan");
+        return;
+    }
+
     StartBleScan();
 }
 
@@ -86,6 +98,7 @@ void DeviceAgentCapabilityBleAdv::Close()
         powerInhibitTimer_ = nullptr;
         timeoutCount_.store(0);
     }
+    isAclConnected_.store(false);
 }
 
 void DeviceAgentCapabilityBleAdv::StartBleScan()
@@ -134,6 +147,7 @@ void DeviceAgentCapabilityBleAdv::OnBluetoothDeviceAclConnected()
 void DeviceAgentCapabilityBleAdv::OnBluetoothDeviceAclDisconnected()
 {
     HILOGI("StartBleScan at ble aclDisConnect");
+    isAclConnected_.store(false);
     StartBleScan();
 }
 
