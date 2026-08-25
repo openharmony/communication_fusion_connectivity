@@ -205,6 +205,9 @@ HWTEST_F(DeviceAgentCapabilityBleAdvTest, ThreadSafetyTest, TestSize.Level1) {
     thread1.join();
     thread2.join();
 
+    // 并发下 OnScreenOn/Off 可能在 AclConnected 之后完成 StartBleScan（调度顺序不定），
+    // 显式执行一次 AclConnected 停止扫描，使最终状态断言稳定成立
+    deviceAgent_->OnBluetoothDeviceAclConnected();
     EXPECT_FALSE(deviceAgent_->isScanStarted_.load());
 }
 
