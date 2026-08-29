@@ -56,6 +56,16 @@ do {                                                     \
     NAPI_FCM_ASSERT_RETURN((env), (cond), (errCode), res); \
 } while (0)
 
+// verify error code
+#define NAPI_FCM_ASSERT_RETURN_VERIFY(env, cond, errCode, retObj)   \
+do {                                                               \
+    std::vector<int32_t> validErrCodes = apiContext.validErrCodes; \
+    if (!(cond)) {                                                 \
+        HandleSyncErrAdapter((env), (errCode), validErrCodes);     \
+        return (retObj);                                           \
+    }                                                              \
+} while (0)
+
 struct ErrInfo {
     int32_t errCode;
     std::string errMsg;
@@ -101,6 +111,8 @@ void HandleSyncErr(napi_env env, int32_t errCode);
 void HandleSyncErrAdapter(const napi_env &env, int32_t errCode, std::vector<int32_t> &validErrCodes);
 void HandleSyncErrNumAdapter(const napi_env &env, int32_t errCode, std::vector<int32_t> &validErrCodes);
 std::string GetNapiErrMsg(napi_env env, int32_t errCode);
+bool IsInnerErrorCode(int32_t errCode);
+void ConvertInnerToBusinessErrCode(int32_t innerCode, ErrInfo &info);
 ErrInfo ProcessErrCode(int32_t originalCode, const std::vector<int32_t> &validErrCodes);
 }  // namespace FusionConnectivity
 }  // namespace OHOS

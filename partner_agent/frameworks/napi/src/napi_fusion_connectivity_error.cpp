@@ -35,6 +35,7 @@ static std::map<int32_t, std::string> napiErrMsgMap = {
     { FCM_ERR_APPLICATION_NOT_SUPPORT, "The application is not support PartnerDeviceExtensionAbility"},
     { FCM_ERR_DEVICE_NOT_PAIRED, "The device is not paired"},
     { FCM_ERR_DEVICE_ALREADY_BOUNDED, "The device is already bound"},
+    { FCM_ERR_BLUETOOTH_IS_OFF, "Bluetooth is off" },
     { FusionRanging::RANGING_ERR_DEVICE_NOT_INITIATED, "Device not initiated."},
     { FusionRanging::RANGING_ERR_DEVICE_ALREADY_INITIATED, "Device already initiated."},
     { FusionRanging::RANGING_ERR_RANGING_TYPE_NOT_SUPPORT, "Ranging type not support."},
@@ -80,10 +81,69 @@ void HandleSyncErr(napi_env env, int32_t errCode)
     FCM_CHECK_RETURN(ret == napi_ok, "napi_throw failed, ret: %{public}d", ret);
 }
 
+static std::map<int32_t, int32_t> innerToBusinessErrCodeMap {
+    // inner error code ->
+    // business error code (ARKTS API, file: fusion_connectivity_errorcode.h)
+    // One inner error code maps to one business error code, business error code can have multiple inner error codes.
+    { FCM_ERR_CONFIG_INVALID_ADDRESS_INFO, FCM_ERR_INTERNAL_ERROR },
+    { FCM_ERR_CONFIG_INVALID_ADDRESS, FCM_ERR_INTERNAL_ERROR },
+    { FCM_ERR_CONFIG_INVALID_ADDRESS_TYPE, FCM_ERR_INTERNAL_ERROR },
+    { FCM_ERR_CONFIG_INVALID_RAW_ADDRESS_TYPE, FCM_ERR_INTERNAL_ERROR },
+    { FCM_ERR_CONFIG_INVALID_CAPABILITY, FCM_ERR_INTERNAL_ERROR },
+    { FCM_ERR_CONFIG_INVALID_BUSINESS_CAPABILITY, FCM_ERR_INTERNAL_ERROR },
+    { FCM_ERR_CONFIG_DEVICE_EXPIRED, FCM_ERR_INTERNAL_ERROR },
+    { FCM_ERR_CONFIG_INVALID_JSON, FCM_ERR_INTERNAL_ERROR },
+    { FCM_ERR_CONFIG_INVALID_TOKEN_ID, FCM_ERR_INTERNAL_ERROR },
+    { FCM_ERR_EXTENSION_TYPE_NOT_SUPPORT, FCM_ERR_INTERNAL_ERROR },
+    { FCM_ERR_PROXY_IS_NULL, FCM_ERR_INTERNAL_ERROR },
+};
+
+static std::map<int32_t, std::string> innerErrMsgMap {
+    { FCM_ERR_CONFIG_INVALID_ADDRESS_INFO, "Operation failed. Invalid addressInfo format." },
+    { FCM_ERR_CONFIG_INVALID_ADDRESS, "Operation failed. Invalid address." },
+    { FCM_ERR_CONFIG_INVALID_ADDRESS_TYPE, "Operation failed. Invalid address type." },
+    { FCM_ERR_CONFIG_INVALID_RAW_ADDRESS_TYPE, "Operation failed. Invalid raw address type." },
+    { FCM_ERR_CONFIG_INVALID_CAPABILITY, "Operation failed. Invalid capability format." },
+    { FCM_ERR_CONFIG_INVALID_BUSINESS_CAPABILITY, "Operation failed. Invalid business capability format." },
+    { FCM_ERR_CONFIG_DEVICE_EXPIRED,
+        "Operation failed. The device has been unpaired for more than 30 days." },
+    { FCM_ERR_CONFIG_INVALID_JSON, "Operation failed. Invalid partner device config JSON format." },
+    { FCM_ERR_CONFIG_INVALID_TOKEN_ID, "Operation failed. Invalid tokenId, the app is uninstalled." },
+    { FCM_ERR_EXTENSION_TYPE_NOT_SUPPORT, "Operation failed. The extension is not partnerAgent type." },
+    { FCM_ERR_PROXY_IS_NULL, "Operation failed. SA proxy is nullptr." },
+};
+
+bool IsInnerErrorCode(int32_t errCode)
+{
+    return innerToBusinessErrCodeMap.find(errCode) != innerToBusinessErrCodeMap.end();
+}
+
+void ConvertInnerToBusinessErrCode(int32_t innerCode, ErrInfo &info)
+{
+    info.errCode = innerCode;
+    info.errMsg = "Unknown inner error.";
+    // find business errCode
+    auto mapIter = innerToBusinessErrCodeMap.find(innerCode);
+    if (mapIter != innerToBusinessErrCodeMap.end()) {
+        info.errCode = mapIter->second;
+    }
+    // find inner errMsg
+    auto innerMsgIter = innerErrMsgMap.find(innerCode);
+    if (innerMsgIter != innerErrMsgMap.end()) {
+        info.errMsg = innerMsgIter->second;
+    }
+    HILOGI("innerCode: %{public}d -> errCode: %{public}d, msg: %{public}s",
+        innerCode, info.errCode, info.errMsg.c_str());
+}
+
 ErrInfo ProcessErrCode(int32_t originalCode, const std::vector<int32_t> &validErrCodes)
 {
     ErrInfo result = { originalCode, "" };
-    // inner code: originalCode -> business errCode + specific errMsg, reserved
+    // inner code: originalCode -> business errCode + specific errMsg
+    if (IsInnerErrorCode(originalCode)) {
+        ConvertInnerToBusinessErrCode(originalCode, result);
+        return result;
+    }
     bool isValidCode = false;
     for (const auto &code: validErrCodes) {
         if (code == result.errCode) {
@@ -92,7 +152,7 @@ ErrInfo ProcessErrCode(int32_t originalCode, const std::vector<int32_t> &validEr
         }
     }
     if (!isValidCode) {
-        // invalid code: BT_ERR_INTERNAL_ERROR + specific errMsg
+        // invalid code: FCM_ERR_INTERNAL_ERROR + specific errMsg
         result.errCode = FCM_ERR_INTERNAL_ERROR;
         result.errMsg = "Operation failed";
     } else {
