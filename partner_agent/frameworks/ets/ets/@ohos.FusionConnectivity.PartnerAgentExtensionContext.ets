@@ -15,5 +15,6 @@
 
 import type ExtensionContext from 'application.ExtensionContext';
 
-export default class PartnerAgentExtensionContext extends ExtensionContext {}
-
+export default class PartnerAgentExtensionContext extends ExtensionContext {
+  private nativePartnerAgentExtensionContext: long = 0;
+}

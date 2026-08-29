@@ -17,27 +17,21 @@
 #endif
 
 #include "log.h"
-#include "js_partner_agent_extension.h"
 #include "partner_agent_extension.h"
 
 namespace OHOS {
 namespace FusionConnectivity {
 using namespace OHOS::AppExecFwk;
+
 PartnerAgentExtension* PartnerAgentExtension::Create(
     const std::unique_ptr<AbilityRuntime::Runtime>& runtime)
 {
     HILOGI("Create begin.");
     if (!runtime) {
-        HILOGI("Create !runtime.");
-        return new (std::nothrow) PartnerAgentExtension();
+        HILOGE("runtime is null.");
+        return nullptr;
     }
-
-    switch (runtime->GetLanguage()) {
-        case AbilityRuntime::Runtime::Language::JS:
-            return JsPartnerAgentExtension::Create(runtime);
-        default:
-            return new (std::nothrow) PartnerAgentExtension();
-    }
+    return new (std::nothrow) PartnerAgentExtension();
 }
 
 void PartnerAgentExtension::Init(const std::shared_ptr<AbilityLocalRecord>& record,

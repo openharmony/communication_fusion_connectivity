@@ -83,7 +83,6 @@ ohos_shared_library("partneragentextensionability_napi") {
   deps = [
     ":partner_agent_extension_ability_abc",
     ":partner_agent_extension_ability_js",
-    "$FUSION_CONN/partner_agent/frameworks/inner:partner_agent_extension_common",
     "$FUSION_CONN/partner_agent/frameworks/napi:partneragent",
     "$FUSION_CONN/partner_agent/idl:partner_agent_extension_ipc",
   ]

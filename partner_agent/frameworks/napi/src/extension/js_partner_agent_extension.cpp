@@ -78,10 +78,14 @@ napi_value AttachPartnerAgentExtensionContext(napi_env env, void* value, void*)
     return napiContextObj;
 }
 
-JsPartnerAgentExtension* JsPartnerAgentExtension::Create(
+__attribute__((visibility("default"))) JsPartnerAgentExtension* JsPartnerAgentExtension::Create(
     const std::unique_ptr<AbilityRuntime::Runtime>& runtime)
 {
     HILOGI("Js partner agent extension create.");
+    if (runtime == nullptr) {
+        HILOGE("runtime is null");
+        return nullptr;
+    }
     return new (std::nothrow) JsPartnerAgentExtension(static_cast<AbilityRuntime::JsRuntime&>(*runtime));
 }
 

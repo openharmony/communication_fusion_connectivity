@@ -38,7 +38,8 @@ public:
         * @param runtime The runtime.
         * @return The JsPartnerAgentExtension instance.
         */
-    static JsPartnerAgentExtension* Create(const std::unique_ptr<AbilityRuntime::Runtime>& runtime);
+    static JsPartnerAgentExtension* Create(const std::unique_ptr<AbilityRuntime::Runtime>& runtime)
+        __attribute__((visibility("default")));
 
     void Init(const std::shared_ptr<AppExecFwk::AbilityLocalRecord>& record,
                 const std::shared_ptr<AppExecFwk::OHOSApplication>& application,
