@@ -148,16 +148,16 @@ int ParseAddressInfoJsonObject(const cJSON *addressInfo, PartnerDeviceAddress &d
         (rawAddressType != nullptr && !cJSON_IsNumber(rawAddressType));
     if (isCheckFail) {
         HILOGE("Invalid addressInfo format.");
-        return FCM_ERR_INTERNAL_ERROR;
+        return FCM_ERR_CONFIG_INVALID_ADDRESS_INFO;
     }
     if (!IsValidAddress(address->valuestring)) {
         HILOGE("Invalid address");
-        return FCM_ERR_INTERNAL_ERROR;
+        return FCM_ERR_CONFIG_INVALID_ADDRESS;
     }
     if (addressType->valueint < static_cast<int>(BluetoothAddressType::VIRTUAL) ||
         addressType->valueint > static_cast<int>(BluetoothAddressType::REAL)) {
         HILOGE("Invalid addressType: %{public}d", addressType->valueint);
-        return FCM_ERR_INTERNAL_ERROR;
+        return FCM_ERR_CONFIG_INVALID_ADDRESS_TYPE;
     }
     deviceAddress = PartnerDeviceAddress(
         address->valuestring, static_cast<BluetoothAddressType>(addressType->valueint));
@@ -165,7 +165,7 @@ int ParseAddressInfoJsonObject(const cJSON *addressInfo, PartnerDeviceAddress &d
         if (rawAddressType->valueint < static_cast<int>(BluetoothRawAddressType::PUBLIC) ||
             rawAddressType->valueint > static_cast<int>(BluetoothRawAddressType::RANDOM)) {
             HILOGE("Invalid rawAddressType: %{public}d", rawAddressType->valueint);
-            return FCM_ERR_INTERNAL_ERROR;
+            return FCM_ERR_CONFIG_INVALID_RAW_ADDRESS_TYPE;
         }
         deviceAddress = PartnerDeviceAddress(
             address->valuestring,
@@ -182,7 +182,7 @@ int ParseDeviceCapability(const cJSON *capability, DeviceCapability &deviceCapab
     bool isCheckFail = !cJSON_IsBool(isSupportBR) || !cJSON_IsBool(isSupportBleAdvertiser);
     if (isCheckFail) {
         HILOGE("Invalid capability format.");
-        return FCM_ERR_INTERNAL_ERROR;
+        return FCM_ERR_CONFIG_INVALID_CAPABILITY;
     }
     deviceCapability.isSupportBR = static_cast<bool>(isSupportBR->valueint);
     deviceCapability.isSupportBleAdvertiser = static_cast<bool>(isSupportBleAdvertiser->valueint);
@@ -198,7 +198,7 @@ int ParseBusinessCapability(const cJSON *businessCapabilityJson, BusinessCapabil
     bool isCheckFail = !cJSON_IsBool(isSupportMediaControl) || !cJSON_IsBool(isSupportTelephonyControl);
     if (isCheckFail) {
         HILOGE("Invalid business capability format.");
-        return FCM_ERR_INTERNAL_ERROR;
+        return FCM_ERR_CONFIG_INVALID_BUSINESS_CAPABILITY;
     }
     businessCapability.isSupportMediaControl = static_cast<bool>(isSupportMediaControl->valueint);
     businessCapability.isSupportTelephonyControl = static_cast<bool>(isSupportTelephonyControl->valueint);
@@ -219,7 +219,7 @@ int ParseLostTimestamp(
         int64_t now = GetDaysSince1970ToNow();
         if (now - lostTimestamp->valueint > MAX_LOST_TIME_DAYS) {
             HILOGE("The device has been unpaired for more than 30 days; delete it.");
-            return FCM_ERR_INTERNAL_ERROR;
+            return FCM_ERR_CONFIG_DEVICE_EXPIRED;
         }
         deviceInfo.lostTimestamp = lostTimestamp->valueint;
     } else {
@@ -235,7 +235,7 @@ int ParseLostTimestamp(
 int ParsePartnerDeviceInfo(cJSON *root, int index, PartnerDevice::DeviceInfo &deviceInfo)
 {
     cJSON *item = cJSON_GetArrayItem(root, index);
-    FCM_CHECK_RETURN_RET(item, FCM_ERR_INTERNAL_ERROR, "Failed to get array item (%{public}d).", index);
+    FCM_CHECK_RETURN_RET(item, FCM_ERR_CONFIG_INVALID_JSON, "Failed to get array item (%{public}d).", index);
 
     const cJSON *version = cJSON_GetObjectItemCaseSensitive(item, "version");
     const cJSON *bundleName = cJSON_GetObjectItemCaseSensitive(item, "bundleName");
@@ -251,32 +251,33 @@ int ParsePartnerDeviceInfo(cJSON *root, int index, PartnerDevice::DeviceInfo &de
     bool isCheckFail = !cJSON_IsString(version) || !cJSON_IsString(bundleName) || !cJSON_IsString(abilityName) ||
         !cJSON_IsObject(addressInfo) || !cJSON_IsNumber(tokenId) || !cJSON_IsNumber(registerTimestamp) ||
         !cJSON_IsObject(capability) || !cJSON_IsBool(isUserEnabled);
-    FCM_CHECK_RETURN_RET(!isCheckFail, FCM_ERR_INTERNAL_ERROR, "Invalid JSON format.");
+    FCM_CHECK_RETURN_RET(!isCheckFail, FCM_ERR_CONFIG_INVALID_JSON, "Invalid JSON format.");
 
+    int ret = FCM_NO_ERROR;
     // 解析 addressInfo 对象
     PartnerDeviceAddress deviceAddress;
-    if (ParseAddressInfoJsonObject(addressInfo, deviceAddress) != FCM_NO_ERROR) {
-        return FCM_ERR_INTERNAL_ERROR;
+    if ((ret = ParseAddressInfoJsonObject(addressInfo, deviceAddress)) != FCM_NO_ERROR) {
+        return ret;
     }
     PartnerDeviceAddress realDeviceAddress = GetRealDeviceAddress(deviceAddress);
     // 解析 capability 对象
     DeviceCapability deviceCapability;
-    if (ParseDeviceCapability(capability, deviceCapability) != FCM_NO_ERROR) {
-        return FCM_ERR_INTERNAL_ERROR;
+    if ((ret = ParseDeviceCapability(capability, deviceCapability)) != FCM_NO_ERROR) {
+        return ret;
     }
     // 解析 businessCapability 对象
     BusinessCapability businessCapability;
-    if (ParseBusinessCapability(businessCapabilityJson, businessCapability) != FCM_NO_ERROR) {
-        return FCM_ERR_INTERNAL_ERROR;
+    if ((ret = ParseBusinessCapability(businessCapabilityJson, businessCapability)) != FCM_NO_ERROR) {
+        return ret;
     }
     // 检查tokenid是否有效
     if (!IsValidAppTokenId(tokenId->valueint)) {
         HILOGE("Invalid tokenId: %{public}d, app is uninstall", tokenId->valueint);
-        return FCM_ERR_INTERNAL_ERROR;
+        return FCM_ERR_CONFIG_INVALID_TOKEN_ID;
     }
     // 检查 lostTimestamp 注册是否失效
-    if (ParseLostTimestamp(lostTimestamp, realDeviceAddress, deviceInfo) != FCM_NO_ERROR) {
-        return FCM_ERR_INTERNAL_ERROR;
+    if ((ret = ParseLostTimestamp(lostTimestamp, realDeviceAddress, deviceInfo)) != FCM_NO_ERROR) {
+        return ret;
     }
 
     deviceInfo.bundleName = bundleName->valuestring;

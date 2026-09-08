@@ -261,7 +261,7 @@ ErrCode PartnerDeviceAgentServer::BindDevice(
         partnerAgentExtensionAbilityName) == false) {
         HILOGE("%{public}s extension is not partnerAgent type.", partnerAgentExtensionAbilityName.c_str());
         AttemptUnloadPartnerAgent();
-        return FCM_ERR_INTERNAL_ERROR;
+        return FCM_ERR_EXTENSION_TYPE_NOT_SUPPORT;
     }
     // 应用注册虚拟地址，partnerAgent服务需要固化该虚拟地址
     if (deviceAddress.GetAddressType() == BluetoothAddressType::VIRTUAL) {

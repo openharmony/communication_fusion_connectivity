@@ -207,7 +207,7 @@ int PartnerDeviceAgent::IsDeviceBound(const PartnerDeviceAddress &deviceAddress,
     }
 
     auto proxy = LoadRemoteSa();
-    FCM_CHECK_RETURN_RET(proxy != nullptr, FCM_ERR_INTERNAL_ERROR, "proxy is nullptr");
+    FCM_CHECK_RETURN_RET(proxy != nullptr, FCM_ERR_PROXY_IS_NULL, "proxy is nullptr");
     return proxy->IsDeviceBound(deviceAddress, isBound);
 }
 
@@ -218,7 +218,7 @@ int PartnerDeviceAgent::EnableDeviceControl(const PartnerDeviceAddress &deviceAd
     }
 
     auto proxy = LoadRemoteSa();
-    FCM_CHECK_RETURN_RET(proxy != nullptr, FCM_ERR_INTERNAL_ERROR, "proxy is nullptr");
+    FCM_CHECK_RETURN_RET(proxy != nullptr, FCM_ERR_PROXY_IS_NULL, "proxy is nullptr");
     return proxy->EnableDeviceControl(deviceAddress);
 }
 
@@ -229,7 +229,7 @@ int PartnerDeviceAgent::DisableDeviceControl(const PartnerDeviceAddress &deviceA
     }
 
     auto proxy = LoadRemoteSa();
-    FCM_CHECK_RETURN_RET(proxy != nullptr, FCM_ERR_INTERNAL_ERROR, "proxy is nullptr");
+    FCM_CHECK_RETURN_RET(proxy != nullptr, FCM_ERR_PROXY_IS_NULL, "proxy is nullptr");
     return proxy->DisableDeviceControl(deviceAddress);
 }
 
@@ -244,7 +244,7 @@ int PartnerDeviceAgent::IsDeviceControlEnabled(const PartnerDeviceAddress &devic
     }
 
     auto proxy = LoadRemoteSa();
-    FCM_CHECK_RETURN_RET(proxy != nullptr, FCM_ERR_INTERNAL_ERROR, "proxy is nullptr");
+    FCM_CHECK_RETURN_RET(proxy != nullptr, FCM_ERR_PROXY_IS_NULL, "proxy is nullptr");
     return proxy->IsDeviceControlEnabled(deviceAddress, isEnabled);
 }
 
