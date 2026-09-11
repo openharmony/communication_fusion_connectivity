@@ -68,7 +68,8 @@
                 "nearlink_service",
                 "selinux_adapter",
                 "runtime_core",
-                "taihe_ffi_gen"
+                "taihe_ffi_gen",
+                "bounds_checking_function"
               ],
               "third_party": [
               ]
