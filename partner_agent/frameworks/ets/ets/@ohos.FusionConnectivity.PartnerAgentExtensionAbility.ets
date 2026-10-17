@@ -14,10 +14,17 @@
  */
 
 import type PartnerAgentExtensionContext from '@ohos.FusionConnectivity.PartnerAgentExtensionContext';
+import partnerAgent from '@ohos.FusionConnectivity.partnerAgent';
+import ExtensionAbility from '@ohos.app.ability.ExtensionAbility';
 
-export default class PartnerAgentExtensionAbility {
+export default class PartnerAgentExtensionAbility extends ExtensionAbility {
+  public context: PartnerAgentExtensionContext = {};
 
-  onDestroyWithReason(): void {
-      console.log(' .JS onDestroyWithReason');
+  onDestroyWithReason(reason: partnerAgent.PartnerAgentExtensionAbilityDestroyReason): void {
+      console.log(' .ETS onDestroyWithReason');
+  }
+
+  onDeviceDiscovered(deviceAddress: partnerAgent.PartnerDeviceAddress): void {
+      console.log(' .ETS onDeviceDiscovered');
   };
 }

@@ -84,7 +84,10 @@
                     "//foundation/communication/fusion_connectivity/partner_agent/frameworks/napi/src/extension:napi_packages",
                     "//foundation/communication/fusion_connectivity/fusion_ranging/frameworks/inner:fusion_ranging_manager_framework",
                     "//foundation/communication/fusion_connectivity/fusion_ranging/frameworks/napi:ranging",
-                    "//foundation/communication/fusion_connectivity/fusion_ranging/frameworks/ets/taihe:fusionRanging_taihe"
+                    "//foundation/communication/fusion_connectivity/fusion_ranging/frameworks/ets/taihe:fusionRanging_taihe",
+                    "//foundation/communication/fusion_connectivity/partner_agent/frameworks/ets/taihe/partnerAgent:partnerAgent_taihe",
+                    "//foundation/communication/fusion_connectivity/partner_agent/frameworks/ets/ets:partnerAgent_extension_ability_etc",
+                    "//foundation/communication/fusion_connectivity/partner_agent/frameworks/ets/extension:partner_agent_extension_ani"
                 ],
                 "service_group": [
                     "//foundation/communication/fusion_connectivity/partner_agent/sa_profile:partner_device_agent_sa_profile",

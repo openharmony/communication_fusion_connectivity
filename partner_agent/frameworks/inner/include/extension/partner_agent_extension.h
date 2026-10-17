@@ -79,6 +79,7 @@ public:
 
     virtual PartnerAgentExtensionResult OnDestroyWithReason(const int32_t reason);
 };
+
 }  // namespace FusionConnectivity
 }  // namespace OHOS
 

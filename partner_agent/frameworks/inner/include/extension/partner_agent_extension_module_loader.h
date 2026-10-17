@@ -21,6 +21,7 @@
 
 namespace OHOS {
 namespace FusionConnectivity {
+class PartnerAgentExtension;
 class PartnerAgentExtensionModuleLoader : public AbilityRuntime::ExtensionModuleLoader,
                                             public Singleton<PartnerAgentExtensionModuleLoader> {
     DECLARE_SINGLETON(PartnerAgentExtensionModuleLoader);
@@ -44,4 +45,3 @@ public:
 } // namespace FusionConnectivity
 } // namespace OHOS
 #endif // PARTNER_AGENT_EXTENSION_MODULE_LOADER
- 

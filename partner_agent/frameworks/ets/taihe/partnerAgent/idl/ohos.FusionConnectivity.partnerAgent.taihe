@@ -1,0 +1,59 @@
+/*
+ * Copyright (C) 2026 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+@!namespace("@ohos.FusionConnectivity.partnerAgent", "partnerAgent")
+@!sts_inject("""
+  static { loadLibraryWithPermissionCheck("FusionConnectivityPartnerAgent_taihe_native.z", "@ohos.FusionConnectivity.partnerAgent") }
+""")
+
+use ohos.bluetooth.common as common;
+
+function IsPartnerAgentSupported(): bool;
+
+@promise function BindDevice(deviceAddress: PartnerDeviceAddress, deviceCapability: DeviceCapability,
+    businessCapability: BusinessCapability, partnerAgentExtensionAbilityName: String): void;
+
+@promise function UnbindDevice(deviceAddress: PartnerDeviceAddress): void;
+
+function IsDeviceBound(deviceAddress: PartnerDeviceAddress): bool;
+
+function GetBoundDevices(): Array<PartnerDeviceAddress>;
+
+@promise function EnableDeviceControl(deviceAddress: PartnerDeviceAddress): void;
+
+@promise function DisableDeviceControl(deviceAddress: PartnerDeviceAddress): void;
+
+function IsDeviceControlEnabled(deviceAddress: PartnerDeviceAddress): bool;
+
+struct DeviceCapability {
+    supportBR: Optional<bool>;
+    supportBleAdvertiser: Optional<bool>;
+}
+
+struct BusinessCapability {
+    supportMediaControl: Optional<bool>;
+    supportTelephonyControl: Optional<bool>;
+}
+
+struct PartnerDeviceAddress {
+    bluetoothAddress: Optional<common.BluetoothAddress>;
+}
+
+enum PartnerAgentExtensionAbilityDestroyReason: i32 {
+    UNKNOWN_REASON = 0,
+    USER_CLOSED_ABILITY = 1,
+    DEVICE_UNPAIRED = 2,
+    DEVICE_LOST = 3,
+    BLUETOOTH_DISABLED = 4
+}

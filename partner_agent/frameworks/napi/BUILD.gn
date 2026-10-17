@@ -28,7 +28,7 @@ config("fusion_connectivity_inner_cfg") {
 group("napi_partner_agent_extension") {
   deps = [
     "src/extension:partner_agent_extension",
-    "src/extension:partner_agent_extension_module",
+    "$FUSION_CONN/partner_agent/frameworks/inner:partner_agent_extension_module",
   ]
 }
 
