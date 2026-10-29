@@ -73,9 +73,8 @@ config("partner_agent_extension_interface_config") {
 
 idl_gen_interface("partner_agent_extension_interface") { 
   sources = [ "$FUSION_CONN/partner_agent/idl/IPartnerAgentExtension.idl" ] 
-  sources_common = [ 
-    "$FUSION_CONN/partner_agent/idl/IFusionConnectivityTypes.idl", 
-  ] 
+  # Shared type code has one producer in this directory.
+  deps = [ ":partner_device_agent" ]
   log_domainid = "0xD000100" 
   log_tag = "PartnerAgentExtension" 
   subsystem_name = "communication" 
